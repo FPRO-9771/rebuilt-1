@@ -1,0 +1,20 @@
+# FRC Team 9771 Robot 2026 Dependencies
+
+# RobotPy - WPILib Python bindings
+# https://pypi.org/project/robotpy/
+robotpy==2026.2.1
+
+# Phoenix 6 - CTRE motor controllers (TalonFX, KrakenX60)
+# https://pypi.org/project/phoenix6/
+phoenix6==26.1.0
+
+# Commands v2 framework
+# https://pypi.org/project/robotpy-commands-v2/
+robotpy-commands-v2==2026.2.1
+
+# Testing
+pytest>=8.0.0
+pytest-cov>=4.1.0
+
+# Limelight (optional - install when camera is set up)
+# limelight-python>=1.0.0
