@@ -2295,3 +2295,43 @@ motor.set_velocity(target_rps)
 10. **Manual overrides matter** - Always have a way to manually control mechanisms
 11. **Calibrate vision multipliers early** - The LL_DATA_SETTINGS multipliers need tuning per camera mount
 12. **Test direction logic** - Easy to get signs wrong (left vs right, forward vs back)
+
+---
+
+## 2026 Ideas to Explore
+
+A running list of things we want to investigate this season.
+
+### Physical-Input Autonomous Commands
+
+**Goal:** Write autonomous routines using physical measurements instead of voltage/time.
+
+Instead of:
+```python
+# Voltage-based (what we did in 2025)
+self.drivetrain.run_at_voltage(-6.0, duration=1.5)  # Hope this moves ~2 meters
+```
+
+We want:
+```python
+# Physical-input based (goal for 2026)
+self.drivetrain.move_distance(-2.0)  # Move back 2 meters
+self.drivetrain.rotate_to_heading(90)  # Turn to face 90 degrees
+self.arm.move_to_angle(45)  # Move arm to 45 degrees
+```
+
+**Why this is better:**
+- More intuitive to write and read
+- Repeatable regardless of battery voltage
+- Easier to tune and debug
+- Works with odometry/encoders for accuracy
+
+**Things to figure out:**
+- [ ] How to use encoder feedback for distance tracking
+- [ ] PID tuning for position-based movement
+- [ ] Integration with Phoenix 6 motion magic / position control
+- [ ] How to handle "I didn't reach the target" failures
+
+---
+
+*Add more ideas below as we think of them!*
