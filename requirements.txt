@@ -2,15 +2,15 @@
 
 # RobotPy - WPILib Python bindings
 # https://pypi.org/project/robotpy/
-robotpy==2026.2.1
+robotpy==2026.2.1.1
 
 # Phoenix 6 - CTRE motor controllers (TalonFX, KrakenX60)
 # https://pypi.org/project/phoenix6/
-phoenix6==26.1.0
+phoenix6==26.1.1
 
 # Commands v2 framework
 # https://pypi.org/project/robotpy-commands-v2/
-robotpy-commands-v2==2026.2.1
+robotpy-commands-v2==2026.2.1.1
 
 # Testing
 pytest>=8.0.0
