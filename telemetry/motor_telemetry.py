@@ -18,7 +18,8 @@ class MotorTelemetry:
     def update(self):
         """Publish current motor data to SmartDashboard."""
         sd = wpilib.SmartDashboard
-        sd.putNumber("Motors/Conveyor Velocity", self._conveyor.get_velocity())
+        if self._conveyor is not None:
+            sd.putNumber("Motors/Conveyor Velocity", self._conveyor.get_velocity())
         sd.putNumber("Motors/Turret Position", self._turret.get_position())
         sd.putNumber("Motors/Turret Velocity", self._turret.get_velocity())
         sd.putNumber("Motors/Launcher Velocity", self._launcher.get_velocity())

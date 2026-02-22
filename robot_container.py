@@ -6,7 +6,7 @@ This is where controllers are bound to commands.
 from commands2.button import CommandXboxController
 
 from constants import CON_ROBOT
-from subsystems.conveyor import Conveyor
+# from subsystems.conveyor import Conveyor  # NOT WIRED YET
 from subsystems.turret import Turret
 from subsystems.launcher import Launcher
 from subsystems.hood import Hood
@@ -22,7 +22,7 @@ class RobotContainer:
 
     def __init__(self):
         # --- Subsystems ---
-        self.conveyor = Conveyor()
+        # self.conveyor = Conveyor()  # NOT WIRED YET
         self.turret = Turret()
         self.launcher = Launcher()
         self.hood = Hood()
@@ -45,7 +45,7 @@ class RobotContainer:
         self._configure_bindings()
 
         # --- Telemetry ---
-        setup_telemetry(self.conveyor, self.turret, self.launcher,
+        setup_telemetry(None, self.turret, self.launcher,
                         self.hood, self.vision)
 
     def _configure_bindings(self):
@@ -53,7 +53,7 @@ class RobotContainer:
 
         # --- Operator Controls ---
         configure_operator(
-            self.operator, self.conveyor, self.turret,
+            self.operator, None, self.turret,
             self.launcher, self.hood, self.vision,
         )
 

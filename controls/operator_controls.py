@@ -39,9 +39,10 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision):
     }
 
     # --- Conveyor: right stick Y ---
-    Trigger(lambda: abs(operator.getRightY()) > deadband).whileTrue(
-        conveyor.manual(lambda: -operator.getRightY())
-    )
+    if conveyor is not None:
+        Trigger(lambda: abs(operator.getRightY()) > deadband).whileTrue(
+            conveyor.manual(lambda: -operator.getRightY())
+        )
 
     # --- Auto shooter: Y button toggle ---
     operator.y().toggleOnTrue(
