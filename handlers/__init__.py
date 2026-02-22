@@ -17,7 +17,7 @@ def set_mock_vision_mode(enabled: bool) -> None:
     global _use_mock_vision, _mock_provider
     _use_mock_vision = enabled
     if enabled:
-        from .vision import MockVisionProvider
+        from .mock_vision import MockVisionProvider
         _mock_provider = MockVisionProvider()
 
 
@@ -28,7 +28,7 @@ def get_vision_provider():
     """
     if _use_mock_vision:
         return _mock_provider
-    from .vision import LimelightVisionProvider
+    from .limelight_vision import LimelightVisionProvider
     return LimelightVisionProvider()
 
 

@@ -2,7 +2,8 @@
 Tests for vision system.
 """
 
-from handlers.vision import MockVisionProvider, VisionTarget
+from handlers.mock_vision import MockVisionProvider
+from handlers.vision import VisionTarget
 
 
 def test_mock_vision_target_left():

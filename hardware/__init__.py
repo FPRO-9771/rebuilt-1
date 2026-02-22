@@ -3,8 +3,10 @@ Hardware abstraction layer.
 Provides factory functions that return real or mock hardware based on mode.
 """
 
-from .motor_controller import MotorController, TalonFXController, MockMotorController
+from .motor_controller import MotorController
+from .motor_controller_talon import TalonFXController
 from .motor_controller_fxs import TalonFXSController
+from .mock_motor_controller import MockMotorController
 
 _use_mock_hardware = False
 

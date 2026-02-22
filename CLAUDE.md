@@ -23,10 +23,11 @@ RobotPy (Python) codebase for an FRC competition robot using the WPILib command-
 3. **Testable Modules** - All hardware access goes through abstractions that can be mocked for testing
 4. **No Magic Numbers** - All values (CAN IDs, voltages, limits) defined in constants
 5. **Command Ownership** - Subsystems expose commands; commands always call `addRequirements()`
+6. **Small Files** - Keep every module short and focused (under ~100 lines). One interface, class, or concept per file. Split early — the team includes new Python learners who need to read files top-to-bottom
 
-## Documentation Library
+## IMPORTANT: Read Docs First
 
-**Read these docs before diving into code.** They are kept up to date and are the authoritative reference.
+**Before reading or modifying ANY code, read the relevant docs below.** The docs are the authoritative reference for how this codebase is structured, what patterns we use, and why. Jumping straight into code without reading the docs first will lead to mistakes — wrong patterns, duplicated work, or changes that break conventions. Always start here.
 
 | Document | Description |
 |----------|-------------|

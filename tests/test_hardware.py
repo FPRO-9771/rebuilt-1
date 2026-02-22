@@ -3,7 +3,7 @@ Tests for hardware abstraction layer.
 """
 
 from hardware import create_motor, create_motor_fxs
-from hardware.motor_controller import MockMotorController
+from hardware.mock_motor_controller import MockMotorController
 
 
 def test_set_velocity_records_in_mock():

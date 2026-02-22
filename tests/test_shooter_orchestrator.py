@@ -7,7 +7,7 @@ from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from subsystems.shooter_lookup import get_shooter_settings
 from commands.shooter_orchestrator import ShooterOrchestrator
-from handlers.vision import MockVisionProvider
+from handlers.mock_vision import MockVisionProvider
 from constants import CON_SHOOTER
 
 
