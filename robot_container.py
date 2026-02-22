@@ -12,6 +12,7 @@ from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from controls import configure_operator
 from handlers import get_vision_provider
+from telemetry import setup_telemetry
 
 
 class RobotContainer:
@@ -42,6 +43,10 @@ class RobotContainer:
 
         # --- Configure button bindings ---
         self._configure_bindings()
+
+        # --- Telemetry ---
+        setup_telemetry(self.conveyor, self.turret, self.launcher,
+                        self.hood, self.vision)
 
     def _configure_bindings(self):
         """Wire controller inputs to commands."""

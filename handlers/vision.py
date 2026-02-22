@@ -5,7 +5,7 @@ Defines the contract that all vision providers must implement.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -30,4 +30,9 @@ class VisionProvider(ABC):
     @abstractmethod
     def has_target(self, tag_id: Optional[int] = None) -> bool:
         """Check if a target is visible."""
+        pass
+
+    @abstractmethod
+    def get_all_targets(self) -> List[VisionTarget]:
+        """Get all currently visible targets."""
         pass

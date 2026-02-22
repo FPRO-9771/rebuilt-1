@@ -3,7 +3,7 @@ Mock vision provider for testing.
 Lets tests simulate targets at specific positions without real hardware.
 """
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from .vision import VisionProvider, VisionTarget
 
@@ -24,6 +24,10 @@ class MockVisionProvider(VisionProvider):
 
     def has_target(self, tag_id: Optional[int] = None) -> bool:
         return self.get_target(tag_id) is not None
+
+    def get_all_targets(self) -> List[VisionTarget]:
+        """Get all currently set targets."""
+        return list(self._targets.values())
 
     # --- Test helpers ---
 

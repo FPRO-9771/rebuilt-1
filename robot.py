@@ -6,6 +6,7 @@ Subclasses TimedRobot and delegates to RobotContainer.
 import wpilib
 from commands2 import CommandScheduler
 from robot_container import RobotContainer
+from telemetry import update_telemetry
 
 
 class Robot(wpilib.TimedRobot):
@@ -19,6 +20,7 @@ class Robot(wpilib.TimedRobot):
     def robotPeriodic(self):
         """Called every 20ms regardless of mode."""
         CommandScheduler.getInstance().run()
+        update_telemetry()
 
     # --- Autonomous ---
 

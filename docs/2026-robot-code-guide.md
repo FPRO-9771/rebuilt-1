@@ -20,6 +20,7 @@ Detailed guides live in `docs/architecture/`. Jump to the one you need:
 | [Drivetrain](architecture/drivetrain.md) | Drivetrain config/tuning |
 | [Vision](architecture/vision.md) | Limelight for auto, teleop, or any use |
 | [Testing & Simulation](architecture/testing-and-simulation.md) | Writing tests, running sim |
+| [Telemetry](architecture/telemetry.md) | Live dashboard data (motors, commands, vision) |
 
 ---
 
@@ -35,6 +36,7 @@ The codebase is organized by responsibility, not by file type:
 - **`autonomous/`** — Auto routine composition, field-position constants, and dashboard chooser. See [Autonomous](architecture/autonomous.md).
 - **`handlers/`** — External system integrations (vision/Limelight). Same abstraction pattern as hardware.
 - **`controls/`** — Controller bindings (driver and operator). Keeps button-wiring logic out of `robot_container.py`.
+- **`telemetry/`** — Dashboard publishers for motors, commands, and vision. Pushes data to SmartDashboard every cycle.
 - **`testing/`** — Physics simulation models and sim runner. Calibrated from real robot measurements.
 - **`tests/`** — Automated pytest tests. Convention: one `test_<topic>.py` per subsystem or concern.
 - **`generated/`** — Phoenix Tuner X output. Don't edit by hand.
@@ -56,7 +58,8 @@ constants/
 ├── shooter.py         # CON_TURRET, CON_LAUNCHER, CON_HOOD, CON_SHOOTER
 ├── conveyor.py        # CON_CONVEYOR
 ├── controls.py        # CON_MANUAL, CON_ROBOT
-└── simulation.py      # SIM_CALIBRATION, SIM_DT
+├── simulation.py      # SIM_CALIBRATION, SIM_DT
+└── telemetry.py       # CON_TELEMETRY
 ```
 
 Import from the package — works the same as the old single file:
