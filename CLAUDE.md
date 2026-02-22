@@ -30,7 +30,13 @@ RobotPy (Python) codebase for an FRC competition robot using the WPILib command-
 
 | Document | Description |
 |----------|-------------|
-| `docs/2026-robot-code-guide.md` | Comprehensive architecture guide covering project structure, hardware abstraction, subsystem design, command patterns, autonomous system, vision, testing, and physics simulation |
+| `docs/2026-robot-code-guide.md` | High-level overview, project structure, config management, quick reference tables, workflow, and lessons learned |
+| `docs/architecture/hardware-and-subsystems.md` | Hardware abstraction layer and subsystem design patterns |
+| `docs/architecture/commands-and-controls.md` | Command-based architecture and controller bindings |
+| `docs/architecture/autonomous.md` | Autonomous system: routines, constants, chooser setup |
+| `docs/architecture/drivetrain.md` | Swerve drivetrain setup with Phoenix Tuner X |
+| `docs/architecture/vision.md` | Vision system (Limelight), abstraction layer, and testing |
+| `docs/architecture/testing-and-simulation.md` | Testing with mocks, physics simulation, and calibration |
 
 ## Quick Reference
 
