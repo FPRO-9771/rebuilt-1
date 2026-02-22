@@ -40,6 +40,9 @@ RobotPy (Python) codebase for an FRC competition robot using the WPILib command-
 | `docs/architecture/drivetrain.md` | Swerve drivetrain setup with Phoenix Tuner X |
 | `docs/architecture/vision.md` | Vision system (Limelight), abstraction layer, and testing |
 | `docs/architecture/testing-and-simulation.md` | Testing with mocks, physics simulation, and calibration |
+| `docs/architecture/telemetry.md` | Telemetry dashboard module, published keys, and how to extend |
+| `docs/dashboard-setup.md` | How to open Shuffleboard / Glass / Elastic and view live telemetry |
+| `docs/drive-team-guide.md` | Xbox controller button maps for driver and operator |
 
 ## Quick Reference
 
