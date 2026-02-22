@@ -43,6 +43,8 @@ RobotPy (Python) codebase for an FRC competition robot using the WPILib command-
 | `docs/architecture/telemetry.md` | Telemetry dashboard module, published keys, and how to extend |
 | `docs/dashboard-setup.md` | How to open Shuffleboard / Glass / Elastic and view live telemetry |
 | `docs/drive-team-guide.md` | Xbox controller button maps for driver and operator |
+| `docs/PYTHON_SETUP.md` | Python installation for Mac and Windows |
+| `docs/roborio-deploy.md` | RoboRIO setup, deployment, and troubleshooting |
 
 ## Quick Reference
 
