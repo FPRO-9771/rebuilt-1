@@ -3,10 +3,15 @@ Central hub - creates all subsystems and wires them together.
 This is where controllers are bound to commands.
 """
 
-from commands2.button import CommandXboxController, Trigger
+from commands2.button import CommandXboxController
 
-from constants import CON_ROBOT, CON_CONVEYOR
+from constants import CON_ROBOT
 from subsystems.conveyor import Conveyor
+from subsystems.turret import Turret
+from subsystems.launcher import Launcher
+from subsystems.hood import Hood
+from controls import configure_operator
+from handlers import get_vision_provider
 
 
 class RobotContainer:
@@ -17,10 +22,15 @@ class RobotContainer:
     def __init__(self):
         # --- Subsystems ---
         self.conveyor = Conveyor()
+        self.turret = Turret()
+        self.launcher = Launcher()
+        self.hood = Hood()
+
+        # --- Vision ---
+        self.vision = get_vision_provider()
 
         # TODO: Add more subsystems as they're built
         # self.drivetrain = Drivetrain()
-        # self.arm = Arm()
 
         # --- Controllers ---
         self.driver = CommandXboxController(CON_ROBOT["driver_controller_port"])
@@ -37,21 +47,10 @@ class RobotContainer:
         """Wire controller inputs to commands."""
 
         # --- Operator Controls ---
-
-        # Conveyor manual control with right joystick Y-axis
-        # Uses a Trigger to check if joystick is past deadband
-        deadband = CON_ROBOT["joystick_deadband"]
-
-        Trigger(lambda: abs(self.operator.getRightY()) > deadband).whileTrue(
-            self.conveyor.manual(lambda: -self.operator.getRightY())
+        configure_operator(
+            self.operator, self.conveyor, self.turret,
+            self.launcher, self.hood, self.vision,
         )
-
-        # Alternative: Button-based control
-        # A button = intake (forward)
-        # self.operator.a().whileTrue(self.conveyor.run_at_voltage(CON_CONVEYOR["intake_voltage"]))
-
-        # B button = outtake (reverse)
-        # self.operator.b().whileTrue(self.conveyor.run_at_voltage(CON_CONVEYOR["outtake_voltage"]))
 
         # --- Driver Controls ---
         # TODO: Add drivetrain controls

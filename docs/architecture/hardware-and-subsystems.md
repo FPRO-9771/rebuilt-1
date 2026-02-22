@@ -42,13 +42,17 @@ class Arm(SubsystemBase):
 from abc import ABC, abstractmethod
 from typing import Optional
 from phoenix6.hardware import TalonFX
-from phoenix6.controls import VoltageOut, PositionVoltage
+from phoenix6.controls import VoltageOut, VelocityVoltage, PositionVoltage
 
 class MotorController(ABC):
     """Abstract interface for motor controllers."""
 
     @abstractmethod
     def set_voltage(self, volts: float) -> None:
+        pass
+
+    @abstractmethod
+    def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
         pass
 
     @abstractmethod
@@ -82,6 +86,9 @@ class TalonFXController(MotorController):
         self._last_voltage = volts
         self.motor.set_control(VoltageOut(volts))
 
+    def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
+        self.motor.set_control(VelocityVoltage(velocity).with_feed_forward(feedforward))
+
     def set_position(self, position: float, feedforward: float = 0) -> None:
         self.motor.set_control(PositionVoltage(position).with_feed_forward(feedforward))
 
@@ -109,6 +116,10 @@ class MockMotorController(MotorController):
     def set_voltage(self, volts: float) -> None:
         self._voltage = volts
         self.command_history.append({"type": "voltage", "value": volts})
+
+    def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
+        self._velocity = velocity
+        self.command_history.append({"type": "velocity", "value": velocity, "ff": feedforward})
 
     def set_position(self, position: float, feedforward: float = 0) -> None:
         self._position = position  # Instant for testing
@@ -150,12 +161,28 @@ def set_mock_mode(enabled: bool) -> None:
     global _use_mock_hardware
     _use_mock_hardware = enabled
 
+def is_mock_mode() -> bool:
+    """Check if mock mode is enabled."""
+    return _use_mock_hardware
+
 def create_motor(can_id: int, inverted: bool = False) -> MotorController:
-    """Factory function - returns real or mock motor based on mode."""
+    """Factory function - returns real or mock TalonFX motor based on mode."""
     if _use_mock_hardware:
         return MockMotorController(can_id, inverted)
     return TalonFXController(can_id, inverted)
+
+def create_motor_fxs(can_id: int, inverted: bool = False) -> MotorController:
+    """Factory function - returns real or mock TalonFXS motor based on mode."""
+    if _use_mock_hardware:
+        return MockMotorController(can_id, inverted)
+    return TalonFXSController(can_id, inverted)
 ```
+
+### TalonFXS Support
+
+Some motors (like WCP) connect through a TalonFXS controller instead of a TalonFX. The `TalonFXSController` class implements the same `MotorController` ABC, so subsystems don't need to know the difference. Use `create_motor_fxs()` instead of `create_motor()` when wiring up those motors.
+
+Both factory functions return a `MockMotorController` in test mode — the mock doesn't care which real controller it's standing in for.
 
 ### Updated Subsystem (uses abstraction)
 
@@ -163,7 +190,7 @@ def create_motor(can_id: int, inverted: bool = False) -> MotorController:
 # subsystems/arm.py (NEW WAY - testable)
 from commands2 import SubsystemBase, Command
 from hardware import create_motor
-from constants import MOTOR_IDS, CON_ARM
+from constants import MOTOR_IDS, CON_ARM  # or: from constants.ids import MOTOR_IDS
 
 class Arm(SubsystemBase):
     def __init__(self):
@@ -237,7 +264,7 @@ Each mechanism gets its own file in `subsystems/`. A subsystem:
 
 from commands2 import SubsystemBase, Command
 from hardware import create_motor
-from constants import MOTOR_IDS, CON_[MECHANISM]
+from constants import MOTOR_IDS, CON_[MECHANISM]  # or import from specific file
 
 class [Mechanism](SubsystemBase):
     def __init__(self):
@@ -322,4 +349,5 @@ class [Mechanism](SubsystemBase):
 
 **See also:**
 - [Commands & Controls](commands-and-controls.md) - How commands compose and wire to buttons
+- [Shooter System](shooter-system.md) - Concrete examples of three different control patterns (voltage, velocity, position)
 - [Testing & Simulation](testing-and-simulation.md) - Writing tests against mock hardware

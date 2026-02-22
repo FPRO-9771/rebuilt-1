@@ -137,4 +137,6 @@ class RobotContainer:
 
 **See also:**
 - [Hardware & Subsystems](hardware-and-subsystems.md) - How subsystems expose commands
+- [Shooter System](shooter-system.md) - Multi-subsystem command example (ShooterOrchestrator)
+- [Controls & Manual Overrides](controls.md) - Extracting bindings from robot_container, manual override patterns
 - [Autonomous](autonomous.md) - Composing commands into auto routines

@@ -18,7 +18,7 @@ RobotPy (Python) codebase for an FRC competition robot using the WPILib command-
 
 ## Code Principles
 
-1. **DRY (Don't Repeat Yourself)** - Configuration lives in `constants.py`, not scattered through code
+1. **DRY (Don't Repeat Yourself)** - Configuration lives in `constants/`, not scattered through code
 2. **Separation of Concerns** - Hardware abstraction in `hardware/`, subsystems own their mechanisms, commands handle actions
 3. **Testable Modules** - All hardware access goes through abstractions that can be mocked for testing
 4. **No Magic Numbers** - All values (CAN IDs, voltages, limits) defined in constants
@@ -33,6 +33,8 @@ RobotPy (Python) codebase for an FRC competition robot using the WPILib command-
 | `docs/2026-robot-code-guide.md` | High-level overview, project structure, config management, quick reference tables, workflow, and lessons learned |
 | `docs/architecture/hardware-and-subsystems.md` | Hardware abstraction layer and subsystem design patterns |
 | `docs/architecture/commands-and-controls.md` | Command-based architecture and controller bindings |
+| `docs/architecture/shooter-system.md` | Shooter subsystems, distance lookup table, and orchestrator |
+| `docs/architecture/controls.md` | Binding extraction pattern, operator control map, manual overrides |
 | `docs/architecture/autonomous.md` | Autonomous system: routines, constants, chooser setup |
 | `docs/architecture/drivetrain.md` | Swerve drivetrain setup with Phoenix Tuner X |
 | `docs/architecture/vision.md` | Vision system (Limelight), abstraction layer, and testing |

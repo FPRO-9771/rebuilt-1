@@ -14,6 +14,8 @@ Detailed guides live in `docs/architecture/`. Jump to the one you need:
 |----------|-------------------|
 | [Hardware & Subsystems](architecture/hardware-and-subsystems.md) | Adding a new mechanism |
 | [Commands & Controls](architecture/commands-and-controls.md) | Wiring buttons/joysticks to actions |
+| [Shooter System](architecture/shooter-system.md) | Turret, launcher, hood, orchestrator, distance table |
+| [Controls & Manual Overrides](architecture/controls.md) | Binding extraction pattern, operator control map, emergency overrides |
 | [Autonomous](architecture/autonomous.md) | Building/editing auto routines |
 | [Drivetrain](architecture/drivetrain.md) | Drivetrain config/tuning |
 | [Vision](architecture/vision.md) | Limelight for auto, teleop, or any use |
@@ -21,138 +23,53 @@ Detailed guides live in `docs/architecture/`. Jump to the one you need:
 
 ---
 
-## 1. Project Structure
+## 1. Project Layout
 
-Create this directory structure at the start of the season:
+The codebase is organized by responsibility, not by file type:
 
-```
-robot-2026/
-├── main.py                    # Entry point (tiny - just starts robot)
-├── robot.py                   # Robot lifecycle (TimedRobot subclass)
-├── robot_container.py         # Central hub - creates everything, wires it together
-├── constants.py               # ALL configuration values
-│
-├── hardware/                  # NEW: Hardware abstraction layer
-│   ├── __init__.py
-│   ├── motor_controller.py    # Motor interface + implementations
-│   ├── sensors.py             # Encoder, limit switch abstractions
-│   └── mock_hardware.py       # Mock implementations for testing
-│
-├── generated/                 # Phoenix Tuner X output (don't edit by hand)
-│   └── tuner_constants.py
-│
-├── subsystems/                # One file per mechanism
-│   ├── __init__.py
-│   ├── drivetrain.py
-│   └── [mechanism].py         # arm.py, intake.py, etc.
-│
-├── autonomous/
-│   ├── __init__.py
-│   ├── auton_modes.py         # High-level auto routines
-│   ├── auton_constants.py     # Auto-specific config (AprilTag IDs, paths)
-│   └── auton_mode_selector.py # Dashboard chooser
-│
-├── handlers/                  # External system integrations
-│   ├── __init__.py
-│   ├── vision.py              # Vision abstraction (Limelight wrapper + mock)
-│   └── limelight_handler.py   # Legacy direct Limelight access
-│
-├── testing/                   # Simulation and test utilities
-│   ├── __init__.py
-│   ├── physics_sim.py         # Physics models (drivetrain, mechanisms)
-│   └── sim_runner.py          # Simulation test runner
-│
-├── tests/                     # Automated tests
-│   ├── __init__.py
-│   ├── conftest.py            # Pytest fixtures (mock setup)
-│   ├── test_subsystems.py
-│   ├── test_commands.py
-│   ├── test_vision.py         # Vision alignment tests
-│   ├── test_auto_physics.py   # Full auto tests with physics sim
-│   └── test_autonomous.py
-│
-├── calibration/               # Scripts to run on real robot
-│   └── measure_drivetrain.py  # Measure max speed, rotation rate
-│
-└── requirements.txt
-```
-
-**From phoenix-v1:** We had this structure but without `hardware/` layer and with minimal tests. Adding the hardware abstraction is the big improvement for 2026.
+- **`constants/`** — Single source of truth for every configurable value (CAN IDs, voltages, limits, positions). Split into topic files (`ids.py`, `shooter.py`, `conveyor.py`, `controls.py`, `simulation.py`) so you can find what you need fast. Import from the package (`from constants import CON_TURRET`) or from a specific file (`from constants.shooter import CON_TURRET`).
+- **`robot_container.py`** — Central hub that creates all subsystems and wires them together. The only place that knows about everything.
+- **`hardware/`** — Abstraction layer between subsystem code and real motors/sensors. Subsystems program against the `MotorController` ABC; the factory decides whether to return a real TalonFX or a mock. This is the big improvement over 2025.
+- **`subsystems/`** — One file per mechanism. Each subsystem owns its hardware, exposes Commands, and enforces safety limits. Also contains pure-logic helpers like `shooter_lookup.py`.
+- **`commands/`** — Multi-subsystem commands that don't belong inside a single subsystem file (e.g., `ShooterOrchestrator` coordinates turret + launcher + hood).
+- **`autonomous/`** — Auto routine composition, field-position constants, and dashboard chooser. See [Autonomous](architecture/autonomous.md).
+- **`handlers/`** — External system integrations (vision/Limelight). Same abstraction pattern as hardware.
+- **`controls/`** — Controller bindings (driver and operator). Keeps button-wiring logic out of `robot_container.py`.
+- **`testing/`** — Physics simulation models and sim runner. Calibrated from real robot measurements.
+- **`tests/`** — Automated pytest tests. Convention: one `test_<topic>.py` per subsystem or concern.
+- **`generated/`** — Phoenix Tuner X output. Don't edit by hand.
 
 ---
 
 ## 2. Configuration Management
 
-**Rule: No magic numbers in code. Everything configurable goes in `constants.py`.**
+**Rule: No magic numbers in code. Everything configurable goes in `constants/`.**
 
-### constants.py Structure
+### constants/ Package Structure
 
-```python
-# constants.py
+The `constants/` package is split into topic files so you can find what you need fast:
 
-# =============================================================================
-# MOTOR CAN IDS - Single source of truth for all motor IDs
-# =============================================================================
-MOTOR_IDS = {
-    # Drivetrain (configured via tuner_constants.py, listed here for reference)
-    # "drive_fl": 11, "steer_fl": 10, etc.
-
-    # Mechanisms
-    "arm_main": 20,
-    "arm_follower": 21,
-    "intake": 22,
-    "climber": 23,
-}
-
-# =============================================================================
-# SENSOR CAN IDS
-# =============================================================================
-SENSOR_IDS = {
-    "pigeon": 40,
-    "canrange_front": 41,
-    "canrange_rear": 42,
-}
-
-# =============================================================================
-# MECHANISM CONFIGS - Limits, speeds, positions
-# =============================================================================
-CON_ARM = {
-    "min_angle": 0,
-    "max_angle": 180,
-    "position_tolerance": 2,  # degrees
-
-    # Named positions
-    "stow": 10,
-    "intake": 45,
-    "score_low": 90,
-    "score_high": 135,
-
-    # Motion
-    "max_voltage": 10,
-    "hold_voltage": 1,
-}
-
-CON_INTAKE = {
-    "intake_voltage": 8,
-    "outtake_voltage": -6,
-    "hold_voltage": 2,
-}
-
-# =============================================================================
-# ROBOT-WIDE SETTINGS
-# =============================================================================
-CON_ROBOT = {
-    "driver_controller_port": 0,
-    "operator_controller_port": 1,
-
-    "max_speed_mps": 5.0,           # meters per second
-    "max_angular_rate": 3.14,       # radians per second
-
-    "joystick_deadband": 0.1,
-}
+```
+constants/
+├── __init__.py        # Re-exports everything (no special imports needed)
+├── ids.py             # MOTOR_IDS, SENSOR_IDS
+├── shooter.py         # CON_TURRET, CON_LAUNCHER, CON_HOOD, CON_SHOOTER
+├── conveyor.py        # CON_CONVEYOR
+├── controls.py        # CON_MANUAL, CON_ROBOT
+└── simulation.py      # SIM_CALIBRATION, SIM_DT
 ```
 
-**From phoenix-v1:** We did this well. All motor IDs, limits, speeds, and positions were in `constants.py`. When we changed hardware, we only edited one file.
+Import from the package — works the same as the old single file:
+```python
+from constants import MOTOR_IDS, CON_TURRET
+```
+
+Or import from a specific file when you want to be explicit:
+```python
+from constants.shooter import CON_LAUNCHER
+```
+
+**From phoenix-v1:** We did this well. All motor IDs, limits, speeds, and positions were centralized. When we changed hardware, we only edited one place.
 
 ---
 
@@ -198,9 +115,12 @@ motor.set_velocity(target_rps)
 
 ### Starting a New Mechanism
 
-1. **Add config to `constants.py`:**
+1. **Add config to `constants/`** (pick the right file, or create a new one and add it to `__init__.py`):
    ```python
+   # constants/ids.py
    MOTOR_IDS["new_mechanism"] = 30
+
+   # constants/new_mechanism.py (new file)
    CON_NEW_MECHANISM = {"max_voltage": 8, "tolerance": 2, ...}
    ```
 
@@ -217,7 +137,7 @@ motor.set_velocity(target_rps)
 
 6. **Test in simulation:** `robotpy sim`
 
-7. **Deploy:** `robotpy deploy --skip-tests`
+7. **Deploy:** `python -m robotpy deploy --skip-tests`
 
 ### Git Workflow
 

@@ -18,6 +18,11 @@ class MotorController(ABC):
         pass
 
     @abstractmethod
+    def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
+        """Run at velocity using closed-loop control (rotations per second)."""
+        pass
+
+    @abstractmethod
     def set_position(self, position: float, feedforward: float = 0) -> None:
         """Move to position using closed-loop control."""
         pass
@@ -63,6 +68,13 @@ class TalonFXController(MotorController):
         self._last_voltage = volts
         self.motor.set_control(VoltageOut(volts))
 
+    def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
+        from phoenix6.controls import VelocityVoltage
+
+        self.motor.set_control(
+            VelocityVoltage(velocity).with_feed_forward(feedforward)
+        )
+
     def set_position(self, position: float, feedforward: float = 0) -> None:
         from phoenix6.controls import PositionVoltage
 
@@ -97,6 +109,14 @@ class MockMotorController(MotorController):
     def set_voltage(self, volts: float) -> None:
         self._voltage = volts
         self.command_history.append({"type": "voltage", "value": volts})
+
+    def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
+        self._velocity = velocity
+        self.command_history.append({
+            "type": "velocity",
+            "value": velocity,
+            "ff": feedforward
+        })
 
     def set_position(self, position: float, feedforward: float = 0) -> None:
         self._position = position  # Instant move for basic testing
