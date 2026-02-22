@@ -22,6 +22,7 @@ class Turret(SubsystemBase):
             MOTOR_IDS["turret"],
             inverted=CON_TURRET["inverted"],
         )
+        self.setDefaultCommand(self.hold_position())
 
     # --- Sensor reads (public) ---
 

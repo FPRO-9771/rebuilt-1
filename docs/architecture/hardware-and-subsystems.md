@@ -152,7 +152,9 @@ class MockMotorController(MotorController):
 ```python
 # hardware/__init__.py
 
-from .motor_controller import MotorController, TalonFXController, MockMotorController
+from .motor_controller import MotorController
+from .motor_controller_talon import TalonFXController
+from .mock_motor_controller import MockMotorController
 
 _use_mock_hardware = False
 

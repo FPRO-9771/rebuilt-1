@@ -9,7 +9,7 @@ Workflow:
 2. Record max speed, rotation rate, acceleration in constants.SIM_CALIBRATION
 3. Use these models in tests to verify autonomous reaches expected positions
 
-See docs/2026-robot-code-guide.md Section 11 for detailed examples.
+See docs/architecture/testing-and-simulation.md for detailed examples.
 """
 
 import math

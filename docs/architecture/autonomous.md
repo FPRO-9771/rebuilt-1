@@ -20,12 +20,11 @@ This doc covers how to build, organize, and select autonomous routines using com
 
 ## 1. Structure
 
-```
-autonomous/
-  auton_modes.py         - Composes full auto routines
-  auton_constants.py     - Data: AprilTag IDs, drive paths, timings
-  auton_mode_selector.py - Dashboard chooser
-```
+The autonomous system has three concerns:
+
+- **Routines** — Compose commands into full auto sequences (drive here, score, intake, etc.). Each routine is a factory method that returns a fresh `SequentialCommandGroup`.
+- **Constants** — Field-position data: AprilTag IDs per starting position, drive paths (velocity/duration tuples), and timing budgets. Separated so you can tweak values without touching command logic.
+- **Selection** — Dashboard chooser that stores *factories* (lambdas), not command instances. A fresh command is created each time auto starts, avoiding stale-state bugs.
 
 ---
 

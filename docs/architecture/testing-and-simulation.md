@@ -19,16 +19,9 @@ This doc covers writing automated tests with mock hardware and running physics s
 
 **This is where phoenix-v1 was weak.** We had minimal automated tests. For 2026, we should:
 
-### Test Structure
+### Test Convention
 
-```
-tests/
-  conftest.py           # Pytest fixtures (mock mode setup)
-  test_subsystems.py    # Unit tests for each subsystem
-  test_commands.py      # Test command behavior
-  test_autonomous.py    # Test auto routines
-  test_integration.py   # End-to-end tests
-```
+Tests live in `tests/` with one file per subsystem or concern (e.g., `test_arm.py`, `test_vision.py`, `test_autonomous.py`). All tests run against mock hardware — the `conftest.py` fixture below enables that automatically.
 
 ### conftest.py (Test Setup)
 
@@ -590,181 +583,94 @@ class SimulationRunner:
 
 ### Example Tests with Physics
 
+These three tests show the key patterns: basic movement verification, vision-in-the-loop alignment, and full auto integration.
+
 ```python
 # tests/test_auto_physics.py
 
 import pytest
-import math
-from testing.physics_sim import Pose2D, DrivetrainPhysicsSim
+from testing.physics_sim import Pose2D
 from testing.sim_runner import SimulationRunner
 from hardware import set_mock_mode
 from handlers import set_mock_vision_mode, get_mock_vision
+from handlers.vision import VisionTarget
 
 @pytest.fixture
 def sim():
     """Create simulation environment."""
     set_mock_mode(True)
     set_mock_vision_mode(True)
-
     runner = SimulationRunner()
     yield runner
-
     set_mock_mode(False)
     set_mock_vision_mode(False)
 
 
 def test_drive_forward_reaches_target(sim):
-    """Verify driving forward for 2 seconds reaches expected distance."""
+    """Pattern: basic movement — command the drivetrain, step time, check position."""
     from subsystems.drivetrain import Drivetrain
 
     drivetrain = Drivetrain()  # Uses mock with physics
     sim.register(drivetrain)
 
-    # Command: drive forward at 2 m/s
     drivetrain.drive(velocity_x=2.0, velocity_y=0, rotation=0)
-
-    # Run for 2 seconds
     sim.run_for(2.0)
 
-    # At 2 m/s for 2 seconds = 4 meters (approximately, with acceleration)
-    assert drivetrain.pose.x > 3.5, f"Expected ~4m forward, got {drivetrain.pose.x:.2f}m"
-    assert drivetrain.pose.x < 4.5
+    # At 2 m/s for 2 seconds ≈ 4 meters (with acceleration ramp)
+    assert 3.5 < drivetrain.pose.x < 4.5
     assert abs(drivetrain.pose.y) < 0.1, "Should not drift sideways"
-    assert abs(drivetrain.pose.heading) < 1.0, "Should not rotate"
 
 
-def test_rotation_reaches_target_heading(sim):
-    """Verify rotation command turns robot expected amount."""
-    from subsystems.drivetrain import Drivetrain
-
-    drivetrain = Drivetrain()
-    sim.register(drivetrain)
-
-    # Command: rotate at 90 deg/s
-    drivetrain.drive(velocity_x=0, velocity_y=0, rotation=90)
-
-    # Run for 1 second
-    sim.run_for(1.0)
-
-    # Should be close to 90 degrees
-    assert drivetrain.pose.heading > 80, f"Expected ~90 degrees, got {drivetrain.pose.heading:.1f} degrees"
-    assert drivetrain.pose.heading < 100
-
-
-def test_arm_reaches_position(sim):
-    """Verify arm moves to target position."""
-    from subsystems.arm import Arm
-
-    arm = Arm()  # Uses mock motor with physics
-    sim.register(arm)
-
-    # Start at 0, go to 90 degrees
-    arm.motor.physics.reset(position=0)
-
-    cmd = arm.go_to_position(90)
-    finished = sim.run_command(cmd, timeout=5.0)
-
-    assert finished, "Command should have finished"
-    assert abs(arm.get_position() - 90) < 5, f"Arm should be at 90 degrees, got {arm.get_position():.1f} degrees"
-
-
-def test_vision_alignment_reaches_target(sim):
-    """Verify vision alignment command centers on target."""
+def test_vision_alignment(sim):
+    """Pattern: vision-in-the-loop — update mock vision each cycle as robot moves."""
     from subsystems.drivetrain import Drivetrain
     from autonomous.auton_drive import AutonDrive
 
     drivetrain = Drivetrain()
     sim.register(drivetrain)
 
-    auton_drive = AutonDrive(drivetrain)
     vision = get_mock_vision()
-
-    # Start with target 15 degrees to the left, 3 meters away
     vision.simulate_target_left(tag_id=20, offset_degrees=15, distance=3.0)
 
-    # As robot rotates and moves, update mock vision to simulate getting closer
-    # (In a real test, you'd update vision based on pose, but this shows the concept)
-
-    cmd = auton_drive.align_to_tag(20)
+    cmd = AutonDrive(drivetrain).align_to_tag(20)
     cmd.initialize()
 
-    # Run a few cycles manually to show the approach
     for i in range(50):  # 1 second of simulation
         cmd.execute()
         sim.step()
 
-        # Simulate target getting more centered as robot moves
-        current_offset = 15 - (i * 0.3)  # Decreasing offset
-        current_distance = 3.0 - (i * 0.04)  # Getting closer
-
+        # Simulate target getting more centered as robot approaches
+        current_offset = 15 - (i * 0.3)
+        current_distance = 3.0 - (i * 0.04)
         if current_distance < 1.0:
             vision.simulate_target_centered(tag_id=20, distance=1.0)
             break
         else:
-            vision.set_target(vision.VisionTarget(
-                tag_id=20,
-                tx=-current_offset,
-                ty=0,
-                distance=current_distance,
-                yaw=0,
+            vision.set_target(VisionTarget(
+                tag_id=20, tx=-current_offset, ty=0,
+                distance=current_distance, yaw=0,
             ))
 
-    # Robot should have moved forward and rotated
     assert drivetrain.pose.x > 0.5, "Should have driven forward"
 
 
-def test_full_auto_routine_reaches_scoring_position(sim):
-    """
-    Integration test: Full auto routine ends at expected field position.
-    This is the holy grail - test the whole auto in simulation.
-    """
+def test_full_auto_integration(sim):
+    """Pattern: end-to-end — create RobotContainer, run a full auto, verify outcome."""
     from robot_container import RobotContainer
 
-    container = RobotContainer()  # Creates all subsystems with mocks
+    container = RobotContainer()  # All subsystems created with mocks
     sim.register(container.drivetrain)
     sim.register(container.arm)
 
     vision = get_mock_vision()
-
-    # Setup starting position (blue left starting zone)
     container.drivetrain.physics.reset(Pose2D(x=0, y=0, heading=0))
-
-    # Simulate scoring target visible
     vision.simulate_target_centered(tag_id=20, distance=2.0)
 
-    # Get and run the auto command
     auto_cmd = container.auton_modes.simple_score("blue_left")
     finished = sim.run_command(auto_cmd, timeout=15.0)
 
     assert finished, "Auto should complete within timeout"
-
-    # Verify robot ended up in reasonable position
-    # (exact values depend on your auto routine)
     assert container.drivetrain.pose.x > 1.0, "Should have driven forward"
-    print(f"Final pose: {container.drivetrain.pose}")
-
-
-def test_two_piece_auto_timing(sim):
-    """Verify two-piece auto completes in expected time."""
-    from robot_container import RobotContainer
-
-    container = RobotContainer()
-    sim.register(container.drivetrain)
-    sim.register(container.arm)
-    sim.register(container.intake)
-
-    vision = get_mock_vision()
-    vision.simulate_target_centered(tag_id=20, distance=2.0)
-
-    auto_cmd = container.auton_modes.two_piece("blue_left")
-
-    start_time = sim.time
-    finished = sim.run_command(auto_cmd, timeout=15.0)
-    elapsed = sim.time - start_time
-
-    assert finished, "Auto should complete"
-    assert elapsed < 14.0, f"Auto took {elapsed:.1f}s, should be under 14s for 15s auto period"
-    print(f"Two-piece auto completed in {elapsed:.1f} seconds")
 ```
 
 ### Debugging Simulation
@@ -801,9 +707,9 @@ def test_auto_with_trajectory_output(sim):
 
 ### Calibration Checklist
 
-Before competition, run these calibration tests on the real robot:
+Before competition, run these calibration tests on the real robot.
 
-### Drivetrain Calibration Checklist
+#### Drivetrain
 
 - [ ] **Max Speed Test**
   - Drive at 12V for 2 seconds
@@ -822,7 +728,7 @@ Before competition, run these calibration tests on the real robot:
   - Calculate: accel = max_speed / time = ______ m/s^2
   - Update `SIM_CALIBRATION["drivetrain"]["accel_mps2"]`
 
-### Mechanism Calibration
+#### Mechanisms
 
 - [ ] **Arm Speed Test**
   - Run arm at 10V

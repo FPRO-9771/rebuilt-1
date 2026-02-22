@@ -375,7 +375,9 @@ class MockVisionProvider(VisionProvider):
 ```python
 # handlers/__init__.py
 
-from .vision import VisionProvider, LimelightVisionProvider, MockVisionProvider
+from .vision import VisionProvider
+from .mock_vision import MockVisionProvider
+from .limelight_vision import LimelightVisionProvider
 
 _use_mock_vision = False
 _mock_provider: Optional[MockVisionProvider] = None

@@ -38,10 +38,18 @@ CON_HOOD = {
 # SHOOTER SYSTEM CONFIGURATION
 # =============================================================================
 CON_SHOOTER = {
-    "target_tag_ids": [4, 7],           # AprilTag IDs on the hoop
     "turret_p_gain": 0.3,               # Proportional gain for turret aiming (volts per degree)
+    "turret_aim_inverted": False,        # Flip to True if turret tracks away from target
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
-    "target_lost_timeout": 0.5,          # Seconds to hold aim after losing target
+
+    # Per-tag offsets: corrections when aiming at the hoop via each tag.
+    # tx_offset (degrees): positive = hoop is to the right of this tag
+    # distance_offset (meters): positive = hoop is farther than this tag
+    # All zeros to start — tune on the real robot.
+    "target_tags": {
+        4: {"tx_offset": 0.0, "distance_offset": 0.0},
+        7: {"tx_offset": 0.0, "distance_offset": 0.0},
+    },
 
     # Distance lookup table: (distance_m, launcher_rps, hood_position)
     # Sorted by distance — interpolated at runtime
