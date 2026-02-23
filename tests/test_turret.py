@@ -5,10 +5,14 @@ Tests for turret subsystem.
 from subsystems.turret import Turret
 from constants import CON_TURRET
 
+# Midpoint of soft limits — always safe regardless of constant tuning
+_MID_POS = (CON_TURRET["min_position"] + CON_TURRET["max_position"]) / 2
+
 
 def test_turret_voltage_clamping():
     """Verify voltage is clamped to max."""
     turret = Turret()
+    turret.motor.simulate_position(_MID_POS)
 
     turret._set_voltage(100)
     assert turret.motor.get_last_voltage() == CON_TURRET["max_voltage"]
@@ -63,18 +67,20 @@ def test_turret_is_at_position():
 def test_turret_manual_command_scales_input():
     """Verify manual command scales joystick to voltage."""
     turret = Turret()
+    turret.motor.simulate_position(_MID_POS)
 
     cmd = turret.manual(lambda: 0.5)
     cmd.initialize()
     cmd.execute()
 
-    expected_voltage = 0.5 * CON_TURRET["max_voltage"]
+    expected_voltage = 0.5 * CON_TURRET["max_voltage"] * CON_TURRET["manual_speed_factor"]
     assert turret.motor.get_last_voltage() == expected_voltage
 
 
 def test_turret_manual_command_stops_on_end():
     """Verify manual command stops motor when ended."""
     turret = Turret()
+    turret.motor.simulate_position(_MID_POS)
 
     cmd = turret.manual(lambda: 1.0)
     cmd.initialize()

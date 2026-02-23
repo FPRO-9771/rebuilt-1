@@ -8,12 +8,16 @@ from subsystems.hood import Hood
 from subsystems.shooter_lookup import get_shooter_settings
 from commands.shooter_orchestrator import ShooterOrchestrator
 from handlers.mock_vision import MockVisionProvider
-from constants import CON_SHOOTER
+from constants import CON_SHOOTER, CON_TURRET
+
+# Midpoint of soft limits — always safe regardless of constant tuning
+_MID_POS = (CON_TURRET["min_position"] + CON_TURRET["max_position"]) / 2
 
 
 def _make_orchestrator():
     """Helper to create orchestrator with all dependencies."""
     turret = Turret()
+    turret.motor.simulate_position(_MID_POS)
     launcher = Launcher()
     hood = Hood()
     vision = MockVisionProvider()

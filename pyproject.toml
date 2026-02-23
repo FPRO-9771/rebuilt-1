@@ -1,4 +1,5 @@
 [tool.robotpy]
+robotpy_version = "2026.2.1.1"
 
 # Directories and files to exclude from deploy to the RoboRIO.
 # This keeps sim-only, test, and docs files off the robot.

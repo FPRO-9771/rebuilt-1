@@ -25,6 +25,16 @@ RobotPy (Python) codebase for an FRC competition robot using the WPILib command-
 5. **Command Ownership** - Subsystems expose commands; commands always call `addRequirements()`
 6. **Small Files** - Keep every module short and focused (under ~100 lines). One interface, class, or concept per file. Split early — the team includes new Python learners who need to read files top-to-bottom
 
+## Testing Rule: Never Hardcode Constants in Tests
+
+Tests must stay green when the team tunes values in `constants/`. **Never use hardcoded numbers that depend on specific constant values.** Instead:
+
+- **Derive expected values from the constants themselves.** For example, use `CON_TURRET["max_voltage"] * CON_TURRET["manual_speed_factor"]` — not `0.4`.
+- **Compute safe positions from limits.** When a test needs the motor away from soft limits, calculate the midpoint: `(CON_TURRET["min_position"] + CON_TURRET["max_position"]) / 2` — not a hardcoded `-10`.
+- **Check behavior, not specific numbers, where possible.** Prefer `assert voltage > 0` or `assert voltage != 0` over asserting an exact value, when the test is verifying direction or activity rather than a formula.
+
+This matters because the team frequently adjusts voltages, positions, and speed factors during tuning. A constant change in `constants/` should never require editing test files.
+
 ## IMPORTANT: Read Docs First
 
 **Before reading or modifying ANY code, read the relevant docs below.** The docs are the authoritative reference for how this codebase is structured, what patterns we use, and why. Jumping straight into code without reading the docs first will lead to mistakes — wrong patterns, duplicated work, or changes that break conventions. Always start here.

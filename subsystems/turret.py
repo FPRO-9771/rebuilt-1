@@ -95,7 +95,7 @@ class Turret(SubsystemBase):
 
         def execute(self):
             speed = self.speed_supplier()
-            voltage = speed * CON_TURRET["max_voltage"]
+            voltage = speed * CON_TURRET["max_voltage"] * CON_TURRET["manual_speed_factor"]
             self.turret._set_voltage(voltage)
 
         def end(self, interrupted: bool):
