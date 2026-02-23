@@ -9,6 +9,7 @@ This package is split into topic files for easier navigation:
   controls.py   - Manual overrides and robot-wide settings
   simulation.py - Sim calibration values and time step
   debug.py      - Debug logging toggles
+  vision.py     - Camera names and hostnames
 
 You can import from the package (from constants import CON_TURRET)
 or from a specific file (from constants.shooter import CON_TURRET).
@@ -21,3 +22,4 @@ from constants.controls import *
 from constants.simulation import *
 from constants.telemetry import *
 from constants.debug import *
+from constants.vision import *

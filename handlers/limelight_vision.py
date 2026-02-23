@@ -14,10 +14,10 @@ from .vision import VisionProvider, VisionTarget
 class LimelightVisionProvider(VisionProvider):
     """
     Real Limelight implementation.
-    Discovers the Limelight on the network and reads AprilTag fiducial data.
+    Connects to a specific Limelight by hostname and reads AprilTag fiducial data.
     """
 
-    def __init__(self):
+    def __init__(self, host: str):
         self._camera = None
         self._results_lib = None
 
@@ -27,10 +27,8 @@ class LimelightVisionProvider(VisionProvider):
 
             self._results_lib = limelightresults
 
-            discovered = limelight.discover_limelights()
-            if discovered:
-                self._camera = limelight.Limelight(discovered[0])
-                self._camera.enable_websocket()
+            self._camera = limelight.Limelight(host)
+            self._camera.enable_websocket()
         except (ImportError, Exception):
             # Graceful fallback — no camera available
             self._camera = None

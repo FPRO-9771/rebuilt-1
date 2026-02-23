@@ -1,0 +1,15 @@
+[tool.robotpy]
+
+# Directories and files to exclude from deploy to the RoboRIO.
+# This keeps sim-only, test, and docs files off the robot.
+robotpy_excludes = [
+    "tests",
+    "docs",
+    "scripts",
+    "calibration",
+    "ctre_sim",
+    "generated",
+    "testing",
+    "hardware/mock_motor_controller.py",
+    "constants/simulation.py",
+]

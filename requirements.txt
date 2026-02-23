@@ -16,5 +16,8 @@ robotpy-commands-v2==2026.2.1.1
 pytest>=8.0.0
 pytest-cov>=4.1.0
 
+# CameraServer / cscore - video stream forwarding to dashboard
+robotpy-cscore==2026.2.1.1
+
 # Limelight (optional - install when camera is set up)
 # limelight-python>=1.0.0

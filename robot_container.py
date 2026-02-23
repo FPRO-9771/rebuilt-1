@@ -11,7 +11,7 @@ from subsystems.turret import Turret
 from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from controls import configure_operator
-from handlers import get_vision_provider
+from handlers import get_vision_providers
 from telemetry import setup_telemetry
 
 
@@ -28,7 +28,7 @@ class RobotContainer:
         self.hood = Hood()
 
         # --- Vision ---
-        self.vision = get_vision_provider()
+        self.vision = get_vision_providers()
 
         # TODO: Add more subsystems as they're built
         # self.drivetrain = Drivetrain()
@@ -54,7 +54,7 @@ class RobotContainer:
         # --- Operator Controls ---
         configure_operator(
             self.operator, None, self.turret,
-            self.launcher, self.hood, self.vision,
+            self.launcher, self.hood, self.vision["shooter"],
         )
 
         # --- Driver Controls ---

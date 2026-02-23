@@ -102,35 +102,56 @@ def test_command_telemetry_filters_internals(mock_wpilib):
 
 @patch("telemetry.vision_telemetry.wpilib")
 def test_vision_telemetry_no_targets(mock_wpilib):
-    """When no targets visible, Has Target should be false."""
+    """When no targets visible, Has Target should be false for each camera."""
     sd = mock_wpilib.SmartDashboard
 
-    vision = MockVisionProvider()
-    publisher = VisionTelemetry(vision)
+    cameras = {
+        "shooter": MockVisionProvider(),
+        "front": MockVisionProvider(),
+    }
+    publisher = VisionTelemetry(cameras)
     publisher.update()
 
-    sd.putBoolean.assert_called_once_with("Vision/Has Target", False)
-    sd.putNumber.assert_called_once_with("Vision/Tag Count", 0)
+    boolean_keys = [c.args[0] for c in sd.putBoolean.call_args_list]
+    number_keys = [c.args[0] for c in sd.putNumber.call_args_list]
+
+    assert "Vision/Shooter/Has Target" in boolean_keys
+    assert "Vision/Front/Has Target" in boolean_keys
+    assert "Vision/Shooter/Tag Count" in number_keys
+    assert "Vision/Front/Tag Count" in number_keys
 
 
 @patch("telemetry.vision_telemetry.wpilib")
 def test_vision_telemetry_with_targets(mock_wpilib):
-    """When targets are visible, data should be published correctly."""
+    """When targets are visible, data should be published with prefixed keys."""
     sd = mock_wpilib.SmartDashboard
 
-    vision = MockVisionProvider()
-    vision.simulate_target_left(tag_id=4, offset_degrees=3.2, distance=2.4)
-    vision.simulate_target_right(tag_id=7, offset_degrees=1.0, distance=3.1)
+    shooter = MockVisionProvider()
+    shooter.simulate_target_left(tag_id=4, offset_degrees=3.2, distance=2.4)
 
-    publisher = VisionTelemetry(vision)
+    front = MockVisionProvider()
+    front.simulate_target_right(tag_id=7, offset_degrees=1.0, distance=3.1)
+
+    cameras = {"shooter": shooter, "front": front}
+    publisher = VisionTelemetry(cameras)
     publisher.update()
 
-    sd.putBoolean.assert_called_once_with("Vision/Has Target", True)
-    sd.putNumber.assert_called_once_with("Vision/Tag Count", 2)
+    # Check shooter camera published with prefix
+    boolean_calls = {c.args[0]: c.args[1] for c in sd.putBoolean.call_args_list}
+    assert boolean_calls["Vision/Shooter/Has Target"] is True
+    assert boolean_calls["Vision/Front/Has Target"] is True
 
-    tags_call = [c for c in sd.putString.call_args_list
-                 if c.args[0] == "Vision/Tags"]
-    assert len(tags_call) == 1
-    table_text = tags_call[0].args[1]
-    assert "4" in table_text
-    assert "7" in table_text
+    number_calls = {c.args[0]: c.args[1] for c in sd.putNumber.call_args_list}
+    assert number_calls["Vision/Shooter/Tag Count"] == 1
+    assert number_calls["Vision/Front/Tag Count"] == 1
+
+    # Check tag tables have correct data
+    shooter_tags = [c for c in sd.putString.call_args_list
+                    if c.args[0] == "Vision/Shooter/Tags"]
+    assert len(shooter_tags) == 1
+    assert "4" in shooter_tags[0].args[1]
+
+    front_tags = [c for c in sd.putString.call_args_list
+                  if c.args[0] == "Vision/Front/Tags"]
+    assert len(front_tags) == 1
+    assert "7" in front_tags[0].args[1]

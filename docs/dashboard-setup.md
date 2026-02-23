@@ -57,7 +57,8 @@ Once connected, you'll see keys grouped by prefix:
 
 - **Motors/** — motor positions and velocities (numbers)
 - **Commands/** — active commands and recent event log (text)
-- **Vision/** — AprilTag target data (text + booleans)
+- **Vision/Shooter/** — Shooter Limelight AprilTag data (text + booleans)
+- **Vision/Front/** — Front Limelight AprilTag data (text + booleans)
 
 ### Setting Up a Layout
 
@@ -65,7 +66,7 @@ Once connected, you'll see keys grouped by prefix:
 2. Right-click a widget to change its display type (e.g., use "Text View" for table strings)
 3. Arrange widgets into tabs (e.g., "Motors", "Commands", "Vision")
 
-### Table Widgets (Commands/Recent, Vision/Tags)
+### Table Widgets (Commands/Recent, Vision/Shooter/Tags, Vision/Front/Tags)
 
 These keys contain multi-line ASCII tables. To display them well:
 
@@ -94,6 +95,19 @@ Use the dashboard to find good motor speeds, then save them as constants.
 6. Add those values to the appropriate file in `constants/`
 
 This is how we discover values like conveyor speed, launcher RPM, and hood angles before hardcoding them.
+
+---
+
+## Camera Streams
+
+Each Limelight's MJPEG video feed is registered with CameraServer automatically at startup. In Elastic:
+
+1. Look for the camera streams in the sidebar under **CameraServer**
+2. Drag **Limelight Shooter** and **Limelight Front** onto your layout
+3. Right-click → change to **Camera Stream** widget type
+4. Resize to your preferred video size
+
+The streams come from the Limelights at `http://limelight-shooter:5800/stream.mjpg` and `http://limelight-front:5800/stream.mjpg`. Camera config is defined in `constants/vision.py`.
 
 ---
 

@@ -13,6 +13,7 @@ __pycache__/
 *.so
 .Python
 venv/
+.venv/
 env/
 .env
 *.egg-info/
@@ -27,3 +28,6 @@ htmlcov/
 # RobotPy
 *.pyc
 robot.log
+networktables.json
+ctre_sim/
+simgui*.json

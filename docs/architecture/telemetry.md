@@ -11,7 +11,8 @@ telemetry/
 ├── __init__.py             # setup_telemetry() and update_telemetry()
 ├── motor_telemetry.py      # Motor positions and velocities
 ├── command_telemetry.py    # Active commands and recent event log
-└── vision_telemetry.py     # Limelight AprilTag data
+├── vision_telemetry.py     # Per-camera Limelight AprilTag data
+└── camera_telemetry.py     # CameraServer MJPEG stream registration
 ```
 
 Each publisher is a small class with an `update()` method that pushes data to `wpilib.SmartDashboard`.
@@ -20,7 +21,7 @@ Each publisher is a small class with an `update()` method that pushes data to `w
 
 ## How It's Wired
 
-1. `robot_container.py` calls `setup_telemetry(conveyor, turret, launcher, hood, vision)` at the end of `__init__()` — creates all three publishers and registers command callbacks.
+1. `robot_container.py` calls `setup_telemetry(conveyor, turret, launcher, hood, vision)` at the end of `__init__()` — creates all publishers, registers command callbacks, and sets up camera streams. The `vision` argument is a dict of `{camera_key: VisionProvider}` (e.g., `{"shooter": ..., "front": ...}`).
 2. `robot.py` calls `update_telemetry()` in `robotPeriodic()` after `CommandScheduler.run()` — publishes all data every cycle in all modes (teleop, auto, disabled).
 
 ---
@@ -48,13 +49,22 @@ Hooks into `CommandScheduler.onCommandInitialize()` and `onCommandFinish()` call
 
 ### Vision Telemetry (`vision_telemetry.py`)
 
+Published per camera — keys are prefixed with the camera name (e.g., `Vision/Shooter/`, `Vision/Front/`).
+
 | SmartDashboard Key | Type | Description |
 |--------------------|------|-------------|
-| `Vision/Has Target` | boolean | Is any AprilTag visible |
-| `Vision/Tag Count` | number | Number of visible tags |
-| `Vision/Tags` | string | ASCII table with ID, TX, TY, distance, yaw per tag |
+| `Vision/Shooter/Has Target` | boolean | Is any AprilTag visible (shooter camera) |
+| `Vision/Shooter/Tag Count` | number | Number of visible tags (shooter camera) |
+| `Vision/Shooter/Tags` | string | ASCII table with ID, TX, TY, distance, yaw per tag |
+| `Vision/Front/Has Target` | boolean | Is any AprilTag visible (front camera) |
+| `Vision/Front/Tag Count` | number | Number of visible tags (front camera) |
+| `Vision/Front/Tags` | string | ASCII table with ID, TX, TY, distance, yaw per tag |
 
-Uses `vision.get_all_targets()` to get all visible tags each cycle.
+Loops over all cameras defined in `CON_VISION` and calls `get_all_targets()` on each.
+
+### Camera Streams (`camera_telemetry.py`)
+
+Registers each Limelight's MJPEG stream with `CameraServer` so dashboard apps can display live video. Called once during `setup_telemetry()` — no per-cycle update needed. Camera hostnames come from `constants/vision.py`.
 
 ---
 

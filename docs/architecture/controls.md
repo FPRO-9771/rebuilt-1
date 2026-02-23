@@ -42,7 +42,7 @@ class RobotContainer:
     def _configure_bindings(self):
         configure_operator(
             self.operator, self.conveyor, self.turret,
-            self.launcher, self.hood, self.vision,
+            self.launcher, self.hood, self.vision["shooter"],
         )
         # configure_driver(self.driver, self.drivetrain)  # future
 ```

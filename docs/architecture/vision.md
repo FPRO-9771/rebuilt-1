@@ -246,18 +246,16 @@ class VisionProvider(ABC):
 class LimelightVisionProvider(VisionProvider):
     """Real Limelight implementation."""
 
-    def __init__(self):
+    def __init__(self, host: str):
         import limelight
         import limelightresults
         self._ll = limelight
         self._llr = limelightresults
 
-        discovered = limelight.discover_limelights()
-        if discovered:
-            self._camera = limelight.Limelight(discovered[0])
-            self._camera.pipeline_switch(0)
+        try:
+            self._camera = limelight.Limelight(host)
             self._camera.enable_websocket()
-        else:
+        except Exception:
             self._camera = None
 
     def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
@@ -370,34 +368,51 @@ class MockVisionProvider(VisionProvider):
         self._query_history.clear()
 ```
 
-### Factory for Vision Provider
+### Factory for Vision Providers
+
+Camera config lives in `constants/vision.py` — one entry per Limelight:
+
+```python
+# constants/vision.py
+
+CON_VISION = {
+    "cameras": {
+        "shooter": {"name": "Limelight Shooter", "host": "limelight-shooter"},
+        "front":   {"name": "Limelight Front",   "host": "limelight-front"},
+    },
+}
+```
+
+The factory creates one provider per camera:
 
 ```python
 # handlers/__init__.py
 
+from constants import CON_VISION
 from .vision import VisionProvider
-from .mock_vision import MockVisionProvider
-from .limelight_vision import LimelightVisionProvider
 
 _use_mock_vision = False
-_mock_provider: Optional[MockVisionProvider] = None
+_mock_providers: dict[str, VisionProvider] | None = None
 
 def set_mock_vision_mode(enabled: bool) -> None:
-    global _use_mock_vision, _mock_provider
+    global _use_mock_vision, _mock_providers
     _use_mock_vision = enabled
     if enabled:
-        _mock_provider = MockVisionProvider()
+        from .mock_vision import MockVisionProvider
+        _mock_providers = {key: MockVisionProvider() for key in CON_VISION["cameras"]}
 
-def get_vision_provider() -> VisionProvider:
-    if _use_mock_vision:
-        return _mock_provider
-    return LimelightVisionProvider()
+def get_vision_providers() -> dict[str, VisionProvider]:
+    if _use_mock_vision and _mock_providers is not None:
+        return _mock_providers
+    from .limelight_vision import LimelightVisionProvider
+    return {key: LimelightVisionProvider(cam["host"])
+            for key, cam in CON_VISION["cameras"].items()}
 
-def get_mock_vision() -> MockVisionProvider:
-    """Get the mock provider for test setup. Only call after set_mock_vision_mode(True)."""
-    if not _mock_provider:
+def get_mock_vision(camera: str = "shooter") -> "MockVisionProvider":
+    """Get a mock provider by camera key for test setup."""
+    if not _mock_providers:
         raise RuntimeError("Mock vision not enabled. Call set_mock_vision_mode(True) first.")
-    return _mock_provider
+    return _mock_providers[camera]
 ```
 
 ### Updated AutonDrive (uses abstraction)
@@ -405,12 +420,10 @@ def get_mock_vision() -> MockVisionProvider:
 ```python
 # autonomous/auton_drive.py (updated for testability)
 
-from handlers import get_vision_provider
-
 class AutonDrive(SubsystemBase):
-    def __init__(self, drivetrain, vision_provider=None):
+    def __init__(self, drivetrain, vision):
         self.drivetrain = drivetrain
-        self.vision = vision_provider or get_vision_provider()
+        self.vision = vision  # A single VisionProvider (e.g., the front camera)
 
     def align_to_tag(self, target_tag_id: int) -> Command:
         class AlignCommand(Command):
