@@ -160,7 +160,25 @@ class AutonDrive(SubsystemBase):
 
 ---
 
-## 3. Configuration for Vision
+## 3. Limelight Network Setup
+
+| Setting | Value |
+|---------|-------|
+| IP Address | `10.97.71.11` (static) |
+| Subnet Mask | `255.255.255.0` |
+| Gateway | `10.97.71.1` |
+| Web UI | `http://10.97.71.11:5801` |
+| Pipeline 0 | AprilTag detection |
+
+- The Limelight connects via **Ethernet to the radio** (not the roboRIO)
+- IP must be **static** — DHCP is unreliable at competition
+- The robot code uses `limelight.discover_limelights()` (mDNS auto-discovery), so it works regardless of IP, but a static IP is still required for field reliability
+- If you can't reach it by IP, try `ping limelight.local` to find it
+- The team number subnet is `10.97.71.x` (from team 9771)
+
+---
+
+## 4. Configuration for Vision
 
 ```python
 # autonomous/auton_constants.py
@@ -205,7 +223,7 @@ DRIVING = {
 
 ---
 
-## 4. Making Vision Testable (NEW for 2026)
+## 5. Making Vision Testable (NEW for 2026)
 
 The problem: We couldn't test vision-based commands without a real Limelight and AprilTags.
 
@@ -458,7 +476,7 @@ class AutonDrive(SubsystemBase):
 
 ---
 
-## 5. Testing Vision-Based Commands
+## 6. Testing Vision-Based Commands
 
 Now the powerful part - testing alignment without hardware:
 
