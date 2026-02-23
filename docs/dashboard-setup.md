@@ -10,12 +10,28 @@ NetworkTables is FRC's built-in system for sharing data between the robot and th
 
 ---
 
-## Opening Shuffleboard
+## Our Dashboard: Elastic
 
-Shuffleboard comes pre-installed with WPILib. To open it:
+We use **Elastic Dashboard** — a modern, drag-and-drop dashboard for FRC. It has a clean UI, handles our ASCII table widgets well, and works on all platforms.
 
-- **Windows:** Start menu → WPILib → Shuffleboard
-- **macOS:** Open WPILib VS Code, then from the command palette: `WPILib: Start Tool` → Shuffleboard
+### Installing Elastic
+
+#### macOS (development machines)
+
+1. Go to the [Elastic releases page](https://github.com/Gold872/elastic-dashboard/releases/latest)
+2. Download the `.dmg` file for macOS
+3. Open the `.dmg` and drag Elastic to your Applications folder
+4. First launch: right-click → Open (to bypass Gatekeeper)
+
+#### Windows (driver station laptop)
+
+1. Go to the [Elastic releases page](https://github.com/Gold872/elastic-dashboard/releases/latest)
+2. Download the `.exe` installer for Windows
+3. Run the installer
+
+#### No install needed?
+
+You can also try Elastic in your browser at https://gold872.github.io/elastic_dashboard/ — useful for a quick look, but the installed app is better for real use.
 
 ---
 
@@ -23,19 +39,21 @@ Shuffleboard comes pre-installed with WPILib. To open it:
 
 ### In Simulation
 
-When you run `python -m robotpy sim`, Shuffleboard auto-connects to `localhost`. Just open Shuffleboard and the keys will appear.
+1. Run `python -m robotpy sim` in this project
+2. Open Elastic
+3. It auto-connects to `localhost` — telemetry keys will appear automatically
 
 ### On the Real Robot
 
 1. Connect your laptop to the robot's radio network
 2. The robot's address is `10.97.71.2` (Team 9771 → `10.TE.AM.2`)
-3. Shuffleboard should auto-discover the robot. If not, set the team number in Shuffleboard preferences to `9771`
+3. Elastic should auto-discover the robot. If not, set the team number in Elastic settings to `9771`
 
 ---
 
 ## Viewing Telemetry Keys
 
-Once connected, you'll see keys auto-populate in the left sidebar grouped by prefix:
+Once connected, you'll see keys grouped by prefix:
 
 - **Motors/** — motor positions and velocities (numbers)
 - **Commands/** — active commands and recent event log (text)
@@ -44,7 +62,7 @@ Once connected, you'll see keys auto-populate in the left sidebar grouped by pre
 ### Setting Up a Layout
 
 1. Drag keys from the sidebar onto the main area
-2. Right-click a widget to change its type (e.g., use "Text View" for the table strings)
+2. Right-click a widget to change its display type (e.g., use "Text View" for table strings)
 3. Arrange widgets into tabs (e.g., "Motors", "Commands", "Vision")
 
 ### Table Widgets (Commands/Recent, Vision/Tags)
@@ -52,30 +70,47 @@ Once connected, you'll see keys auto-populate in the left sidebar grouped by pre
 These keys contain multi-line ASCII tables. To display them well:
 
 1. Drag the key onto the dashboard
-2. Right-click → "Show as..." → **Text View**
+2. Right-click → change to **Text View**
 3. Resize the widget to be wide enough to show full rows (~400px wide)
 4. Make it tall enough to show all rows (~150px)
 
 ### Saving and Loading Layouts
 
-- **Save:** File → Save Layout (or Ctrl+S)
+- **Save:** File → Save Layout (or Ctrl+S / Cmd+S)
 - **Load:** File → Load Layout
 - Save your layout file in the repo so the whole team can use it
 
 ---
 
+## Motor Tuning Workflow
+
+Use the dashboard to find good motor speeds, then save them as constants.
+
+1. Run `python -m robotpy sim`
+2. Open Elastic and connect
+3. Drag the `Motors/*` keys onto your layout (velocity and position values)
+4. Operate the mechanisms using your controller or sim controls
+5. Watch the values in real time — note the velocities/positions that work well
+6. Add those values to the appropriate file in `constants/`
+
+This is how we discover values like conveyor speed, launcher RPM, and hood angles before hardcoding them.
+
+---
+
 ## Alternative Dashboard Apps
+
+These are available but we don't use them day-to-day.
+
+### Shuffleboard
+
+Comes pre-installed with WPILib. Heavier and less actively maintained than Elastic.
+
+- **Windows:** Start menu → WPILib → Shuffleboard
+- **macOS:** WPILib VS Code command palette → `WPILib: Start Tool` → Shuffleboard
 
 ### Glass
 
-Lightweight viewer included with WPILib. Good for quick checks.
+Lightweight viewer included with WPILib. Good for quick spot-checks.
 
 - Open from WPILib VS Code command palette: `WPILib: Start Tool` → Glass
 - Navigate to NetworkTables → SmartDashboard to see all keys
-
-### Elastic
-
-Modern alternative with a cleaner UI. Download from [GitHub](https://github.com/Gold872/elastic-dashboard).
-
-- Supports drag-and-drop layout like Shuffleboard
-- Better text widget rendering for our ASCII tables

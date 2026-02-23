@@ -8,6 +8,7 @@ This package is split into topic files for easier navigation:
   conveyor.py   - Conveyor configuration
   controls.py   - Manual overrides and robot-wide settings
   simulation.py - Sim calibration values and time step
+  debug.py      - Debug logging toggles
 
 You can import from the package (from constants import CON_TURRET)
 or from a specific file (from constants.shooter import CON_TURRET).
@@ -19,3 +20,4 @@ from constants.conveyor import *
 from constants.controls import *
 from constants.simulation import *
 from constants.telemetry import *
+from constants.debug import *

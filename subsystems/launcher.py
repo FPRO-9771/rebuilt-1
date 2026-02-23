@@ -21,6 +21,7 @@ class Launcher(SubsystemBase):
             MOTOR_IDS["launcher"],
             inverted=CON_LAUNCHER["inverted"],
         )
+        self._target_rps = 0.0
 
     # --- Sensor reads (public) ---
 
@@ -36,6 +37,7 @@ class Launcher(SubsystemBase):
 
     def _set_velocity(self, rps: float) -> None:
         """Set flywheel to target velocity using closed-loop control."""
+        self._target_rps = rps
         self.motor.set_velocity(rps)
 
     def _set_voltage(self, volts: float) -> None:
@@ -46,6 +48,7 @@ class Launcher(SubsystemBase):
 
     def _stop(self) -> None:
         """Stop the launcher."""
+        self._target_rps = 0.0
         self.motor.stop()
 
     # --- Commands (public) ---

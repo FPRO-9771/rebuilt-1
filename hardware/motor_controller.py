@@ -37,6 +37,11 @@ class MotorController(ABC):
         pass
 
     @abstractmethod
+    def zero_position(self) -> None:
+        """Set current position as zero."""
+        pass
+
+    @abstractmethod
     def stop(self) -> None:
         """Stop the motor."""
         pass

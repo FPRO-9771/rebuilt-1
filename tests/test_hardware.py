@@ -2,13 +2,13 @@
 Tests for hardware abstraction layer.
 """
 
-from hardware import create_motor, create_motor_fxs
+from hardware import create_motor
 from hardware.mock_motor_controller import MockMotorController
 
 
 def test_set_velocity_records_in_mock():
     """Verify set_velocity() records in command history."""
-    motor = create_motor(99)
+    motor = create_motor({"can_id": 99, "type": "talon_fx", "wired": True})
 
     motor.set_velocity(50.0)
     assert motor._velocity == 50.0
@@ -22,20 +22,32 @@ def test_set_velocity_records_in_mock():
 
 def test_set_velocity_with_feedforward():
     """Verify set_velocity() records feedforward."""
-    motor = create_motor(99)
+    motor = create_motor({"can_id": 99, "type": "talon_fx", "wired": True})
 
     motor.set_velocity(30.0, feedforward=1.5)
     assert motor.command_history[0]["ff"] == 1.5
 
 
 def test_create_motor_fxs_returns_mock():
-    """Verify create_motor_fxs() returns mock in mock mode."""
-    motor = create_motor_fxs(99)
+    """Verify talon_fxs type returns mock in mock mode."""
+    motor = create_motor({"can_id": 99, "type": "talon_fxs", "wired": True})
     assert isinstance(motor, MockMotorController)
 
 
 def test_create_motor_fxs_supports_inverted():
-    """Verify create_motor_fxs() passes inverted flag."""
-    motor = create_motor_fxs(99, inverted=True)
+    """Verify talon_fxs type passes inverted flag."""
+    motor = create_motor({"can_id": 99, "type": "talon_fxs", "wired": True}, inverted=True)
     assert isinstance(motor, MockMotorController)
     assert motor.inverted is True
+
+
+def test_unwired_motor_returns_mock():
+    """Verify unwired motor returns a no-op mock controller."""
+    motor = create_motor({"can_id": 99, "type": "talon_fx", "wired": False})
+    assert isinstance(motor, MockMotorController)
+
+
+def test_motor_position_zeroed_on_create():
+    """Verify motor position is zeroed when created."""
+    motor = create_motor({"can_id": 99, "type": "talon_fx", "wired": True})
+    assert motor.get_position() == 0.0

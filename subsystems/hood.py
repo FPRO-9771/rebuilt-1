@@ -5,7 +5,7 @@ Adjustable hood powered by a WCP motor via TalonFXS for angle control.
 
 from commands2 import SubsystemBase, Command
 
-from hardware import create_motor_fxs
+from hardware import create_motor
 from constants import MOTOR_IDS, CON_HOOD
 
 
@@ -17,7 +17,7 @@ class Hood(SubsystemBase):
 
     def __init__(self):
         super().__init__()
-        self.motor = create_motor_fxs(
+        self.motor = create_motor(
             MOTOR_IDS["hood"],
             inverted=CON_HOOD["inverted"],
         )
