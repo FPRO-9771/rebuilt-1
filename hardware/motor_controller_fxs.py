@@ -18,7 +18,7 @@ class TalonFXSController(MotorController):
     def __init__(self, can_id: int, inverted: bool = False, slot0: dict | None = None):
         from phoenix6.hardware import TalonFXS
         from phoenix6.configs import TalonFXSConfiguration
-        from phoenix6.signals import InvertedValue
+        from phoenix6.signals import InvertedValue, MotorArrangementValue
 
         self._can_id = can_id
         self.motor = TalonFXS(can_id)
@@ -27,11 +27,12 @@ class TalonFXSController(MotorController):
         _log.info(f"CAN {can_id}: TalonFXS created, inverted={inverted}")
 
         config = TalonFXSConfiguration()
-        needs_apply = False
+        config.commutation.motor_arrangement = MotorArrangementValue.MINION_JST
+        needs_apply = True
+        _log.info(f"CAN {can_id}: Motor arrangement set to Minion JST")
 
         if inverted:
             config.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE
-            needs_apply = True
             _log.info(f"CAN {can_id}: Inversion configured")
 
         if slot0:
