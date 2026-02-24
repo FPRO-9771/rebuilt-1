@@ -22,6 +22,12 @@ CON_LAUNCHER = {
     "max_voltage": 12.0,        # Maximum voltage to apply
     "velocity_tolerance": 2.0,  # "At speed" tolerance (rotations per second)
     "inverted": False,
+
+    # Slot 0 PID gains for closed-loop velocity control
+    # Start with kP only — tune on the real robot
+    "slot0_kP": 0.1,
+    "slot0_kI": 0.0,
+    "slot0_kD": 0.0,
 }
 
 # =============================================================================

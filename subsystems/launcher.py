@@ -20,6 +20,11 @@ class Launcher(SubsystemBase):
         self.motor = create_motor(
             MOTOR_IDS["launcher"],
             inverted=CON_LAUNCHER["inverted"],
+            slot0={
+                "kP": CON_LAUNCHER["slot0_kP"],
+                "kI": CON_LAUNCHER["slot0_kI"],
+                "kD": CON_LAUNCHER["slot0_kD"],
+            },
         )
         self._target_rps = 0.0
 

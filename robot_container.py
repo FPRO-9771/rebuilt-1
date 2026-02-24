@@ -3,9 +3,8 @@ Central hub - creates all subsystems and wires them together.
 This is where controllers are bound to commands.
 """
 
-from commands2.button import CommandXboxController
-
 from constants import CON_ROBOT
+from controls.game_controller import GameController
 # from subsystems.conveyor import Conveyor  # NOT WIRED YET
 from subsystems.turret import Turret
 from subsystems.launcher import Launcher
@@ -34,8 +33,9 @@ class RobotContainer:
         # self.drivetrain = Drivetrain()
 
         # --- Controllers ---
-        self.driver = CommandXboxController(CON_ROBOT["driver_controller_port"])
-        self.operator = CommandXboxController(CON_ROBOT["operator_controller_port"])
+        use_ps4 = CON_ROBOT["use_ps4"]
+        self.driver = GameController(CON_ROBOT["driver_controller_port"], use_ps4)
+        self.operator = GameController(CON_ROBOT["operator_controller_port"], use_ps4)
 
         # --- Autonomous chooser ---
         # TODO: Set up auto mode selector

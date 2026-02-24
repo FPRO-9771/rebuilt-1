@@ -14,7 +14,7 @@ Controls:
 """
 
 from commands2 import Command, InstantCommand
-from commands2.button import CommandXboxController, Trigger
+from commands2.button import Trigger
 
 from constants import CON_ROBOT, CON_MANUAL, CON_HOOD
 from utils.logger import get_logger
