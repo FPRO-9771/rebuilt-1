@@ -1,5 +1,8 @@
 [tool.robotpy]
 robotpy_version = "2026.2.1.1"
+requires = [
+    "limelight-python",
+]
 
 # Directories and files to exclude from deploy to the RoboRIO.
 # This keeps sim-only, test, and docs files off the robot.
