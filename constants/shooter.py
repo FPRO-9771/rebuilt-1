@@ -42,9 +42,9 @@ CON_HOOD = {
 
     # Slot 0 PID gains for closed-loop position control
     # Start with kP only — tune on the real robot
-    "slot0_kP": 1.0,
+    "slot0_kP": 5.0,
     "slot0_kI": 0.0,
-    "slot0_kD": 0.0,
+    "slot0_kD": 0.1,
 }
 
 # =============================================================================
