@@ -3,10 +3,10 @@ Tests for turret subsystem.
 """
 
 from subsystems.turret import Turret
-from constants import CON_TURRET
+from tests.conftest import TEST_CON_TURRET
 
 # Midpoint of soft limits — always safe regardless of constant tuning
-_MID_POS = (CON_TURRET["min_position"] + CON_TURRET["max_position"]) / 2
+_MID_POS = (TEST_CON_TURRET["min_position"] + TEST_CON_TURRET["max_position"]) / 2
 
 
 def test_turret_voltage_clamping():
@@ -15,53 +15,57 @@ def test_turret_voltage_clamping():
     turret.motor.simulate_position(_MID_POS)
 
     turret._set_voltage(100)
-    assert turret.motor.get_last_voltage() == CON_TURRET["max_voltage"]
+    assert turret.motor.get_last_voltage() == TEST_CON_TURRET["max_voltage"]
 
     turret._set_voltage(-100)
-    assert turret.motor.get_last_voltage() == -CON_TURRET["max_voltage"]
+    assert turret.motor.get_last_voltage() == -TEST_CON_TURRET["max_voltage"]
 
 
 def test_turret_soft_limit_blocks_at_max():
     """Verify positive voltage is blocked when at max position."""
     turret = Turret()
+    max_v = TEST_CON_TURRET["max_voltage"]
+    half_v = max_v * 0.5
 
-    turret.motor.simulate_position(CON_TURRET["max_position"])
-    turret._set_voltage(2.0)
+    turret.motor.simulate_position(TEST_CON_TURRET["max_position"])
+    turret._set_voltage(half_v)
     assert turret.motor.get_last_voltage() == 0
 
     # Allow return (negative voltage when at max)
-    turret._set_voltage(-2.0)
-    assert turret.motor.get_last_voltage() == -2.0
+    turret._set_voltage(-half_v)
+    assert turret.motor.get_last_voltage() == -half_v
 
 
 def test_turret_soft_limit_blocks_at_min():
     """Verify negative voltage is blocked when at min position."""
     turret = Turret()
+    max_v = TEST_CON_TURRET["max_voltage"]
+    half_v = max_v * 0.5
 
-    turret.motor.simulate_position(CON_TURRET["min_position"])
-    turret._set_voltage(-2.0)
+    turret.motor.simulate_position(TEST_CON_TURRET["min_position"])
+    turret._set_voltage(-half_v)
     assert turret.motor.get_last_voltage() == 0
 
     # Allow return (positive voltage when at min)
-    turret._set_voltage(2.0)
-    assert turret.motor.get_last_voltage() == 2.0
+    turret._set_voltage(half_v)
+    assert turret.motor.get_last_voltage() == half_v
 
 
 def test_turret_is_at_position():
     """Verify is_at_position with tolerance."""
     turret = Turret()
+    tol = TEST_CON_TURRET["position_tolerance"]
 
-    turret.motor.simulate_position(0.1)
-    assert turret.is_at_position(0.1) is True
+    turret.motor.simulate_position(_MID_POS)
+    assert turret.is_at_position(_MID_POS) is True
 
     # Clearly within tolerance
-    tol = CON_TURRET["position_tolerance"]
-    turret.motor.simulate_position(0.1 + tol * 0.5)
-    assert turret.is_at_position(0.1) is True
+    turret.motor.simulate_position(_MID_POS + tol * 0.5)
+    assert turret.is_at_position(_MID_POS) is True
 
     # Clearly outside tolerance
-    turret.motor.simulate_position(0.1 + tol + 0.01)
-    assert turret.is_at_position(0.1) is False
+    turret.motor.simulate_position(_MID_POS + tol * 2)
+    assert turret.is_at_position(_MID_POS) is False
 
 
 def test_turret_manual_command_scales_input():
@@ -73,7 +77,9 @@ def test_turret_manual_command_scales_input():
     cmd.initialize()
     cmd.execute()
 
-    expected_voltage = 0.5 * CON_TURRET["max_voltage"] * CON_TURRET["manual_speed_factor"]
+    expected_voltage = (
+        0.5 * TEST_CON_TURRET["max_voltage"] * TEST_CON_TURRET["manual_speed_factor"]
+    )
     assert turret.motor.get_last_voltage() == expected_voltage
 
 
@@ -95,11 +101,11 @@ def test_turret_is_within_limits():
     """Verify is_within_limits check."""
     turret = Turret()
 
-    turret.motor.simulate_position(0.0)
+    turret.motor.simulate_position(_MID_POS)
     assert turret.is_within_limits() is True
 
-    turret.motor.simulate_position(CON_TURRET["max_position"])
+    turret.motor.simulate_position(TEST_CON_TURRET["max_position"])
     assert turret.is_within_limits() is True
 
-    turret.motor.simulate_position(CON_TURRET["max_position"] + 0.1)
+    turret.motor.simulate_position(TEST_CON_TURRET["max_position"] + 1.0)
     assert turret.is_within_limits() is False

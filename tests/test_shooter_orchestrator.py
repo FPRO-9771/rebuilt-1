@@ -8,10 +8,10 @@ from subsystems.hood import Hood
 from subsystems.shooter_lookup import get_shooter_settings
 from commands.shooter_orchestrator import ShooterOrchestrator
 from handlers.mock_vision import MockVisionProvider
-from constants import CON_SHOOTER, CON_TURRET
+from tests.conftest import TEST_CON_TURRET, TEST_CON_SHOOTER
 
 # Midpoint of soft limits — always safe regardless of constant tuning
-_MID_POS = (CON_TURRET["min_position"] + CON_TURRET["max_position"]) / 2
+_MID_POS = (TEST_CON_TURRET["min_position"] + TEST_CON_TURRET["max_position"]) / 2
 
 
 def _make_orchestrator():
@@ -33,7 +33,7 @@ def test_target_right_positive_turret_voltage():
     cmd.initialize()
     cmd.execute()
 
-    expected_voltage = 10.0 * CON_SHOOTER["turret_p_gain"]
+    expected_voltage = 10.0 * TEST_CON_SHOOTER["turret_p_gain"]
     assert turret.motor.get_last_voltage() == expected_voltage
 
 
@@ -45,7 +45,7 @@ def test_target_left_negative_turret_voltage():
     cmd.initialize()
     cmd.execute()
 
-    expected_voltage = -8.0 * CON_SHOOTER["turret_p_gain"]
+    expected_voltage = -8.0 * TEST_CON_SHOOTER["turret_p_gain"]
     assert turret.motor.get_last_voltage() == expected_voltage
 
 
