@@ -20,4 +20,4 @@ pytest-cov>=4.1.0
 robotpy-cscore==2026.2.1.1
 
 # Limelight
-limelight-python>=1.0.0
+limelightlib-python>=0.9.6

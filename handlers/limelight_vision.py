@@ -1,14 +1,18 @@
 """
 Limelight vision provider.
-Real hardware implementation using limelight-python.
+Real hardware implementation using limelightlib-python.
 
-Requires: pip install limelight-python
+Requires: pip install limelightlib-python
 """
 
 import math
 from typing import List, Optional
 
+from utils.logger import get_logger
+
 from .vision import VisionProvider, VisionTarget
+
+_log = get_logger("limelight")
 
 
 class LimelightVisionProvider(VisionProvider):
@@ -28,10 +32,11 @@ class LimelightVisionProvider(VisionProvider):
             self._results_lib = limelightresults
 
             self._camera = limelight.Limelight(host)
-            self._camera.enable_websocket()
-        except (ImportError, Exception):
-            # Graceful fallback — no camera available
-            self._camera = None
+            _log.info(f"Connected to Limelight at {host}")
+        except ImportError as e:
+            _log.error(f"Limelight library not installed: {e}")
+        except Exception as e:
+            _log.error(f"Failed to connect to Limelight at {host}: {e}")
 
     def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
         """Get target data from Limelight fiducial results."""
@@ -41,7 +46,8 @@ class LimelightVisionProvider(VisionProvider):
         try:
             result = self._camera.get_latest_results()
             parsed = self._results_lib.parse_results(result)
-        except Exception:
+        except Exception as e:
+            _log.debug(f"get_target failed: {e}")
             return None
 
         if not parsed or not hasattr(parsed, "fiducialResults"):
@@ -94,7 +100,8 @@ class LimelightVisionProvider(VisionProvider):
         try:
             result = self._camera.get_latest_results()
             parsed = self._results_lib.parse_results(result)
-        except Exception:
+        except Exception as e:
+            _log.debug(f"get_all_targets failed: {e}")
             return []
 
         if not parsed or not hasattr(parsed, "fiducialResults"):

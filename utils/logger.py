@@ -30,9 +30,9 @@ class _DriverStationHandler(logging.Handler):
             import wpilib
             msg = self.format(record)
             if record.levelno >= logging.ERROR:
-                wpilib.DriverStation.reportError(msg, False)
+                wpilib.reportError(msg, False)
             elif record.levelno >= logging.WARNING:
-                wpilib.DriverStation.reportWarning(msg, False)
+                wpilib.reportWarning(msg, False)
         except ImportError:
             # Not running on a robot — skip DS reporting
             pass
