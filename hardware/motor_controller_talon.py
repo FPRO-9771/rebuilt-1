@@ -9,7 +9,7 @@ from .motor_controller import MotorController
 class TalonFXController(MotorController):
     """Real TalonFX/KrakenX60 implementation using Phoenix 6."""
 
-    def __init__(self, can_id: int, inverted: bool = False):
+    def __init__(self, can_id: int, inverted: bool = False, slot0: dict | None = None):
         from phoenix6.hardware import TalonFX
         from phoenix6.configs import TalonFXConfiguration
         from phoenix6.signals import InvertedValue
@@ -17,9 +17,20 @@ class TalonFXController(MotorController):
         self.motor = TalonFX(can_id)
         self._last_voltage = 0.0
 
+        config = TalonFXConfiguration()
+        needs_apply = False
+
         if inverted:
-            config = TalonFXConfiguration()
             config.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE
+            needs_apply = True
+
+        if slot0:
+            config.slot0.k_p = slot0.get("kP", 0)
+            config.slot0.k_i = slot0.get("kI", 0)
+            config.slot0.k_d = slot0.get("kD", 0)
+            needs_apply = True
+
+        if needs_apply:
             self.motor.configurator.apply(config)
 
     def set_voltage(self, volts: float) -> None:

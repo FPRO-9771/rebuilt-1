@@ -33,6 +33,12 @@ CON_HOOD = {
     "max_position": 0.25,       # Maximum hood angle (rotations)
     "position_tolerance": 0.01,  # "Close enough" tolerance (rotations)
     "inverted": False,
+
+    # Slot 0 PID gains for closed-loop position control
+    # Start with kP only — tune on the real robot
+    "slot0_kP": 12.0,
+    "slot0_kI": 0.0,
+    "slot0_kD": 0.0,
 }
 
 # =============================================================================

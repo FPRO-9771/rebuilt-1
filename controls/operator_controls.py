@@ -17,6 +17,9 @@ from commands2 import Command, InstantCommand
 from commands2.button import CommandXboxController, Trigger
 
 from constants import CON_ROBOT, CON_MANUAL, CON_HOOD
+from utils.logger import get_logger
+
+_log = get_logger("operator")
 from subsystems.conveyor import Conveyor
 from subsystems.turret import Turret
 from subsystems.launcher import Launcher
@@ -91,9 +94,14 @@ def adjust_launcher_rps(state, delta):
 
 def nudge_hood(state, delta, hood):
     """Bump hood position by delta, clamp to limits, and command the motor."""
+    old = state["hood_position"]
     state["hood_position"] = max(
         CON_HOOD["min_position"],
         min(state["hood_position"] + delta, CON_HOOD["max_position"]),
+    )
+    _log.debug(
+        f"nudge_hood: delta={delta:+.4f} old={old:.4f} "
+        f"new={state['hood_position']:.4f}"
     )
     hood._set_position(state["hood_position"])
 

@@ -7,6 +7,9 @@ from commands2 import SubsystemBase, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_HOOD
+from utils.logger import get_logger
+
+_log = get_logger("hood")
 
 
 class Hood(SubsystemBase):
@@ -20,6 +23,11 @@ class Hood(SubsystemBase):
         self.motor = create_motor(
             MOTOR_IDS["hood"],
             inverted=CON_HOOD["inverted"],
+            slot0={
+                "kP": CON_HOOD["slot0_kP"],
+                "kI": CON_HOOD["slot0_kI"],
+                "kD": CON_HOOD["slot0_kD"],
+            },
         )
 
     # --- Sensor reads (public) ---
@@ -37,16 +45,22 @@ class Hood(SubsystemBase):
     def _set_position(self, position: float) -> None:
         """Move hood to position, clamped to min/max limits."""
         clamped = max(CON_HOOD["min_position"], min(position, CON_HOOD["max_position"]))
+        _log.debug(
+            f"_set_position: requested={position:.4f} clamped={clamped:.4f} "
+            f"current={self.get_position():.4f}"
+        )
         self.motor.set_position(clamped)
 
     def _set_voltage(self, volts: float) -> None:
         """Apply voltage with safety clamping."""
         max_v = CON_HOOD["max_voltage"]
         clamped = max(-max_v, min(volts, max_v))
+        _log.debug(f"_set_voltage: requested={volts:.3f} clamped={clamped:.3f}")
         self.motor.set_voltage(clamped)
 
     def _stop(self) -> None:
         """Stop the hood."""
+        _log.debug("_stop called")
         self.motor.stop()
 
     # --- Commands (public) ---
