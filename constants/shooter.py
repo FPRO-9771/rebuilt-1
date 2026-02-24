@@ -60,8 +60,10 @@ CON_SHOOTER = {
     # distance_offset (meters): positive = hoop is farther than this tag
     # All zeros to start — tune on the real robot.
     "target_tags": {
-        4: {"tx_offset": 0.0, "distance_offset": 0.0},
-        7: {"tx_offset": 0.0, "distance_offset": 0.0},
+        8:  {"tx_offset": 0.0, "distance_offset": 0.0},
+        9:  {"tx_offset": 0.0, "distance_offset": 0.0},
+        10: {"tx_offset": 0.0, "distance_offset": 0.0},
+        11: {"tx_offset": 0.0, "distance_offset": 0.0},
     },
 
     # Distance lookup table: (distance_m, launcher_rps, hood_position)
