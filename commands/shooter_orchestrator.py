@@ -11,6 +11,9 @@ from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from subsystems.shooter_lookup import get_shooter_settings
 from constants import CON_SHOOTER
+from utils.logger import get_logger
+
+_log = get_logger("orchestrator")
 
 
 class ShooterOrchestrator(Command):
@@ -75,6 +78,10 @@ class ShooterOrchestrator(Command):
         self.launcher._set_velocity(rps)
 
         # 6. Command hood position
+        _log.debug(
+            f"commanding hood: pos={hood_pos:.4f} dist={self._last_distance:.2f} "
+            f"visible={self._target_visible}"
+        )
         self.hood._set_position(hood_pos)
 
     def is_ready(self) -> bool:

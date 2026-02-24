@@ -14,6 +14,8 @@ class Robot(wpilib.TimedRobot):
 
     def robotInit(self):
         """Called once when the robot starts."""
+        if self.isSimulation():
+            wpilib.DriverStation.silenceJoystickConnectionWarning(True)
         self.container = RobotContainer()
         self.auto_command = None
 

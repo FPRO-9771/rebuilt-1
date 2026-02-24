@@ -35,6 +35,33 @@ Tests must stay green when the team tunes values in `constants/`. **Never use ha
 
 This matters because the team frequently adjusts voltages, positions, and speed factors during tuning. A constant change in `constants/` should never require editing test files.
 
+## Logging: Use the Unified Logger
+
+All logging goes through `utils.logger.get_logger()`. **Never use `print()` or raw `logging.getLogger()`.** The unified logger routes messages to both the console and the FRC Driver Station automatically.
+
+**Setup pattern** — at the top of any file that needs logging:
+
+```python
+from utils.logger import get_logger
+
+_log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
+```
+
+**Log levels and where they go:**
+
+| Level | Use for | Destination |
+|-------|---------|-------------|
+| `_log.debug(...)` | Internal state, parameter values, control flow | Console only |
+| `_log.info(...)` | Initialization, configuration, state transitions | Console only |
+| `_log.warning(...)` | Unusual conditions (unwired motors, limits) | Console + Driver Station |
+| `_log.error(...)` | Failures that affect robot operation | Console + Driver Station |
+
+**Rules:**
+- Logger name should match the module/subsystem (e.g. `get_logger("hood")` in `subsystems/hood.py`)
+- Use f-strings with relevant values: `_log.debug(f"_set_position: requested={position:.4f} clamped={clamped:.4f}")`
+- Verbosity is controlled by `DEBUG["verbose"]` in `constants/debug.py` — don't add your own level toggling
+- WARNING and ERROR appear on the Driver Station during matches, so keep those messages concise and actionable
+
 ## IMPORTANT: Read Docs First
 
 **Before reading or modifying ANY code, read the relevant docs below.** The docs are the authoritative reference for how this codebase is structured, what patterns we use, and why. Jumping straight into code without reading the docs first will lead to mistakes — wrong patterns, duplicated work, or changes that break conventions. Always start here.

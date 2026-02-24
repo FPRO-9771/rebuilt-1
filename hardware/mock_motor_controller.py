@@ -14,7 +14,7 @@ class MockMotorController(MotorController):
     Tracks commands and allows simulation of sensor values.
     """
 
-    def __init__(self, can_id: int, inverted: bool = False):
+    def __init__(self, can_id: int, inverted: bool = False, slot0: dict | None = None):
         self.can_id = can_id
         self.inverted = inverted
         self._position = 0.0
