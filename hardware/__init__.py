@@ -61,7 +61,7 @@ def create_motor(
     if _use_mock_hardware:
         motor = MockMotorController(can_id, inverted)
     elif not wired:
-        _log.warning(f"Motor CAN {can_id} not wired — using no-op controller")
+        _log.warning(f"Motor CAN {can_id} not wired - using no-op controller")
         motor = MockMotorController(can_id, inverted)
     else:
         cls = _MOTOR_TYPES.get(motor_type)

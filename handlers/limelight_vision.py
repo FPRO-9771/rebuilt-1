@@ -42,7 +42,7 @@ class LimelightVisionProvider(VisionProvider):
             _log.debug("Pipeline switched to 0 (AprilTag)")
 
             self._camera.enable_websocket()
-            _log.info(f"Connected to Limelight at {host} — websocket enabled")
+            _log.info(f"Connected to Limelight at {host} - websocket enabled")
         except ImportError as e:
             _log.error(f"Limelight library not installed: {e}")
         except Exception as e:
@@ -51,7 +51,7 @@ class LimelightVisionProvider(VisionProvider):
     def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
         """Get target data from Limelight fiducial results."""
         if not self._camera or not self._results_lib:
-            _log.debug("get_target: no camera or results lib — skipping")
+            _log.debug("get_target: no camera or results lib - skipping")
             return None
 
         try:
@@ -67,11 +67,11 @@ class LimelightVisionProvider(VisionProvider):
 
         fiducials = parsed.fiducialResults
         if not fiducials:
-            _log.debug("get_target: fiducialResults is empty — no tags visible")
+            _log.debug("get_target: fiducialResults is empty - no tags visible")
             return None
 
         _log.debug(
-            f"get_target: {len(fiducials)} tag(s) visible — "
+            f"get_target: {len(fiducials)} tag(s) visible - "
             f"IDs: {[int(f.fiducial_id) for f in fiducials]}"
         )
 
@@ -107,7 +107,7 @@ class LimelightVisionProvider(VisionProvider):
 
         if best:
             _log.debug(
-                f"get_target: selected tag {best.tag_id} — "
+                f"get_target: selected tag {best.tag_id} - "
                 f"tx={best.tx:.1f}° dist={best.distance:.2f}m yaw={best.yaw:.1f}°"
             )
         else:
