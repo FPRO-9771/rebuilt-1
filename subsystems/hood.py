@@ -27,6 +27,10 @@ class Hood(SubsystemBase):
                 "kP": CON_HOOD["slot0_kP"],
                 "kI": CON_HOOD["slot0_kI"],
                 "kD": CON_HOOD["slot0_kD"],
+                "kS": CON_HOOD["slot0_kS"],
+                "kV": CON_HOOD["slot0_kV"],
+                "kA": CON_HOOD["slot0_kA"],
+                "kG": CON_HOOD["slot0_kG"],
             },
         )
 

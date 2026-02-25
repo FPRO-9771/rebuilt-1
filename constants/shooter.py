@@ -23,11 +23,15 @@ CON_LAUNCHER = {
     "velocity_tolerance": 2.0,  # "At speed" tolerance (rotations per second)
     "inverted": False,
 
-    # Slot 0 PID gains for closed-loop velocity control
-    # Start with kP only — tune on the real robot
+    # Slot 0 gains for closed-loop velocity control
+    # Tune feedforward (kS, kV) first, then add kP to close remaining error
     "slot0_kP": 0.1,
     "slot0_kI": 0.0,
     "slot0_kD": 0.0,
+    "slot0_kS": 0.0,            # Static friction (volts to start moving)
+    "slot0_kV": 0.0,            # Velocity feedforward (volts per RPS)
+    "slot0_kA": 0.0,            # Acceleration feedforward (volts per RPS/s)
+    "slot0_kG": 0.0,            # Gravity feedforward (volts to hold against gravity)
 }
 
 # =============================================================================
@@ -40,11 +44,15 @@ CON_HOOD = {
     "position_tolerance": 0.01,  # "Close enough" tolerance (rotations)
     "inverted": False,
 
-    # Slot 0 PID gains for closed-loop position control
-    # Start with kP only — tune on the real robot
-    "slot0_kP": 5.0,
+    # Slot 0 gains for closed-loop position control
+    # Tune feedforward (kS, kG) first for arms, then add kP to close remaining error
+    "slot0_kP": 0.4,
     "slot0_kI": 0.0,
-    "slot0_kD": 0.1,
+    "slot0_kD": 0.0,
+    "slot0_kS": 0.1,            # Static friction (volts to start moving)
+    "slot0_kV": 0.12,            # Velocity feedforward (volts per RPS)
+    "slot0_kA": 0.0,            # Acceleration feedforward (volts per RPS/s)
+    "slot0_kG": 0.0,            # Gravity feedforward (volts to hold against gravity)
 }
 
 # =============================================================================

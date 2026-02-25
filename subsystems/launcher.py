@@ -24,6 +24,10 @@ class Launcher(SubsystemBase):
                 "kP": CON_LAUNCHER["slot0_kP"],
                 "kI": CON_LAUNCHER["slot0_kI"],
                 "kD": CON_LAUNCHER["slot0_kD"],
+                "kS": CON_LAUNCHER["slot0_kS"],
+                "kV": CON_LAUNCHER["slot0_kV"],
+                "kA": CON_LAUNCHER["slot0_kA"],
+                "kG": CON_LAUNCHER["slot0_kG"],
             },
         )
         self._target_rps = 0.0

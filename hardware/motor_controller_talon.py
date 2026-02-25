@@ -28,6 +28,10 @@ class TalonFXController(MotorController):
             config.slot0.k_p = slot0.get("kP", 0)
             config.slot0.k_i = slot0.get("kI", 0)
             config.slot0.k_d = slot0.get("kD", 0)
+            config.slot0.k_s = slot0.get("kS", 0)
+            config.slot0.k_v = slot0.get("kV", 0)
+            config.slot0.k_a = slot0.get("kA", 0)
+            config.slot0.k_g = slot0.get("kG", 0)
             needs_apply = True
 
         if needs_apply:

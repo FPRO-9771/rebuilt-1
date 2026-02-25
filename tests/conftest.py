@@ -33,6 +33,10 @@ TEST_CON_LAUNCHER = {
     "slot0_kP": 0.1,
     "slot0_kI": 0.0,
     "slot0_kD": 0.0,
+    "slot0_kS": 0.0,
+    "slot0_kV": 0.0,
+    "slot0_kA": 0.0,
+    "slot0_kG": 0.0,
 }
 
 TEST_CON_HOOD = {
@@ -44,6 +48,10 @@ TEST_CON_HOOD = {
     "slot0_kP": 10.0,
     "slot0_kI": 0.0,
     "slot0_kD": 0.0,
+    "slot0_kS": 0.0,
+    "slot0_kV": 0.0,
+    "slot0_kA": 0.0,
+    "slot0_kG": 0.0,
 }
 
 TEST_CON_CONVEYOR = {

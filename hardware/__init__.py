@@ -49,7 +49,7 @@ def create_motor(
     Args:
         config: Entry from MOTOR_IDS, e.g. {"can_id": 30, "type": "talon_fx", "wired": True}
         inverted: Whether to invert motor direction
-        slot0: Optional PID gains for closed-loop control, e.g. {"kP": 12.0, "kI": 0, "kD": 0}
+        slot0: Optional gains for closed-loop control, e.g. {"kP": 12.0, "kV": 0.12, "kS": 0.2}
 
     Returns:
         MotorController instance
