@@ -24,15 +24,25 @@ class LimelightVisionProvider(VisionProvider):
     def __init__(self, host: str):
         self._camera = None
         self._results_lib = None
+        self._host = host
+
+        _log.info(f"Initializing Limelight at {host}...")
 
         try:
             import limelight
             import limelightresults
 
+            _log.debug("limelightlib-python imported OK")
             self._results_lib = limelightresults
 
             self._camera = limelight.Limelight(host)
-            _log.info(f"Connected to Limelight at {host}")
+            _log.debug(f"Limelight object created for {host}")
+
+            self._camera.pipeline_switch(0)  # AprilTag detection pipeline
+            _log.debug("Pipeline switched to 0 (AprilTag)")
+
+            self._camera.enable_websocket()
+            _log.info(f"Connected to Limelight at {host} — websocket enabled")
         except ImportError as e:
             _log.error(f"Limelight library not installed: {e}")
         except Exception as e:
@@ -41,21 +51,29 @@ class LimelightVisionProvider(VisionProvider):
     def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
         """Get target data from Limelight fiducial results."""
         if not self._camera or not self._results_lib:
+            _log.debug("get_target: no camera or results lib — skipping")
             return None
 
         try:
             result = self._camera.get_latest_results()
             parsed = self._results_lib.parse_results(result)
         except Exception as e:
-            _log.debug(f"get_target failed: {e}")
+            _log.warning(f"get_target: failed to read results: {e}")
             return None
 
         if not parsed or not hasattr(parsed, "fiducialResults"):
+            _log.debug("get_target: no parsed results or missing fiducialResults")
             return None
 
         fiducials = parsed.fiducialResults
         if not fiducials:
+            _log.debug("get_target: fiducialResults is empty — no tags visible")
             return None
+
+        _log.debug(
+            f"get_target: {len(fiducials)} tag(s) visible — "
+            f"IDs: {[int(f.fiducial_id) for f in fiducials]}"
+        )
 
         # Find the requested tag, or pick the closest one
         best = None
@@ -86,6 +104,16 @@ class LimelightVisionProvider(VisionProvider):
                     distance=dist,
                     yaw=fid.target_yaw if hasattr(fid, "target_yaw") else 0,
                 )
+
+        if best:
+            _log.debug(
+                f"get_target: selected tag {best.tag_id} — "
+                f"tx={best.tx:.1f}° dist={best.distance:.2f}m yaw={best.yaw:.1f}°"
+            )
+        else:
+            _log.debug(
+                f"get_target: requested tag_id={tag_id} not found among visible tags"
+            )
 
         return best
 
