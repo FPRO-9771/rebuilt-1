@@ -224,6 +224,46 @@ Make sure you installed the Visual Studio Build Tools (Step 3 in Windows setup).
 
 ---
 
+## Installing Claude Code
+
+Claude Code is an AI coding assistant that runs in your terminal. It requires Node.js.
+
+### Step 1: Install Node.js
+
+- **Mac:**
+  ```bash
+  brew install node
+  ```
+  If you don't have Homebrew, install it first from https://brew.sh
+
+- **Windows:**
+  1. Go to: https://nodejs.org/
+  2. Download the LTS installer
+  3. Run the installer with default settings
+
+Verify Node.js is installed:
+```bash
+node --version
+```
+
+### Step 2: Install Claude Code
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+### Step 3: Run Claude Code
+
+Navigate to the project folder and start it:
+```bash
+cd /path/to/rebuilt-1
+claude
+```
+
+The first time you run it, you'll be prompted to log in with an Anthropic account.
+
+---
+
 ## Getting Help
 
 - Ask Brian (coding mentor)

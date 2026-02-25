@@ -57,9 +57,10 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 | `_log.error(...)` | Failures that affect robot operation | Console + Driver Station |
 
 **Rules:**
+- **ASCII only in log strings.** Non-ASCII characters (em dashes `--`, en dashes, smart quotes, etc.) crash the roboRIO. Use only plain ASCII in all `_log` messages, string constants, and comments. Write `--` not `--`, `"` not `"`, `'` not `'`.
 - Logger name should match the module/subsystem (e.g. `get_logger("hood")` in `subsystems/hood.py`)
 - Use f-strings with relevant values: `_log.debug(f"_set_position: requested={position:.4f} clamped={clamped:.4f}")`
-- Verbosity is controlled by `DEBUG["verbose"]` in `constants/debug.py` — don't add your own level toggling
+- Verbosity is controlled by `DEBUG["verbose"]` in `constants/debug.py` -- don't add your own level toggling
 - WARNING and ERROR appear on the Driver Station during matches, so keep those messages concise and actionable
 
 ## IMPORTANT: Read Docs First
@@ -82,6 +83,7 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 | `docs/drive-team-guide.md` | Xbox controller button maps for driver and operator |
 | `docs/PYTHON_SETUP.md` | Python installation for Mac and Windows |
 | `docs/roborio-deploy.md` | RoboRIO setup, deployment, and troubleshooting |
+| `docs/debugging.md` | SSH access, remote logs, and common debugging scenarios |
 
 ## Quick Reference
 
