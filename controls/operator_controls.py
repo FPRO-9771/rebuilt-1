@@ -71,13 +71,19 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision):
         InstantCommand(lambda: adjust_launcher_rps(state, -step))
     )
 
+    # --- Hood: default command holds position from state ---
+    hood.setDefaultCommand(
+        hood.go_to_position_supplier(lambda: state["hood_position"])
+    )
+
     # --- Hood nudge: right bumper (+) / right trigger (-) ---
+    # Each press just updates state; default command picks up the new target
     hood_step = CON_MANUAL["hood_position_step"]
     operator.rightBumper().onTrue(
-        hood.runOnce(lambda: nudge_hood(state, hood_step, hood))
+        InstantCommand(lambda: nudge_hood(state, hood_step))
     )
     operator.rightTrigger().onTrue(
-        hood.runOnce(lambda: nudge_hood(state, -hood_step, hood))
+        InstantCommand(lambda: nudge_hood(state, -hood_step))
     )
 
     return state
@@ -92,18 +98,16 @@ def adjust_launcher_rps(state, delta):
     )
 
 
-def nudge_hood(state, delta, hood):
-    """Bump hood position by delta, clamp to limits, and command the motor."""
+def nudge_hood(state, delta):
+    """Bump hood position by delta, clamped to limits."""
     old = state["hood_position"]
     state["hood_position"] = max(
         CON_HOOD["min_position"],
         min(state["hood_position"] + delta, CON_HOOD["max_position"]),
     )
-    _log.debug(
-        f"nudge_hood: delta={delta:+.4f} old={old:.4f} "
-        f"new={state['hood_position']:.4f}"
+    _log.info(
+        f"nudge delta={delta:+.4f} target={state['hood_position']:.4f}"
     )
-    hood._set_position(state["hood_position"])
 
 
 class _LauncherToggleCommand(Command):

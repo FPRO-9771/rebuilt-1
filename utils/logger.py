@@ -56,6 +56,7 @@ def get_logger(name: str) -> logging.Logger:
 
     level = logging.DEBUG if DEBUG["verbose"] else logging.INFO
     logger.setLevel(level)
+    logger.propagate = False  # prevent root logger from duplicating output
 
     # Console handler — all messages go to stdout (Rio log)
     console = logging.StreamHandler(sys.stdout)

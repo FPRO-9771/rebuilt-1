@@ -9,7 +9,7 @@ CON_MANUAL = {
     "launcher_default_rps": 70.0,   # Starting speed for manual launcher
     "launcher_max_rps": 100.0,       # Maximum manual launcher speed
     "launcher_speed_step": 5.0,     # Per-press increment (~5% of max)
-    "hood_default_position": 0.125,  # Starting position (mid-range of 0.0-0.25)
+    "hood_default_position": 0.0,    # Start at zero (where motor initializes)
     "hood_position_step": 0.0125,    # Per-press nudge (~5% of range)
 }
 

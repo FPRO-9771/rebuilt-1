@@ -71,9 +71,6 @@ class TalonFXSController(MotorController):
     def set_position(self, position: float, feedforward: float = 0) -> None:
         from phoenix6.controls import PositionVoltage
 
-        _log.debug(
-            f"CAN {self._can_id}: set_position({position:.4f}, ff={feedforward:.3f})"
-        )
         self.motor.set_control(
             PositionVoltage(position).with_feed_forward(feedforward)
         )

@@ -44,6 +44,7 @@ class ShooterOrchestrator(Command):
 
         # State
         self._last_tx = 0.0
+        self._prev_tx = 0.0  # Previous tx for derivative calculation
         self._last_distance = 2.0  # Default mid-range
         self._target_visible = False
 
@@ -51,8 +52,10 @@ class ShooterOrchestrator(Command):
 
     def initialize(self):
         self._last_tx = 0.0
+        self._prev_tx = 0.0
         self._last_distance = 2.0
         self._target_visible = False
+        _log.info("Orchestrator ENABLED")
 
     def execute(self):
         # 1. Query vision for closest visible tag
@@ -66,9 +69,16 @@ class ShooterOrchestrator(Command):
             self._target_visible = True
         else:
             self._target_visible = False
+            self._last_tx = 0.0  # Stop turret when target lost
 
-        # 3. Aim turret: proportional control from corrected tx
-        turret_voltage = self._last_tx * CON_SHOOTER["turret_p_gain"] * self._aim_sign
+        # 3. Aim turret: PD control from corrected tx
+        p_term = self._last_tx * CON_SHOOTER["turret_p_gain"]
+        d_term = (self._last_tx - self._prev_tx) * CON_SHOOTER["turret_d_gain"]
+        self._prev_tx = self._last_tx
+
+        turret_voltage = (p_term + d_term) * self._aim_sign
+        max_auto_v = CON_SHOOTER["turret_max_auto_voltage"]
+        turret_voltage = max(-max_auto_v, min(turret_voltage, max_auto_v))
         self.turret._set_voltage(turret_voltage)
 
         # 4. Look up launcher and hood settings from corrected distance
@@ -77,11 +87,17 @@ class ShooterOrchestrator(Command):
         # 5. Command launcher velocity
         self.launcher._set_velocity(rps)
 
-        # 6. Command hood position
+        # Debug: log key values every cycle
+        tag_id = target.tag_id if target is not None else None
+        raw_tx = target.tx if target is not None else None
+        raw_dist = target.distance if target is not None else None
         _log.debug(
-            f"commanding hood: pos={hood_pos:.4f} dist={self._last_distance:.2f} "
-            f"visible={self._target_visible}"
+            f"tag={tag_id} tx={raw_tx} dist={raw_dist} "
+            f"cmd_dist={self._last_distance:.2f} rps={rps:.1f} "
+            f"hood={hood_pos:.4f} voltage={turret_voltage:.3f}"
         )
+
+        # 6. Command hood position
         self.hood._set_position(hood_pos)
 
     def is_ready(self) -> bool:
@@ -103,6 +119,7 @@ class ShooterOrchestrator(Command):
         return False
 
     def end(self, interrupted: bool):
+        _log.info(f"Orchestrator DISABLED (interrupted={interrupted})")
         self.turret._stop()
         self.launcher._stop()
         self.hood._stop()

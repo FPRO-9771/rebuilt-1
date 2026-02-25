@@ -62,8 +62,10 @@ TEST_CON_CONVEYOR = {
 
 TEST_CON_SHOOTER = {
     "turret_p_gain": 0.5,
+    "turret_d_gain": 0.1,
     "turret_aim_inverted": False,
     "turret_alignment_tolerance": 2.0,
+    "turret_max_auto_voltage": 5.0,
     "target_tags": {
         4: {"tx_offset": 0.0, "distance_offset": 0.0},
     },

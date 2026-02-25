@@ -149,13 +149,9 @@ def test_vision_telemetry_with_targets(mock_wpilib):
     assert number_calls["Vision/Shooter/Tag Count"] == 1
     assert number_calls["Vision/Front/Tag Count"] == 1
 
-    # Check tag tables have correct data
-    shooter_tags = [c for c in sd.putString.call_args_list
-                    if c.args[0] == "Vision/Shooter/Tags"]
-    assert len(shooter_tags) == 1
-    assert "4" in shooter_tags[0].args[1]
-
-    front_tags = [c for c in sd.putString.call_args_list
-                  if c.args[0] == "Vision/Front/Tags"]
-    assert len(front_tags) == 1
-    assert "7" in front_tags[0].args[1]
+    # Check individual tag slot keys
+    string_calls = {c.args[0]: c.args[1] for c in sd.putString.call_args_list}
+    assert "ID 4" in string_calls["Vision/Shooter/Tag 1"]
+    assert string_calls["Vision/Shooter/Tag 2"] == ""
+    assert "ID 7" in string_calls["Vision/Front/Tag 1"]
+    assert string_calls["Vision/Front/Tag 2"] == ""

@@ -25,11 +25,11 @@ CON_LAUNCHER = {
 
     # Slot 0 gains for closed-loop velocity control
     # Tune feedforward (kS, kV) first, then add kP to close remaining error
-    "slot0_kP": 0.1,
+    "slot0_kP": 0.3,
     "slot0_kI": 0.0,
     "slot0_kD": 0.0,
     "slot0_kS": 0.0,            # Static friction (volts to start moving)
-    "slot0_kV": 0.0,            # Velocity feedforward (volts per RPS)
+    "slot0_kV": 0.12,           # Velocity feedforward (volts per RPS)
     "slot0_kA": 0.0,            # Acceleration feedforward (volts per RPS/s)
     "slot0_kG": 0.0,            # Gravity feedforward (volts to hold against gravity)
 }
@@ -45,12 +45,13 @@ CON_HOOD = {
     "inverted": False,
 
     # Slot 0 gains for closed-loop position control
-    # Tune feedforward (kS, kG) first for arms, then add kP to close remaining error
-    "slot0_kP": 0.4,
+    # NEEDS TUNING -- all gains low to prevent vibration
+    # Tune kP up first, then add kS if friction is a problem
+    "slot0_kP": 1.0,
     "slot0_kI": 0.0,
     "slot0_kD": 0.0,
-    "slot0_kS": 0.1,            # Static friction (volts to start moving)
-    "slot0_kV": 0.12,            # Velocity feedforward (volts per RPS)
+    "slot0_kS": 0.0,            # Static friction (volts to start moving)
+    "slot0_kV": 0.0,            # Velocity feedforward (volts per RPS)
     "slot0_kA": 0.0,            # Acceleration feedforward (volts per RPS/s)
     "slot0_kG": 0.0,            # Gravity feedforward (volts to hold against gravity)
 }
@@ -59,9 +60,11 @@ CON_HOOD = {
 # SHOOTER SYSTEM CONFIGURATION
 # =============================================================================
 CON_SHOOTER = {
-    "turret_p_gain": 0.3,               # Proportional gain for turret aiming (volts per degree)
-    "turret_aim_inverted": False,        # Flip to True if turret tracks away from target
+    "turret_p_gain": 0.04,               # Proportional gain (volts per degree) -- drives toward target
+    "turret_d_gain": 0.02,               # Derivative gain (volts per degree/cycle) -- brakes oscillation
+    "turret_aim_inverted": False,        # Positive tx (target right) -> positive voltage (turret right)
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
+    "turret_max_auto_voltage": 0.7,     # Max voltage during auto-aim (keep low for testing)
 
     # Per-tag offsets: corrections when aiming at the hoop via each tag.
     # tx_offset (degrees): positive = hoop is to the right of this tag
@@ -77,10 +80,10 @@ CON_SHOOTER = {
     # Distance lookup table: (distance_m, launcher_rps, hood_position)
     # Sorted by distance — interpolated at runtime
     "distance_table": [
-        (1.0, 30.0, 0.05),
-        (2.0, 45.0, 0.10),
-        (3.0, 55.0, 0.15),
-        (4.0, 65.0, 0.20),
-        (5.0, 75.0, 0.24),
+        (1.0, 60.0, 0.05),
+        (2.0, 70.0, 0.10),
+        (3.0, 80.0, 0.15),
+        (4.0, 90.0, 0.20),
+        (5.0, 100.0, 0.24),
     ],
 }

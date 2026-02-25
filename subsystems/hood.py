@@ -20,6 +20,7 @@ class Hood(SubsystemBase):
 
     def __init__(self):
         super().__init__()
+        self._last_target = None
         self.motor = create_motor(
             MOTOR_IDS["hood"],
             inverted=CON_HOOD["inverted"],
@@ -49,10 +50,12 @@ class Hood(SubsystemBase):
     def _set_position(self, position: float) -> None:
         """Move hood to position, clamped to min/max limits."""
         clamped = max(CON_HOOD["min_position"], min(position, CON_HOOD["max_position"]))
-        _log.debug(
-            f"_set_position: requested={position:.4f} clamped={clamped:.4f} "
-            f"current={self.get_position():.4f}"
-        )
+        if clamped != self._last_target:
+            _log.debug(
+                f"target={clamped:.4f} current={self.get_position():.4f} "
+                f"error={clamped - self.get_position():.4f}"
+            )
+            self._last_target = clamped
         self.motor.set_position(clamped)
 
     def _set_voltage(self, volts: float) -> None:
@@ -72,12 +75,23 @@ class Hood(SubsystemBase):
     def go_to_position(self, position: float) -> Command:
         """
         Returns command to move hood to position.
-        Never finishes — holds position until canceled.
+        Never finishes -- holds position until canceled.
 
         Args:
             position: Target position in rotations
         """
         return self._GoToPositionCommand(self, position)
+
+    def go_to_position_supplier(self, supplier) -> Command:
+        """
+        Returns command that holds hood at a dynamic position.
+        Reads from supplier each cycle so nudges update the target.
+        Never finishes -- holds position until canceled.
+
+        Args:
+            supplier: Callable returning target position in rotations
+        """
+        return self._GoToPositionSupplierCommand(self, supplier)
 
     def stop_command(self) -> Command:
         """Returns command to stop the hood."""
@@ -86,7 +100,7 @@ class Hood(SubsystemBase):
     # --- Inner command classes ---
 
     class _GoToPositionCommand(Command):
-        """Hold hood at target position — never auto-finishes."""
+        """Hold hood at target position -- never auto-finishes."""
 
         def __init__(self, hood: "Hood", position: float):
             super().__init__()
@@ -96,6 +110,24 @@ class Hood(SubsystemBase):
 
         def execute(self):
             self.hood._set_position(self.position)
+
+        def isFinished(self) -> bool:
+            return False
+
+        def end(self, interrupted: bool):
+            self.hood._stop()
+
+    class _GoToPositionSupplierCommand(Command):
+        """Hold hood at a dynamic target position -- never auto-finishes."""
+
+        def __init__(self, hood: "Hood", supplier):
+            super().__init__()
+            self.hood = hood
+            self.supplier = supplier
+            self.addRequirements(hood)
+
+        def execute(self):
+            self.hood._set_position(self.supplier())
 
         def isFinished(self) -> bool:
             return False

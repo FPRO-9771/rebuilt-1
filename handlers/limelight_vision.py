@@ -6,6 +6,7 @@ Requires: pip install limelightlib-python
 """
 
 import math
+import time
 from typing import List, Optional
 
 from utils.logger import get_logger
@@ -13,6 +14,10 @@ from utils.logger import get_logger
 from .vision import VisionProvider, VisionTarget
 
 _log = get_logger("limelight")
+
+# Only fetch from the Limelight this often (seconds).
+# 10 Hz is plenty for AprilTag tracking and keeps the robot loop fast.
+_REFRESH_INTERVAL = 0.05
 
 
 class LimelightVisionProvider(VisionProvider):
@@ -25,6 +30,8 @@ class LimelightVisionProvider(VisionProvider):
         self._camera = None
         self._results_lib = None
         self._host = host
+        self._cached_targets: List[VisionTarget] = []
+        self._last_fetch = 0.0
 
         _log.info(f"Initializing Limelight at {host}...")
 
@@ -45,95 +52,34 @@ class LimelightVisionProvider(VisionProvider):
             _log.info(f"Connected to Limelight at {host} - websocket enabled")
         except ImportError as e:
             _log.error(f"Limelight library not installed: {e}")
+            self._camera = None
         except Exception as e:
             _log.error(f"Failed to connect to Limelight at {host}: {e}")
+            self._camera = None
 
-    def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
-        """Get target data from Limelight fiducial results."""
+    def _refresh(self) -> None:
+        """Fetch new results from the Limelight if the cache is stale."""
+        now = time.monotonic()
+        if now - self._last_fetch < _REFRESH_INTERVAL:
+            return
+
+        self._last_fetch = now
+
         if not self._camera or not self._results_lib:
-            _log.debug("get_target: no camera or results lib - skipping")
-            return None
+            self._cached_targets = []
+            return
 
         try:
             result = self._camera.get_latest_results()
             parsed = self._results_lib.parse_results(result)
         except Exception as e:
-            _log.warning(f"get_target: failed to read results: {e}")
-            return None
+            _log.debug(f"_refresh failed: {e}")
+            self._cached_targets = []
+            return
 
         if not parsed or not hasattr(parsed, "fiducialResults"):
-            _log.debug("get_target: no parsed results or missing fiducialResults")
-            return None
-
-        fiducials = parsed.fiducialResults
-        if not fiducials:
-            _log.debug("get_target: fiducialResults is empty - no tags visible")
-            return None
-
-        _log.debug(
-            f"get_target: {len(fiducials)} tag(s) visible - "
-            f"IDs: {[int(f.fiducial_id) for f in fiducials]}"
-        )
-
-        # Find the requested tag, or pick the closest one
-        best = None
-        best_distance = float("inf")
-
-        for fid in fiducials:
-            fid_id = int(fid.fiducial_id)
-
-            # Compute distance from camera-space position
-            if hasattr(fid, "target_pose_camera_space"):
-                pose = fid.target_pose_camera_space
-                dx = pose[0] if len(pose) > 0 else 0
-                dy = pose[1] if len(pose) > 1 else 0
-                dz = pose[2] if len(pose) > 2 else 0
-                dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-            else:
-                dist = 0.0
-
-            if tag_id is not None and fid_id != tag_id:
-                continue
-
-            if dist < best_distance:
-                best_distance = dist
-                best = VisionTarget(
-                    tag_id=fid_id,
-                    tx=fid.target_x_degrees if hasattr(fid, "target_x_degrees") else 0,
-                    ty=fid.target_y_degrees if hasattr(fid, "target_y_degrees") else 0,
-                    distance=dist,
-                    yaw=fid.target_yaw if hasattr(fid, "target_yaw") else 0,
-                )
-
-        if best:
-            _log.debug(
-                f"get_target: selected tag {best.tag_id} - "
-                f"tx={best.tx:.1f}° dist={best.distance:.2f}m yaw={best.yaw:.1f}°"
-            )
-        else:
-            _log.debug(
-                f"get_target: requested tag_id={tag_id} not found among visible tags"
-            )
-
-        return best
-
-    def has_target(self, tag_id: Optional[int] = None) -> bool:
-        return self.get_target(tag_id) is not None
-
-    def get_all_targets(self) -> List[VisionTarget]:
-        """Get all currently visible AprilTag targets."""
-        if not self._camera or not self._results_lib:
-            return []
-
-        try:
-            result = self._camera.get_latest_results()
-            parsed = self._results_lib.parse_results(result)
-        except Exception as e:
-            _log.debug(f"get_all_targets failed: {e}")
-            return []
-
-        if not parsed or not hasattr(parsed, "fiducialResults"):
-            return []
+            self._cached_targets = []
+            return
 
         targets = []
         for fid in parsed.fiducialResults:
@@ -154,4 +100,28 @@ class LimelightVisionProvider(VisionProvider):
                 yaw=fid.target_yaw if hasattr(fid, "target_yaw") else 0,
             ))
 
-        return targets
+        self._cached_targets = targets
+
+    def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
+        """Get target data from cached Limelight fiducial results."""
+        self._refresh()
+
+        if not self._cached_targets:
+            return None
+
+        if tag_id is not None:
+            for t in self._cached_targets:
+                if t.tag_id == tag_id:
+                    return t
+            return None
+
+        # Return closest target
+        return min(self._cached_targets, key=lambda t: t.distance)
+
+    def has_target(self, tag_id: Optional[int] = None) -> bool:
+        return self.get_target(tag_id) is not None
+
+    def get_all_targets(self) -> List[VisionTarget]:
+        """Get all currently visible AprilTag targets."""
+        self._refresh()
+        return list(self._cached_targets)
