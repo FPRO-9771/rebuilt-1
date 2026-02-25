@@ -35,7 +35,9 @@ Each publisher is a small class with an `update()` method that pushes data to `w
 | `Motors/Conveyor Velocity` | `conveyor.get_velocity()` |
 | `Motors/Turret Position` | `turret.get_position()` |
 | `Motors/Turret Velocity` | `turret.get_velocity()` |
-| `Motors/Launcher Velocity` | `launcher.get_velocity()` |
+| `Motors/Launcher Target RPS` | `launcher._target_rps` |
+| `Motors/Launcher Actual RPS` | `launcher.get_velocity()` |
+| `Motors/Launcher At Speed` | `launcher.is_at_speed(target_rps)` |
 | `Motors/Hood Position` | `hood.get_position()` |
 
 ### Command Telemetry (`command_telemetry.py`)

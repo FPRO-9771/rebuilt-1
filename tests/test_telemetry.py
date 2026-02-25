@@ -19,7 +19,7 @@ from telemetry.vision_telemetry import VisionTelemetry
 
 @patch("telemetry.motor_telemetry.wpilib")
 def test_motor_telemetry_publishes_all_keys(mock_wpilib):
-    """All five motor keys should be published on update()."""
+    """All motor keys should be published on update()."""
     sd = mock_wpilib.SmartDashboard
 
     conveyor = Conveyor()
@@ -30,16 +30,20 @@ def test_motor_telemetry_publishes_all_keys(mock_wpilib):
     publisher = MotorTelemetry(conveyor, turret, launcher, hood)
     publisher.update()
 
-    expected_keys = [
+    expected_number_keys = [
         "Motors/Conveyor Velocity",
         "Motors/Turret Position",
         "Motors/Turret Velocity",
-        "Motors/Launcher Velocity",
+        "Motors/Launcher Target RPS",
+        "Motors/Launcher Actual RPS",
         "Motors/Hood Position",
     ]
-    published_keys = [call.args[0] for call in sd.putNumber.call_args_list]
-    for key in expected_keys:
-        assert key in published_keys, f"Missing key: {key}"
+    published_number_keys = [call.args[0] for call in sd.putNumber.call_args_list]
+    for key in expected_number_keys:
+        assert key in published_number_keys, f"Missing key: {key}"
+
+    published_boolean_keys = [call.args[0] for call in sd.putBoolean.call_args_list]
+    assert "Motors/Launcher At Speed" in published_boolean_keys
 
 
 # --- Command telemetry ---
