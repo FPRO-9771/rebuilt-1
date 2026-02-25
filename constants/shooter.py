@@ -80,10 +80,10 @@ CON_SHOOTER = {
     # Distance lookup table: (distance_m, launcher_rps, hood_position)
     # Sorted by distance — interpolated at runtime
     "distance_table": [
-        (1.0, 60.0, 0.05),
-        (2.0, 70.0, 0.10),
-        (3.0, 80.0, 0.15),
-        (4.0, 90.0, 0.20),
-        (5.0, 100.0, 0.24),
+        (1.3, 25.0, 0.05),
+        (2.0, 40.0, 0.10),
+        (3.0, 53.0, 0.15),
+        (4.0, 65.0, 0.20),
+        (5.0, 95.0, 0.24),
     ],
 }
