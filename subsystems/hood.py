@@ -24,6 +24,7 @@ class Hood(SubsystemBase):
         self.motor = create_motor(
             MOTOR_IDS["hood"],
             inverted=CON_HOOD["inverted"],
+            brake=CON_HOOD["brake"],
             slot0={
                 "kP": CON_HOOD["slot0_kP"],
                 "kI": CON_HOOD["slot0_kI"],

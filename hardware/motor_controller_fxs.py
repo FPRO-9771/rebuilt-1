@@ -15,10 +15,10 @@ class TalonFXSController(MotorController):
     Used for motors like WCP that connect through a TalonFXS.
     """
 
-    def __init__(self, can_id: int, inverted: bool = False, slot0: dict | None = None):
+    def __init__(self, can_id: int, inverted: bool = False, brake: bool = False, slot0: dict | None = None):
         from phoenix6.hardware import TalonFXS
         from phoenix6.configs import TalonFXSConfiguration
-        from phoenix6.signals import InvertedValue, MotorArrangementValue
+        from phoenix6.signals import InvertedValue, MotorArrangementValue, NeutralModeValue
 
         self._can_id = can_id
         self.motor = TalonFXS(can_id)
@@ -28,8 +28,9 @@ class TalonFXSController(MotorController):
 
         config = TalonFXSConfiguration()
         config.commutation.motor_arrangement = MotorArrangementValue.MINION_JST
+        config.motor_output.neutral_mode = NeutralModeValue.BRAKE if brake else NeutralModeValue.COAST
         needs_apply = True
-        _log.info(f"CAN {can_id}: Motor arrangement set to Minion JST")
+        _log.info(f"CAN {can_id}: Motor arrangement set to Minion JST, brake={brake}")
 
         if inverted:
             config.motor_output.inverted = InvertedValue.CLOCKWISE_POSITIVE

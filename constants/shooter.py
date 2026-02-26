@@ -43,14 +43,15 @@ CON_HOOD = {
     "max_position": 0.25,       # Maximum hood angle (rotations)
     "position_tolerance": 0.01,  # "Close enough" tolerance (rotations)
     "inverted": False,
+    "brake": True,              # Brake on neutral -- holds position when idle
 
     # Slot 0 gains for closed-loop position control
     # NEEDS TUNING -- all gains low to prevent vibration
     # Tune kP up first, then add kS if friction is a problem
-    "slot0_kP": 5.0,
+    "slot0_kP": 1.0,
     "slot0_kI": 0.0,
-    "slot0_kD": 0.0,
-    "slot0_kS": 0.0,            # Static friction (volts to start moving)
+    "slot0_kD": 0.01,
+    "slot0_kS": 0.1,            # Static friction (volts to start moving)
     "slot0_kV": 0.0,            # Velocity feedforward (volts per RPS)
     "slot0_kA": 0.0,            # Acceleration feedforward (volts per RPS/s)
     "slot0_kG": 0.0,            # Gravity feedforward (volts to hold against gravity)

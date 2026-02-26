@@ -37,6 +37,7 @@ def is_mock_mode() -> bool:
 def create_motor(
     config: Dict[str, Any],
     inverted: bool = False,
+    brake: bool = False,
     slot0: Dict[str, float] | None = None,
 ) -> MotorController:
     """
@@ -49,6 +50,7 @@ def create_motor(
     Args:
         config: Entry from MOTOR_IDS, e.g. {"can_id": 30, "type": "talon_fx", "wired": True}
         inverted: Whether to invert motor direction
+        brake: Whether to use brake mode on neutral (TalonFXS/Minion only)
         slot0: Optional gains for closed-loop control, e.g. {"kP": 12.0, "kV": 0.12, "kS": 0.2}
 
     Returns:
@@ -67,7 +69,10 @@ def create_motor(
         cls = _MOTOR_TYPES.get(motor_type)
         if cls is None:
             raise ValueError(f"Unknown motor type '{motor_type}' for CAN {can_id}")
-        motor = cls(can_id, inverted, slot0=slot0)
+        if motor_type == "talon_fxs":
+            motor = cls(can_id, inverted, brake=brake, slot0=slot0)
+        else:
+            motor = cls(can_id, inverted, slot0=slot0)
 
     motor.zero_position()
     _log.info(f"Motor CAN {can_id} ({motor_type}) position zeroed")
