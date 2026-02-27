@@ -12,6 +12,44 @@
 - **Seb** - 8th grade
 - **Toby** - 6th grade
 
+## The Game: REBUILT (2026)
+
+Two 3-robot alliances compete to **score Fuel into the Hub**, **cross field obstacles**, and **climb the Tower**.
+
+**Fuel** -- 5.9 in (15 cm) high-density foam balls. Human players feed Fuel onto the field through the Chute and Outpost. Robots collect Fuel from the Neutral Zone and score it into their alliance's Hub (1 pt each in both auto and teleop).
+
+**Hub** -- each alliance has one Hub. During teleop the Hubs alternate between Active and Inactive across four 25-second Shifts. The alliance that scores more Fuel in Auto has its Hub go Inactive first (Shifts 1 & 3 inactive, Shifts 2 & 4 active). Fuel scored into an Inactive Hub is worth 0 match points. Both Hubs are Active during Auto, the Transition, and Endgame.
+
+**Tower** -- a central climbing structure with three rungs (Low 27 in, Mid 45 in, High 63 in). Climbing earns Tower points:
+- Level 1 (off carpet): 10 pts teleop / 15 pts auto (max 2 robots in auto)
+- Level 2 (bumpers above Low Rung): 20 pts
+- Level 3 (bumpers above Mid Rung): 30 pts
+A robot may only score one Tower level during teleop.
+
+**Obstacles** -- Bump (6.5 in tall, drive over) and Trench (40.25 in tall, drive under) divide the field.
+
+**Match timeline (2 min 40 sec total):**
+| Phase | Duration | Notes |
+|-------|----------|-------|
+| Auto | 20 sec | Both Hubs active |
+| Transition | 10 sec | Both Hubs active |
+| Shifts 1-4 | 4 x 25 sec | Hubs alternate active/inactive |
+| Endgame | 30 sec | Both Hubs active |
+
+**Ranking Points (RP):**
+- Win: 3 RP, Tie: 1 RP
+- Energized: score >= 100 Fuel (1 RP)
+- Supercharged: score >= 360 Fuel (1 RP)
+- Traversal: earn >= 50 Tower points (1 RP)
+
+**Key vocabulary:** Fuel, Hub (Active/Inactive), Tower, Rung (Low/Mid/High), Shift, Bump, Trench, Outpost, Chute, Neutral Zone, Alliance Wall, Energized, Supercharged, Traversal
+
+**Official resources:**
+- [Game & Season page](https://www.firstinspires.org/programs/frc/game-and-season)
+- [2026 Game Manual (PDF)](https://firstfrc.blob.core.windows.net/frc2026/Manual/2026GameManual.pdf)
+- [Game Data details (WPILib)](https://docs.wpilib.org/en/stable/docs/yearly-overview/2026-game-data.html)
+- [Field dimension drawings (PDF)](https://firstfrc.blob.core.windows.net/frc2026/FieldAssets/2026-field-dimension-dwgs.pdf)
+
 ## Project Summary
 
 RobotPy (Python) codebase for an FRC competition robot using the WPILib command-based framework with Phoenix 6 motor controllers. This is a starting-point codebase for the 2026 season built on lessons learned from 2025.

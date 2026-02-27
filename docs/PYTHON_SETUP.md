@@ -21,8 +21,8 @@ We have a script that does everything for you:
 
 ```bash
 # Open Terminal, navigate to the project folder, then run:
-chmod +x scripts/setup_mac.sh
-sudo ./scripts/setup_mac.sh
+./team
+# Choose option 6 (Mac setup - Brian only)
 ```
 
 After the script finishes, **close and reopen Terminal**, then verify:
