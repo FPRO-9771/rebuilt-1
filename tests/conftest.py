@@ -45,6 +45,7 @@ TEST_CON_HOOD = {
     "max_position": 1.0,
     "position_tolerance": 0.1,
     "inverted": False,
+    "brake": False,
     "slot0_kP": 10.0,
     "slot0_kI": 0.0,
     "slot0_kD": 0.0,
