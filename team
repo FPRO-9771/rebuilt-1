@@ -1,0 +1,4 @@
+#!/bin/bash
+# Team 9771 FPRO CLI -- shortcut
+# Just type: ./team
+exec "$(dirname "$0")/cli/team.sh" "$@"
