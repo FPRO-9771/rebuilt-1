@@ -43,7 +43,7 @@ CON_HOOD = {
     "max_position": 0.25,       # Maximum hood angle (rotations)
     "position_tolerance": 0.01,  # "Close enough" tolerance (rotations)
     "inverted": False,
-    "brake": True,              # Brake on neutral -- holds position when idle
+    "brake": False,              # Brake on neutral -- holds position when idle
 
     # Slot 0 gains for closed-loop position control
     # NEEDS TUNING -- all gains low to prevent vibration
