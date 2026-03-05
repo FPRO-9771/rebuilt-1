@@ -108,7 +108,7 @@ We have a PowerShell script that does everything for you:
 ```powershell
 cd C:\path\to\rebuilt-1
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\scripts\setup_windows.ps1
+.\cli\commands\setup_windows.ps1
 ```
 
 After the script finishes, **close and reopen PowerShell**, then verify:
@@ -179,15 +179,23 @@ pip --version
 
 ## After Python is Set Up
 
-Once Python is installed correctly, install the project dependencies:
+On Mac, the easiest way to set up your project environment is:
 
 ```bash
-# Mac
 cd /path/to/rebuilt-1
-pip3 install -r requirements.txt
+./team
+# Choose option 2 (Set up my account)
+```
 
-# Windows
-cd C:\path\to\rebuilt-1
+This creates a virtual environment, installs all packages, and prepares for robot deploy.
+
+To do it manually (or on Windows):
+
+```bash
+cd /path/to/rebuilt-1
+python3 -m venv .venv
+source .venv/bin/activate    # Mac/Linux
+# .venv\Scripts\activate     # Windows
 pip install -r requirements.txt
 ```
 
@@ -226,41 +234,26 @@ Make sure you installed the Visual Studio Build Tools (Step 3 in Windows setup).
 
 ## Installing Claude Code
 
-Claude Code is an AI coding assistant that runs in your terminal. It requires Node.js.
-
-### Step 1: Install Node.js
-
-- **Mac:**
-  ```bash
-  brew install node
-  ```
-  If you don't have Homebrew, install it first from https://brew.sh
-
-- **Windows:**
-  1. Go to: https://nodejs.org/
-  2. Download the LTS installer
-  3. Run the installer with default settings
-
-Verify Node.js is installed:
-```bash
-node --version
-```
-
-### Step 2: Install Claude Code
+On Mac, Claude Code (and Node.js) are installed automatically by the Mac setup script:
 
 ```bash
-npm install -g @anthropic-ai/claude-code
+./team
+# Choose option 6 (Mac setup)
 ```
 
-### Step 3: Run Claude Code
+To install manually (or on Windows):
 
-Navigate to the project folder and start it:
-```bash
-cd /path/to/rebuilt-1
-claude
-```
-
-The first time you run it, you'll be prompted to log in with an Anthropic account.
+1. **Install Node.js:** Download from https://nodejs.org/ (LTS version)
+2. **Install Claude Code:**
+   ```bash
+   npm install -g @anthropic-ai/claude-code
+   ```
+3. **Run it:**
+   ```bash
+   cd /path/to/rebuilt-1
+   claude
+   ```
+   The first time you run it, you'll be prompted to log in with an Anthropic account.
 
 ---
 

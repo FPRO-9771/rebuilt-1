@@ -40,6 +40,7 @@ The codebase is organized by responsibility, not by file type:
 - **`testing/`** — Physics simulation models and sim runner. Calibrated from real robot measurements.
 - **`tests/`** — Automated pytest tests. Convention: one `test_<topic>.py` per subsystem or concern.
 - **`generated/`** — Phoenix Tuner X output. Don't edit by hand.
+- **`cli/`** — Team CLI menu and setup scripts. Run `./team` from the project root for an interactive menu covering environment checks, git, testing, and deploy. Add new menus in `cli/menus/`, new commands in `cli/commands/`.
 
 ---
 

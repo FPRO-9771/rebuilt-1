@@ -6,10 +6,10 @@ This guide covers setting up the roboRIO and deploying Python code for the 2026 
 
 Before deploying, make sure you have:
 
-1. **Python 3.13 installed** - See `docs/PYTHON_SETUP.md`
-2. **Project dependencies installed locally:**
+1. **Environment set up** - Run `./team` option 1 (Check my environment) and fix any red items
+2. **Virtual environment activated:**
    ```bash
-   pip3 install -r requirements.txt --upgrade
+   source .venv/bin/activate
    ```
 3. **roboRIO imaged with 2026 firmware** - Use NI FRC Game Tools to image with `FRC_roboRIO2_2026_vX.X`
 
@@ -92,8 +92,11 @@ python -m robotpy deploy --skip-tests
 When you add a new package to `requirements.txt`:
 
 ```bash
+# Make sure .venv is activated
+source .venv/bin/activate
+
 # Install locally
-pip3 install -r requirements.txt --upgrade
+pip install -r requirements.txt --upgrade
 
 # Download for roboRIO
 python -m robotpy installer download -r requirements.txt
@@ -104,6 +107,8 @@ python -m robotpy installer install -r requirements.txt
 # Deploy
 python -m robotpy deploy
 ```
+
+Or use `./team` -> Robot menu -> options 5 and 6 to download/install robot packages.
 
 ---
 
@@ -120,7 +125,8 @@ python -m robotpy deploy
 
 Your local RobotPy version doesn't match the roboRIO image year. Update your local packages:
 ```bash
-pip3 install -r requirements.txt --upgrade
+source .venv/bin/activate
+pip install -r requirements.txt --upgrade
 ```
 
 ### "python314 has not been downloaded yet"

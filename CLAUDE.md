@@ -122,6 +122,7 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 | `docs/PYTHON_SETUP.md` | Python installation for Mac and Windows |
 | `docs/roborio-deploy.md` | RoboRIO setup, deployment, and troubleshooting |
 | `docs/debugging.md` | SSH access, remote logs, and common debugging scenarios |
+| `docs/QUICK-REFERENCE.md` | Printable 1-page cheat sheet for the team (Python, git, deploy) |
 
 ## Quick Reference
 
