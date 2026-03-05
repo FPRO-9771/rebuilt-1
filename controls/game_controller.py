@@ -49,6 +49,12 @@ class GameController:
     def rightTrigger(self):
         return self._ctrl.R2() if self._use_ps4 else self._ctrl.rightTrigger()
 
+    def back(self):
+        return self._ctrl.share() if self._use_ps4 else self._ctrl.back()
+
+    def start(self):
+        return self._ctrl.options() if self._use_ps4 else self._ctrl.start()
+
     # --- Axes (same on both) ---
 
     def getLeftX(self):
