@@ -16,40 +16,52 @@ class Hood(SubsystemBase):
     """
     Adjustable hood for controlling shot angle.
     Uses closed-loop position control with position limits.
+    When CON_HOOD["enabled"] is False, all methods are safe no-ops.
     """
 
     def __init__(self):
         super().__init__()
+        self._enabled = CON_HOOD.get("enabled", True)
         self._last_target = None
-        self.motor = create_motor(
-            MOTOR_IDS["hood"],
-            inverted=CON_HOOD["inverted"],
-            brake=CON_HOOD["brake"],
-            slot0={
-                "kP": CON_HOOD["slot0_kP"],
-                "kI": CON_HOOD["slot0_kI"],
-                "kD": CON_HOOD["slot0_kD"],
-                "kS": CON_HOOD["slot0_kS"],
-                "kV": CON_HOOD["slot0_kV"],
-                "kA": CON_HOOD["slot0_kA"],
-                "kG": CON_HOOD["slot0_kG"],
-            },
-        )
+        if self._enabled:
+            self.motor = create_motor(
+                MOTOR_IDS["hood"],
+                inverted=CON_HOOD["inverted"],
+                brake=CON_HOOD["brake"],
+                slot0={
+                    "kP": CON_HOOD["slot0_kP"],
+                    "kI": CON_HOOD["slot0_kI"],
+                    "kD": CON_HOOD["slot0_kD"],
+                    "kS": CON_HOOD["slot0_kS"],
+                    "kV": CON_HOOD["slot0_kV"],
+                    "kA": CON_HOOD["slot0_kA"],
+                    "kG": CON_HOOD["slot0_kG"],
+                },
+            )
+        else:
+            self.motor = None
+            _log.warning("Hood DISABLED -- motor not connected")
 
     # --- Sensor reads (public) ---
 
     def get_position(self) -> float:
         """Get current hood position in rotations."""
+        if not self._enabled:
+            return 0.0
         return self.motor.get_position()
 
     def is_at_position(self, target: float) -> bool:
         """Check if hood is within tolerance of target position."""
+        if not self._enabled:
+            return True
         return abs(self.get_position() - target) <= CON_HOOD["position_tolerance"]
 
     # --- Motor control (internal) ---
 
     def _set_position(self, position: float) -> None:
         """Move hood to position, clamped to min/max limits."""
+        if not self._enabled:
+            return
         clamped = max(CON_HOOD["min_position"], min(position, CON_HOOD["max_position"]))
         if clamped != self._last_target:
             _log.debug(
@@ -61,6 +73,8 @@ class Hood(SubsystemBase):
 
     def _set_voltage(self, volts: float) -> None:
         """Apply voltage with safety clamping."""
+        if not self._enabled:
+            return
         max_v = CON_HOOD["max_voltage"]
         clamped = max(-max_v, min(volts, max_v))
         _log.debug(f"_set_voltage: requested={volts:.3f} clamped={clamped:.3f}")
@@ -68,6 +82,8 @@ class Hood(SubsystemBase):
 
     def _stop(self) -> None:
         """Stop the hood."""
+        if not self._enabled:
+            return
         _log.debug("_stop called")
         self.motor.stop()
 

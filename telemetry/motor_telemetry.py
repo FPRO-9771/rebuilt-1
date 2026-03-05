@@ -25,4 +25,5 @@ class MotorTelemetry:
         sd.putNumber("Motors/Launcher Target RPS", self._launcher._target_rps)
         sd.putNumber("Motors/Launcher Actual RPS", self._launcher.get_velocity())
         sd.putBoolean("Motors/Launcher At Speed", self._launcher.is_at_speed(self._launcher._target_rps))
-        sd.putNumber("Motors/Hood Position", self._hood.get_position())
+        if self._hood._enabled:
+            sd.putNumber("Motors/Hood Position", self._hood.get_position())

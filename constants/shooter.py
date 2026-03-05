@@ -38,6 +38,7 @@ CON_LAUNCHER = {
 # HOOD CONFIGURATION
 # =============================================================================
 CON_HOOD = {
+    "enabled": False,           # Hood motor not connected -- flip to True when wired
     "max_voltage": 6.0,         # Maximum voltage to apply
     "min_position": 0.0,        # Minimum hood angle (rotations)
     "max_position": 0.25,       # Maximum hood angle (rotations)

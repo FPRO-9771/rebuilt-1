@@ -72,19 +72,20 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision):
     )
 
     # --- Hood: default command holds position from state ---
-    hood.setDefaultCommand(
-        hood.go_to_position_supplier(lambda: state["hood_position"])
-    )
+    if hood._enabled:
+        hood.setDefaultCommand(
+            hood.go_to_position_supplier(lambda: state["hood_position"])
+        )
 
-    # --- Hood nudge: right bumper (+) / right trigger (-) ---
-    # Each press just updates state; default command picks up the new target
-    hood_step = CON_MANUAL["hood_position_step"]
-    operator.rightBumper().onTrue(
-        InstantCommand(lambda: nudge_hood(state, hood_step))
-    )
-    operator.rightTrigger().onTrue(
-        InstantCommand(lambda: nudge_hood(state, -hood_step))
-    )
+        # --- Hood nudge: right bumper (+) / right trigger (-) ---
+        # Each press just updates state; default command picks up the new target
+        hood_step = CON_MANUAL["hood_position_step"]
+        operator.rightBumper().onTrue(
+            InstantCommand(lambda: nudge_hood(state, hood_step))
+        )
+        operator.rightTrigger().onTrue(
+            InstantCommand(lambda: nudge_hood(state, -hood_step))
+        )
 
     return state
 

@@ -40,6 +40,7 @@ TEST_CON_LAUNCHER = {
 }
 
 TEST_CON_HOOD = {
+    "enabled": True,
     "max_voltage": 10.0,
     "min_position": 0.0,
     "max_position": 1.0,
