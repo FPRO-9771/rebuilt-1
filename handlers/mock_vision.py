@@ -18,8 +18,9 @@ class MockVisionProvider(VisionProvider):
 
     def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
         self._query_history.append(tag_id)
-        if tag_id and tag_id in self._targets:
-            return self._targets[tag_id]
+        if tag_id is not None:
+            # Specific tag requested -- return it or None (not the default)
+            return self._targets.get(tag_id)
         return self._default_target
 
     def has_target(self, tag_id: Optional[int] = None) -> bool:

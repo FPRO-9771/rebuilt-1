@@ -18,9 +18,9 @@ Quick reference for what every button does on each Xbox controller.
     ┌────────────────────────────────────────────┐
     │                                            │
     │   ┌───┐                        (Y)        │
-    │   │ L │  Left Stick         Auto Shooter   │
-    │   │   │  X = Manual       toggle on/off    │
-    │   │   │  turret                            │
+    │   │ L │  Left Stick         Hold to Shoot  │
+    │   │   │  X = Manual       (spins up,       │
+    │   │   │  turret           feeds when lock)  │
     │   └───┘                 (X)        (B)     │
     │                                            │
     │                            (A)             │
@@ -36,22 +36,28 @@ Quick reference for what every button does on each Xbox controller.
 
 | Input | Action | Notes |
 |-------|--------|-------|
-| **Y button** | Toggle auto shooter on/off | Aims turret, spins launcher, sets hood from vision |
-| **Left stick X** | Manual turret aim | Cancels auto shooter if running |
-| **A button** | Toggle manual launcher on/off | Cancels auto shooter if running |
+| **Y button (hold)** | Hold to shoot | Spins launcher, sets hood; feeds when lock indicator is green |
+| **Left stick X** | Manual turret aim | Interrupts auto-tracking; resumes on release |
+| **A button** | Toggle manual launcher on/off | Cancels shoot command if running |
 | **Left bumper** | Increase launcher speed | +5% step, works without interrupting launcher |
 | **Left trigger** | Decrease launcher speed | -5% step, works without interrupting launcher |
-| **Right bumper** | Nudge hood up | Cancels auto shooter if running |
-| **Right trigger** | Nudge hood down | Cancels auto shooter if running |
+| **Right bumper** | Nudge hood up | Cancels shoot command if running |
+| **Right trigger** | Nudge hood down | Cancels shoot command if running |
 | **Right stick Y** | Manual conveyor | Runs while stick is held |
+
+### How shooting works
+
+1. **Turret auto-tracks** scoring tags automatically during teleop -- no button needed
+2. Watch the **Shooter/Lock** indicator on the dashboard (green = ready to fire)
+3. **Hold Y** to spin up the launcher and set the hood -- feeder engages when locked
+4. Release Y to stop
 
 ### Testing workflow
 
-1. Start with auto shooter **off**
-2. Use **A** to toggle launcher on, adjust speed with **left bumper/trigger**
-3. Use **right bumper/trigger** to set hood angle
-4. Use **left stick** to aim turret manually
-5. Once mechanisms are tuned, press **Y** to enable auto shooter
+1. Use **A** to toggle launcher on, adjust speed with **left bumper/trigger**
+2. Use **right bumper/trigger** to set hood angle
+3. Use **left stick** to aim turret manually (auto-tracking resumes when released)
+4. Hold **Y** to test the full shoot sequence
 
 ---
 
@@ -107,6 +113,7 @@ Quick reference for what every button does on each Xbox controller.
 
 ## Important Interactions
 
-- Any manual shooter input (turret stick, hood nudge, launcher toggle) **cancels the auto shooter**. Press **Y** again to re-enable it.
+- **Turret auto-tracks** continuously. Manual turret stick temporarily overrides; tracking resumes on release.
+- Hood nudge or launcher toggle will **cancel the shoot command** if Y is held. Release and re-hold Y to resume.
 - Launcher speed adjustments (bumper/trigger) **never** cancel anything -- they just change the target speed for next time.
 - SysId routines require holding **two buttons at once** (Back/Start + X/Y) so they can't be triggered accidentally.

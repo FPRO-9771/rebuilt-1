@@ -12,6 +12,7 @@ from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from controls import configure_driver, configure_operator
 from handlers import get_vision_providers
+from match_setup import MatchSetup
 from telemetry import setup_telemetry
 
 
@@ -21,6 +22,9 @@ class RobotContainer:
     """
 
     def __init__(self):
+        # --- Match setup (SmartDashboard choosers) ---
+        self.match_setup = MatchSetup()
+
         # --- Subsystems ---
         self.drivetrain = TunerConstants.create_drivetrain()
         # self.conveyor = Conveyor()  # NOT WIRED YET
@@ -56,4 +60,5 @@ class RobotContainer:
         configure_operator(
             self.operator, None, self.turret,
             self.launcher, self.hood, self.vision["shooter"],
+            self.match_setup,
         )

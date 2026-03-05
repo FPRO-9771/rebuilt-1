@@ -87,6 +87,20 @@ TEST_CON_MANUAL = {
     "hood_position_step": 0.1,
 }
 
+# Tag priority: ordered list for priority-based targeting tests.
+# Tag 4 is the only scoring tag in TEST_CON_SHOOTER, so it goes first.
+TEST_TAG_PRIORITY = [4, 5, 6]
+
+# Per-tag offsets for testing -- matches the tags in TEST_TAG_PRIORITY.
+TEST_TAG_OFFSETS = {
+    4: {"tx_offset": 0.0, "distance_offset": 0.0},
+    5: {"tx_offset": 1.0, "distance_offset": 0.5},
+    6: {"tx_offset": -1.0, "distance_offset": -0.5},
+}
+
+# How many cycles before the tracker gives up on a lost locked tag.
+TEST_TARGET_LOCK_LOST_CYCLES = 5
+
 
 # ============================================================================
 # AUTOUSE FIXTURES
@@ -120,10 +134,14 @@ def _patch_constants(monkeypatch):
     monkeypatch.setattr("subsystems.hood.CON_HOOD", TEST_CON_HOOD)
     monkeypatch.setattr("subsystems.conveyor.CON_CONVEYOR", TEST_CON_CONVEYOR)
 
-    # Shooter lookup + orchestrator
+    # Shooter lookup + orchestrator + tracker + shoot command
     monkeypatch.setattr("subsystems.shooter_lookup.CON_SHOOTER", TEST_CON_SHOOTER)
     monkeypatch.setattr("commands.shooter_orchestrator.CON_SHOOTER", TEST_CON_SHOOTER)
-
+    monkeypatch.setattr("commands.auto_tracker.CON_SHOOTER", TEST_CON_SHOOTER)
+    monkeypatch.setattr(
+        "commands.auto_tracker.TARGET_LOCK_LOST_CYCLES",
+        TEST_TARGET_LOCK_LOST_CYCLES,
+    )
     # Operator controls
     monkeypatch.setattr("controls.operator_controls.CON_MANUAL", TEST_CON_MANUAL)
     monkeypatch.setattr("controls.operator_controls.CON_HOOD", TEST_CON_HOOD)

@@ -49,20 +49,52 @@ Each publisher is a small class with an `update()` method that pushes data to `w
 
 Hooks into `CommandScheduler.onCommandInitialize()` and `onCommandFinish()` callbacks. Filters out noisy internal commands (names starting with `_`, `Instant`, `PerpetualCommand`, `RunCommand`).
 
-### Vision Telemetry (`vision_telemetry.py`)
+### Match Setup (`match_setup.py`)
 
-Published per camera — keys are prefixed with the camera name (e.g., `Vision/Shooter/`, `Vision/Front/`).
+Published every cycle by `MatchSetup.update()`.
 
 | SmartDashboard Key | Type | Description |
 |--------------------|------|-------------|
-| `Vision/Shooter/Has Target` | boolean | Is any AprilTag visible (shooter camera) |
-| `Vision/Shooter/Tag Count` | number | Number of visible tags (shooter camera) |
-| `Vision/Shooter/Tags` | string | ASCII table with ID, TX, TY, distance, yaw per tag |
-| `Vision/Front/Has Target` | boolean | Is any AprilTag visible (front camera) |
-| `Vision/Front/Tag Count` | number | Number of visible tags (front camera) |
-| `Vision/Front/Tags` | string | ASCII table with ID, TX, TY, distance, yaw per tag |
+| `Match/Is Red Alliance` | boolean | True = Red alliance, False = Blue alliance |
 
-Loops over all cameras defined in `CON_VISION` and calls `get_all_targets()` on each.
+**How to use in Elastic (big alliance color indicator):**
+
+1. Drag `Match/Is Red Alliance` onto your layout
+2. Right-click the widget and change it to **Boolean Box**
+3. In the widget properties, set **True color** to red and **False color** to blue
+4. Resize it big so the kids can see it from across the pit
+
+### Shooter Targeting (`commands/auto_tracker.py`)
+
+Published directly by the AutoTracker command (not from the telemetry module).
+
+| SmartDashboard Key | Type | Description |
+|--------------------|------|-------------|
+| `Shooter/Lock` | boolean | True when turret is aligned, target is visible, and distance is in the lookup table range |
+| `Shooter/Locked Tag` | number | AprilTag ID the turret is currently tracking (-1 = no target) |
+
+These update every cycle during teleop. When the robot is disabled or not in teleop, both reset (Lock = false, Locked Tag = -1).
+
+**How to use in Elastic:**
+
+1. Drag `Shooter/Lock` onto your layout -- use a **Boolean Box** widget (shows green/red)
+2. Drag `Shooter/Locked Tag` onto your layout -- use a **Number** widget
+3. When the number shows -1, no scoring tag is visible. Any other number is the tag ID the turret is aiming at.
+
+### Vision Telemetry (`vision_telemetry.py`)
+
+Published per camera -- keys are prefixed with the camera name (e.g., `Vision/Shooter/`, `Vision/Front/`).
+
+| SmartDashboard Key | Type | Description |
+|--------------------|------|-------------|
+| `Vision/{Camera}/Has Target` | boolean | Is any AprilTag visible |
+| `Vision/{Camera}/Tag Count` | number | Number of visible tags |
+| `Vision/{Camera}/Tag 1` | string | First tag: ID, tx, ty, distance, yaw |
+| `Vision/{Camera}/Tag 2` | string | Second tag (empty if fewer than 2 visible) |
+| `Vision/{Camera}/Tag 3` | string | Third tag (empty if fewer than 3 visible) |
+| `Vision/{Camera}/Tag 4` | string | Fourth tag (empty if fewer than 4 visible) |
+
+`{Camera}` is `Shooter` or `Front`. Loops over all cameras defined in `CON_VISION` and calls `get_all_targets()` on each. Up to 4 tags are shown; unused slots publish empty strings.
 
 ### Camera Streams (`camera_telemetry.py`)
 

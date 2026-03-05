@@ -1,63 +1,60 @@
 """
-Shooter orchestrator command.
-Ties vision + turret + launcher + hood together for automated shooting.
+Auto-tracker command -- turret default command for teleop.
+Continuously aims turret at qualifying AprilTags using PD control.
+Uses priority-based targeting with stickiness to avoid oscillation.
+Publishes a lock boolean to SmartDashboard for drive team readiness.
 """
 
 from typing import Callable
 
 from commands2 import Command
+from wpilib import DriverStation, SmartDashboard
 
 from handlers.vision import VisionProvider
 from subsystems.turret import Turret
-from subsystems.launcher import Launcher
-from subsystems.hood import Hood
-from subsystems.shooter_lookup import get_shooter_settings
 from constants import CON_SHOOTER
 from constants.match import TARGET_LOCK_LOST_CYCLES
 from utils.logger import get_logger
 
-_log = get_logger("orchestrator")
+_log = get_logger("auto_tracker")
 
 
-class ShooterOrchestrator(Command):
+class AutoTracker(Command):
     """
-    Automated shooter command -- aims turret, spins launcher, adjusts hood.
+    Default turret command -- aims at scoring tags via PD control.
 
     Uses priority-based targeting: the tag_priority_supplier provides an
-    ordered list of AprilTag IDs. The orchestrator locks onto the first
-    visible tag in that list and stays locked until the tag is lost for
-    several consecutive cycles (stickiness).
+    ordered list of AprilTag IDs from match setup. The tracker locks onto
+    the first visible tag in that list and stays locked until the tag is
+    lost for several consecutive cycles (stickiness).
 
-    Never auto-finishes -- runs until canceled by operator.
+    Only requires turret. Manual turret override (left stick X)
+    interrupts this via WPILib requirements; when released, this
+    default command resumes automatically.
     """
 
     def __init__(
         self,
         turret: Turret,
-        launcher: Launcher,
-        hood: Hood,
         vision: VisionProvider,
         tag_priority_supplier: Callable[[], list[int]],
         tag_offsets_supplier: Callable[[], dict],
     ):
         super().__init__()
         self.turret = turret
-        self.launcher = launcher
-        self.hood = hood
         self.vision = vision
         self._tag_priority_supplier = tag_priority_supplier
         self._tag_offsets_supplier = tag_offsets_supplier
         self._aim_sign = -1.0 if CON_SHOOTER["turret_aim_inverted"] else 1.0
 
-        # State
         self._last_tx = 0.0
-        self._prev_tx = 0.0  # Previous tx for derivative calculation
-        self._last_distance = 2.0  # Default mid-range
+        self._prev_tx = 0.0
+        self._last_distance = 2.0
         self._target_visible = False
         self._locked_tag_id = None
         self._lost_count = 0
 
-        self.addRequirements(turret, launcher, hood)
+        self.addRequirements(turret)
 
     def initialize(self):
         self._last_tx = 0.0
@@ -66,7 +63,7 @@ class ShooterOrchestrator(Command):
         self._target_visible = False
         self._locked_tag_id = None
         self._lost_count = 0
-        _log.info("Orchestrator ENABLED")
+        _log.info("AutoTracker ENABLED")
 
     def _select_target(self):
         """Pick a target using priority + stickiness logic."""
@@ -99,6 +96,17 @@ class ShooterOrchestrator(Command):
         return None
 
     def execute(self):
+        # Only track during teleop
+        if not DriverStation.isTeleopEnabled():
+            self._target_visible = False
+            self._last_tx = 0.0
+            self._prev_tx = 0.0
+            self._locked_tag_id = None
+            self._lost_count = 0
+            SmartDashboard.putBoolean("Shooter/Lock", False)
+            SmartDashboard.putNumber("Shooter/Locked Tag", -1)
+            return
+
         # 1. Select target using priority + stickiness
         target = self._select_target()
         tag_offsets = self._tag_offsets_supplier()
@@ -110,15 +118,14 @@ class ShooterOrchestrator(Command):
             self._last_distance = target.distance + offsets["distance_offset"]
             self._target_visible = True
         elif target is not None:
-            # Valid target but no offsets configured -- use raw values
             self._last_tx = target.tx
             self._last_distance = target.distance
             self._target_visible = True
         else:
             self._target_visible = False
-            self._last_tx = 0.0  # Stop turret when target lost
+            self._last_tx = 0.0
 
-        # 3. Aim turret: PD control from corrected tx
+        # 3. PD control for turret aim
         p_term = self._last_tx * CON_SHOOTER["turret_p_gain"]
         d_term = (self._last_tx - self._prev_tx) * CON_SHOOTER["turret_d_gain"]
         self._prev_tx = self._last_tx
@@ -128,45 +135,31 @@ class ShooterOrchestrator(Command):
         turret_voltage = max(-max_auto_v, min(turret_voltage, max_auto_v))
         self.turret._set_voltage(turret_voltage)
 
-        # 4. Look up launcher and hood settings from corrected distance
-        rps, hood_pos = get_shooter_settings(self._last_distance)
+        # 4. Publish lock and target status
+        SmartDashboard.putBoolean("Shooter/Lock", self.is_locked())
+        locked_id = self._locked_tag_id if self._locked_tag_id is not None else -1
+        SmartDashboard.putNumber("Shooter/Locked Tag", locked_id)
 
-        # 5. Command launcher velocity
-        self.launcher._set_velocity(rps)
+    def is_locked(self) -> bool:
+        """Target visible, aligned, and distance within table range."""
+        if not self._target_visible:
+            return False
+        table = CON_SHOOTER["distance_table"]
+        min_dist = table[0][0]
+        max_dist = table[-1][0]
+        in_range = min_dist <= self._last_distance <= max_dist
+        aligned = abs(self._last_tx) <= CON_SHOOTER["turret_alignment_tolerance"]
+        return aligned and in_range
 
-        # Debug: log key values every cycle
-        tag_id = target.tag_id if target is not None else None
-        raw_tx = target.tx if target is not None else None
-        raw_dist = target.distance if target is not None else None
-        _log.debug(
-            f"locked={self._locked_tag_id} tag={tag_id} tx={raw_tx} "
-            f"dist={raw_dist} cmd_dist={self._last_distance:.2f} "
-            f"rps={rps:.1f} hood={hood_pos:.4f} voltage={turret_voltage:.3f}"
-        )
-
-        # 6. Command hood position
-        self.hood._set_position(hood_pos)
-
-    def is_ready(self) -> bool:
-        """Check if all components are aligned and ready to shoot."""
-        turret_aligned = abs(self._last_tx) <= CON_SHOOTER["turret_alignment_tolerance"]
-
-        rps, hood_pos = get_shooter_settings(self._last_distance)
-        launcher_ready = self.launcher.is_at_speed(rps)
-        hood_ready = self.hood.is_at_position(hood_pos)
-
-        return (
-            turret_aligned
-            and launcher_ready
-            and hood_ready
-            and self._target_visible
-        )
+    def get_distance(self) -> float:
+        """Current tracked distance for ShootCommand."""
+        return self._last_distance
 
     def isFinished(self) -> bool:
         return False
 
     def end(self, interrupted: bool):
-        _log.info(f"Orchestrator DISABLED (interrupted={interrupted})")
+        _log.info(f"AutoTracker DISABLED (interrupted={interrupted})")
         self.turret._stop()
-        self.launcher._stop()
-        self.hood._stop()
+        SmartDashboard.putBoolean("Shooter/Lock", False)
+        SmartDashboard.putNumber("Shooter/Locked Tag", -1)

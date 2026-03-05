@@ -96,7 +96,7 @@ All swerve requests and speed limits are derived from `TunerConstants` (the Phoe
 | Input | Binding | Action |
 |-------|---------|--------|
 | Right stick Y | `whileTrue` | Conveyor manual control |
-| Y button | `toggleOnTrue` | Auto shooter on/off |
+| Y button | `whileTrue` | Hold to shoot (pre-spin + feeder when locked) |
 | Left stick X | `whileTrue` | Manual turret override |
 | A button | `toggleOnTrue` | Manual launcher on/off |
 | Left bumper | `onTrue` | Increase launcher speed (+5%) |
@@ -161,22 +161,22 @@ This uses `hood.runOnce()`, which **does** require the hood subsystem. After the
 
 ## 5. How Overrides Interact with Auto Shooter
 
-The auto shooter (`ShooterOrchestrator`) requires turret + launcher + hood. Manual controls interact with it through the WPILib requirement system:
+The system uses two independent commands: `AutoTracker` (turret default command) and `ShootCommand` (Y hold). Manual controls interact through the WPILib requirement system:
 
 | Action | What Happens |
 |--------|-------------|
-| Auto running, press A (launcher toggle) | Launcher requires launcher subsystem → cancels auto shooter |
-| Auto running, press right bumper (hood nudge) | Hood requires hood subsystem → cancels auto shooter |
-| Auto running, push left stick (manual turret) | Turret requires turret subsystem → cancels auto shooter |
-| Manual launcher running, press Y (auto shooter) | Auto requires all three → cancels manual launcher |
-| Press left bumper (speed adjust) | No requirement → nothing interrupted |
+| Tracker running, push left stick (manual turret) | Manual turret requires turret -> interrupts tracker; tracker resumes when stick released |
+| Hold Y (shoot), press A (launcher toggle) | Both require launcher -> launcher toggle cancels shoot |
+| Hold Y (shoot), press right bumper (hood nudge) | Both require hood -> hood nudge cancels shoot |
+| Press left bumper (speed adjust) | No requirement -> nothing interrupted |
 
-This is intentional:
-- **During testing:** Auto shooter is off, manual controls work independently
-- **During a match:** Auto shooter runs normally; any manual input cancels it as an emergency override
-- **To return to auto:** Press Y again to re-enable
+Key differences from the old orchestrator design:
+- **AutoTracker always runs** as the turret's default command during teleop -- no button press needed
+- **ShootCommand is hold-to-shoot** (Y whileTrue) instead of toggle -- releasing Y stops launcher/hood
+- **AutoTracker and ShootCommand run simultaneously** because they require different subsystems (turret vs launcher+hood)
+- **Manual turret stick** only interrupts the tracker, not the shoot command -- launcher keeps spinning
 
-The speed adjustment (left bumper/trigger) is the exception — it changes a variable without requiring a subsystem, so it never interrupts anything. You can pre-set the launcher speed before toggling it on with A.
+The speed adjustment (left bumper/trigger) changes a variable without requiring a subsystem, so it never interrupts anything.
 
 ---
 

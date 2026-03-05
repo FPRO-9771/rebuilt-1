@@ -51,14 +51,35 @@ You can also try Elastic in your browser at https://gold872.github.io/elastic_da
 
 ---
 
+## Match Setup Choosers
+
+Before every match, the drive team must set two dropdowns:
+
+1. **Alliance** -- Red or Blue (must match your actual alliance)
+2. **Starting Pose** -- Left, Center, or Right (must match robot placement)
+
+These appear automatically under SmartDashboard when the robot connects. Drag them onto your layout so they're always visible.
+
+**What they control:**
+
+- Which AprilTags the turret auto-tracks (each alliance has its own Hub tags)
+- The robot's starting position for odometry and autonomous paths
+- Which autonomous routine runs (future)
+
+**Important:** Always verify these are correct after field reset. The dashboard remembers your last selection, which may be wrong for the next match.
+
+For details on how to add new poses or change tag priorities, see [Match Setup Architecture](architecture/match-setup.md).
+
+---
+
 ## Viewing Telemetry Keys
 
 Once connected, you'll see keys grouped by prefix:
 
-- **Motors/** — motor positions and velocities (numbers)
-- **Commands/** — active commands and recent event log (text)
-- **Vision/Shooter/** — Shooter Limelight AprilTag data (text + booleans)
-- **Vision/Front/** — Front Limelight AprilTag data (text + booleans)
+- **Motors/** -- motor positions and velocities (numbers)
+- **Commands/** -- active commands and recent event log (text)
+- **Vision/Shooter/** -- Shooter Limelight AprilTag data (text + booleans)
+- **Vision/Front/** -- Front Limelight AprilTag data (text + booleans)
 
 ### Setting Up a Layout
 

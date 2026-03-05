@@ -26,20 +26,28 @@ The shooter has three mechanisms and a camera, all working together:
 Limelight Camera (on turret)
         │
         ▼
-┌─────────────────────────────────────────────┐
-│            ShooterOrchestrator               │
-│                                             │
-│  vision.get_target() ──► tx, distance       │
-│                            │                │
-│          ┌─────────────────┼────────────┐   │
-│          ▼                 ▼            ▼   │
-│    Turret aim      Lookup table    Hood pos │
-│   (P-control       (distance →    (position │
-│    from tx)        rps + hood)    control)  │
-│          │                │            │    │
-│          ▼                ▼            ▼    │
-│     _set_voltage    _set_velocity  _set_pos │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────┐
+│     AutoTracker              │
+│  (turret default command)    │
+│                              │
+│  vision ──► tx, distance     │
+│  PD aim ──► turret voltage   │
+│  publishes Shooter/Lock      │
+│  requires: turret            │
+└──────────────────────────────┘
+        │ is_locked()
+        │ get_distance()
+        ▼
+┌──────────────────────────────┐
+│     ShootCommand             │
+│  (Y button whileTrue)       │
+│                              │
+│  distance ──► lookup table   │
+│  launcher ──► _set_velocity  │
+│  hood ──► _set_position      │
+│  feeder ──► placeholder      │
+│  requires: launcher, hood    │
+└──────────────────────────────┘
 ```
 
 | Component | Motor | Controller | Control Mode |
@@ -48,7 +56,7 @@ Limelight Camera (on turret)
 | Launcher | Kraken X60 | TalonFX | Closed-loop velocity |
 | Hood | WCP | TalonFXS | Closed-loop position |
 
-All three are "dumb" subsystems — they don't know about each other or about vision. The `ShooterOrchestrator` command coordinates them.
+All three are "dumb" subsystems -- they don't know about each other or about vision. Two commands coordinate them: `AutoTracker` (always-on turret aiming) and `ShootCommand` (hold-to-shoot).
 
 ---
 
@@ -153,40 +161,43 @@ Distances outside the table range clamp to the nearest entry. This prevents extr
 
 ---
 
-## 4. Shooter Orchestrator
+## 4. AutoTracker + ShootCommand
 
-`commands/shooter_orchestrator.py` is the brain. Each `execute()` cycle:
+The shooter is split into two independent commands:
 
-1. **Query vision** for the target AprilTag
-2. **Update state** — if target found, update `tx` and `distance`; if lost, hold last values
-3. **Aim turret** — proportional control: `voltage = tx * p_gain`
-4. **Look up settings** — interpolate the distance table for RPS and hood position
-5. **Command launcher** — closed-loop velocity at the looked-up RPS
-6. **Command hood** — closed-loop position at the looked-up angle
-7. **Compute readiness** — all aligned AND target visible → `is_ready() == True`
+### AutoTracker (`commands/auto_tracker.py`)
 
-### Target Loss Behavior
+The turret's **default command** during teleop. Runs continuously, aiming at scoring AprilTags via PD control. Uses priority-based targeting with stickiness to avoid oscillation between tags.
 
-When the target disappears (momentary occlusion, camera glitch), the orchestrator holds the last known `tx` and `distance`. This prevents the turret from snapping to center or the launcher from changing speed on a brief dropout. The target must be visible again for `is_ready()` to return True.
+Each `execute()` cycle:
+1. Check `DriverStation.isTeleopEnabled()` -- skip if not in teleop
+2. Select target using priority list + stickiness logic
+3. Apply per-tag offsets to tx and distance
+4. PD control: `voltage = (tx * p_gain + d_term) * aim_sign`
+5. Publish `Shooter/Lock` boolean to SmartDashboard
 
-### Readiness Check
+**Lock conditions** (`is_locked()`):
+- Target is visible
+- Turret is aligned (tx within tolerance)
+- Distance is within the lookup table range
 
-`is_ready()` is a query, not a trigger. It returns True when all four conditions are met simultaneously:
+Manual turret override (left stick X) interrupts AutoTracker via WPILib requirements. When the stick is released, AutoTracker resumes automatically as the default command.
 
-```python
-def is_ready(self) -> bool:
-    turret_aligned = abs(self._last_tx) <= CON_SHOOTER["turret_alignment_tolerance"]
-    rps, hood_pos = get_shooter_settings(self._last_distance)
-    launcher_ready = self.launcher.is_at_speed(rps)
-    hood_ready = self.hood.is_at_position(hood_pos)
-    return turret_aligned and launcher_ready and hood_ready and self._target_visible
-```
+### ShootCommand (`commands/shoot_command.py`)
 
-A future conveyor command can poll `is_ready()` to decide when to feed a game piece.
+Bound to **Y button whileTrue** -- hold to shoot. Receives the AutoTracker instance to query lock status and distance.
 
-### Never Auto-Finishes
+Each `execute()` cycle:
+1. Look up RPS + hood position from `tracker.get_distance()`
+2. Always: spin launcher, set hood (pre-spin while aiming)
+3. If `tracker.is_locked()`: engage feeder (placeholder for now)
+4. Else: disengage feeder
 
-The orchestrator runs until canceled by the operator (Y button toggle). `isFinished()` always returns `False`. When `end()` is called, all three motors stop.
+On `end()`: stops launcher, stops hood, disengages feeder.
+
+### Interaction Between Commands
+
+AutoTracker only requires **turret**. ShootCommand requires **launcher + hood**. They run simultaneously without conflict -- the operator can hold Y to pre-spin the launcher while the tracker is still acquiring lock.
 
 ---
 
@@ -196,25 +207,21 @@ Most commands are inner classes of a single subsystem (see the template in [Hard
 
 ```
 commands/
-└── shooter_orchestrator.py   # Requires turret + launcher + hood
+├── auto_tracker.py          # Requires turret only (default command)
+├── shoot_command.py         # Requires launcher + hood
+└── shooter_orchestrator.py  # Legacy -- requires turret + launcher + hood
 ```
 
-The key pattern: a multi-subsystem command receives subsystem references in its constructor and calls `addRequirements()` for all of them:
+The new pattern splits subsystem requirements so commands can run in parallel:
 
 ```python
-class ShooterOrchestrator(Command):
-    def __init__(self, turret, launcher, hood, vision):
-        super().__init__()
-        self.turret = turret
-        self.launcher = launcher
-        self.hood = hood
-        self.vision = vision  # Not a subsystem — no requirement needed
-        self.addRequirements(turret, launcher, hood)
+class AutoTracker(Command):       # Requires: turret
+class ShootCommand(Command):      # Requires: launcher, hood
 ```
 
-Because it requires all three subsystems, the scheduler guarantees exclusive access — no other command can control the turret, launcher, or hood while the orchestrator is running. If a manual override command requires one of these subsystems, the scheduler cancels the orchestrator. This is the correct emergency override behavior.
+AutoTracker and ShootCommand can run simultaneously because they require different subsystems. ShootCommand reads from the tracker instance (not a subsystem requirement) to get distance and lock status.
 
-Note: vision is not a subsystem (it has no `addRequirements`), so it's just passed as a dependency. Multiple commands can read from vision simultaneously.
+Vision is not a subsystem (no `addRequirements`), so multiple commands can read from it simultaneously.
 
 ---
 

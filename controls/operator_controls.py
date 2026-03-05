@@ -3,14 +3,17 @@ Operator controller bindings.
 All operator button/stick mappings live here to keep robot_container short.
 
 Controls:
-    Right stick Y   — Conveyor manual
-    Y button        — Toggle auto shooter on/off
-    Left stick X    — Manual turret override
-    A button        — Toggle manual launcher on/off
-    Left bumper     — Increase launcher speed (+5%)
-    Left trigger    — Decrease launcher speed (-5%)
-    Right bumper    — Nudge hood up
-    Right trigger   — Nudge hood down
+    Right stick Y   -- Conveyor manual
+    Y button (hold) -- Shoot (spin launcher + set hood; feeder when locked)
+    Left stick X    -- Manual turret override
+    A button        -- Toggle manual launcher on/off
+    Left bumper     -- Increase launcher speed (+5%)
+    Left trigger    -- Decrease launcher speed (-5%)
+    Right bumper    -- Nudge hood up
+    Right trigger   -- Nudge hood down
+
+Auto-tracking: turret auto-tracks scoring tags as its default command
+during teleop. Manual turret stick interrupts; tracking resumes on release.
 """
 
 from commands2 import Command, InstantCommand
@@ -25,10 +28,12 @@ from subsystems.turret import Turret
 from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from handlers.vision import VisionProvider
-from commands.shooter_orchestrator import ShooterOrchestrator
+from commands.auto_tracker import AutoTracker
+from commands.shoot_command import ShootCommand
 
 
-def configure_operator(operator, conveyor, turret, launcher, hood, vision):
+def configure_operator(operator, conveyor, turret, launcher, hood, vision,
+                       match_setup):
     """
     Wire all operator controller bindings.
     Call once from RobotContainer.__init__.
@@ -47,9 +52,18 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision):
             conveyor.manual(lambda: -operator.getRightY())
         )
 
-    # --- Auto shooter: Y button toggle ---
-    operator.y().toggleOnTrue(
-        ShooterOrchestrator(turret, launcher, hood, vision)
+    # --- Auto-tracker: turret default command (teleop only) ---
+    # Tag priority and offsets come from match_setup (SmartDashboard choosers)
+    tracker = AutoTracker(
+        turret, vision,
+        tag_priority_supplier=match_setup.get_tag_priority,
+        tag_offsets_supplier=match_setup.get_tag_offsets,
+    )
+    turret.setDefaultCommand(tracker)
+
+    # --- Shoot: Y button hold ---
+    operator.y().whileTrue(
+        ShootCommand(tracker, launcher, hood)
     )
 
     # --- Manual turret: left stick X ---

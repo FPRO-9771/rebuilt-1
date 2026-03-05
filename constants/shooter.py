@@ -68,19 +68,11 @@ CON_SHOOTER = {
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
     "turret_max_auto_voltage": 0.7,     # Max voltage during auto-aim (keep low for testing)
 
-    # Per-tag offsets: corrections when aiming at the hoop via each tag.
-    # tx_offset (degrees): positive = hoop is to the right of this tag
-    # distance_offset (meters): positive = hoop is farther than this tag
-    # All zeros to start — tune on the real robot.
-    "target_tags": {
-        8:  {"tx_offset": 0.0, "distance_offset": 0.0},
-        9:  {"tx_offset": 0.0, "distance_offset": 0.0},
-        10: {"tx_offset": 0.0, "distance_offset": 0.0},
-        11: {"tx_offset": 0.0, "distance_offset": 0.0},
-    },
+    # Per-tag offsets and priorities moved to constants/match.py.
+    # They are now per-alliance and selected via SmartDashboard.
 
     # Distance lookup table: (distance_m, launcher_rps, hood_position)
-    # Sorted by distance — interpolated at runtime
+    # Sorted by distance -- interpolated at runtime
     "distance_table": [
         (1.3, 25.0, 0.05),
         (2.0, 40.0, 0.10),

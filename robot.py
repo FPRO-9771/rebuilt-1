@@ -23,6 +23,7 @@ class Robot(wpilib.TimedRobot):
         """Called every 20ms regardless of mode."""
         CommandScheduler.getInstance().run()
         update_telemetry()
+        self.container.match_setup.update()
 
     # --- Autonomous ---
 

@@ -112,6 +112,7 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 | `docs/architecture/commands-and-controls.md` | Command-based architecture and controller bindings |
 | `docs/architecture/shooter-system.md` | Shooter subsystems, distance lookup table, and orchestrator |
 | `docs/architecture/controls.md` | Binding extraction pattern, operator control map, manual overrides |
+| `docs/architecture/match-setup.md` | Pre-match alliance/pose selection, tag priorities, SmartDashboard choosers |
 | `docs/architecture/autonomous.md` | Autonomous system: routines, constants, chooser setup |
 | `docs/architecture/drivetrain.md` | Swerve drivetrain setup with Phoenix Tuner X |
 | `docs/architecture/vision.md` | Vision system (Limelight), abstraction layer, and testing |
