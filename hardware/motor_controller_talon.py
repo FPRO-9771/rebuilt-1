@@ -9,12 +9,12 @@ from .motor_controller import MotorController
 class TalonFXController(MotorController):
     """Real TalonFX/KrakenX60 implementation using Phoenix 6."""
 
-    def __init__(self, can_id: int, inverted: bool = False, slot0: dict | None = None):
+    def __init__(self, can_id: int, inverted: bool = False, slot0: dict | None = None, bus: str = ""):
         from phoenix6.hardware import TalonFX
         from phoenix6.configs import TalonFXConfiguration
         from phoenix6.signals import InvertedValue
 
-        self.motor = TalonFX(can_id)
+        self.motor = TalonFX(can_id, bus)
         self._last_voltage = 0.0
 
         config = TalonFXConfiguration()

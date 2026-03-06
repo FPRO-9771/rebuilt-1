@@ -15,6 +15,9 @@ from wpimath.kinematics import ChassisSpeeds, SwerveModulePosition, SwerveModule
 
 
 class SwerveTelemetry:
+    # Publish every Nth call (4 = ~3 Hz at 13 Hz loop rate).
+    _PUBLISH_EVERY_N = 4
+
     def __init__(self, max_speed: units.meters_per_second):
         """
         Construct a telemetry object with the specified max speed of the robot.
@@ -23,6 +26,7 @@ class SwerveTelemetry:
         :type max_speed: units.meters_per_second
         """
         self._max_speed = max_speed
+        self._cycle = 0
         SignalLogger.start()
 
         # What to publish over networktables for telemetry
@@ -89,6 +93,10 @@ class SwerveTelemetry:
         """
         Accept the swerve drive state and telemeterize it to SmartDashboard and SignalLogger.
         """
+        self._cycle += 1
+        if self._cycle % self._PUBLISH_EVERY_N != 0:
+            return
+
         # Telemeterize the swerve drive state
         self._drive_pose.set(state.pose)
         self._drive_speeds.set(state.speeds)

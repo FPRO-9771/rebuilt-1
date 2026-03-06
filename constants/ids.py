@@ -15,14 +15,14 @@ MOTOR_IDS = {
     # "drive_fl": {"can_id": 1, "type": "talon_fx", "wired": True},
 
     # Mechanisms
-    "conveyor": {"can_id": 20, "type": "talon_fx", "wired": False},
-    # "arm":    {"can_id": 21, "type": "talon_fx", "wired": False},
-    # "intake": {"can_id": 22, "type": "talon_fx", "wired": False},
+    "conveyor": {"can_id": 20, "type": "talon_fx", "bus": "op_sys", "wired": False},
+    # "arm":    {"can_id": 21, "type": "talon_fx", "bus": "op_sys", "wired": False},
+    # "intake": {"can_id": 22, "type": "talon_fx", "bus": "op_sys", "wired": False},
 
     # Shooter
-    "turret":   {"can_id": 30, "type": "talon_fx",  "wired": True, "sim_rps_per_volt": 2.0},
-    "launcher": {"can_id": 31, "type": "talon_fx",  "wired": True, "sim_rps_per_volt": 8.0},
-    "hood":     {"can_id": 32, "type": "talon_fxs", "wired": True, "sim_rps_per_volt": 1.0},
+    "turret":   {"can_id": 30, "type": "talon_fx",  "bus": "op_sys", "wired": True, "sim_rps_per_volt": 2.0},
+    "launcher": {"can_id": 31, "type": "talon_fx",  "bus": "op_sys", "wired": True, "sim_rps_per_volt": 8.0},
+    "hood":     {"can_id": 32, "type": "talon_fxs", "bus": "op_sys", "wired": True, "sim_rps_per_volt": 1.0},
 }
 
 # =============================================================================

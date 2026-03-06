@@ -13,6 +13,11 @@ from telemetry.camera_telemetry import setup_camera_streams
 _motor: MotorTelemetry | None = None
 _command: CommandTelemetry | None = None
 _vision: VisionTelemetry | None = None
+_cycle: int = 0
+
+# Publish telemetry every Nth cycle (4 = ~3 Hz at 13 Hz loop rate).
+# Keeps the robot loop fast on the roboRIO.
+_PUBLISH_EVERY_N = 4
 
 
 def setup_telemetry(conveyor, turret, launcher, hood, vision):
@@ -32,6 +37,11 @@ def setup_telemetry(conveyor, turret, launcher, hood, vision):
 
 def update_telemetry():
     """Publish all telemetry data. Call every cycle from robotPeriodic()."""
+    global _cycle
+    _cycle += 1
+    if _cycle % _PUBLISH_EVERY_N != 0:
+        return
+
     if _motor:
         _motor.update()
     if _command:

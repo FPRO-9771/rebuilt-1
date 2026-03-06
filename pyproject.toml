@@ -15,7 +15,6 @@ robotpy_excludes = [
     "scripts",
     "calibration",
     "ctre_sim",
-    "generated",
     "testing",
     "hardware/mock_motor_controller.py",
     "constants/simulation.py",

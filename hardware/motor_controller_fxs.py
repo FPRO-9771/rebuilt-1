@@ -15,13 +15,13 @@ class TalonFXSController(MotorController):
     Used for motors like WCP that connect through a TalonFXS.
     """
 
-    def __init__(self, can_id: int, inverted: bool = False, brake: bool = False, slot0: dict | None = None):
+    def __init__(self, can_id: int, inverted: bool = False, brake: bool = False, slot0: dict | None = None, bus: str = ""):
         from phoenix6.hardware import TalonFXS
         from phoenix6.configs import TalonFXSConfiguration
         from phoenix6.signals import InvertedValue, MotorArrangementValue, NeutralModeValue
 
         self._can_id = can_id
-        self.motor = TalonFXS(can_id)
+        self.motor = TalonFXS(can_id, bus)
         self._last_voltage = 0.0
 
         _log.info(f"CAN {can_id}: TalonFXS created, inverted={inverted}")

@@ -2,10 +2,14 @@
 Limelight vision provider.
 Real hardware implementation using limelightlib-python.
 
+All network I/O (connection and polling) runs in a background thread
+so the robot loop is never blocked by a slow or missing Limelight.
+
 Requires: pip install limelightlib-python
 """
 
 import math
+import threading
 import time
 from typing import List, Optional
 
@@ -15,71 +19,85 @@ from .vision import VisionProvider, VisionTarget
 
 _log = get_logger("limelight")
 
-# Only fetch from the Limelight this often (seconds).
-# 10 Hz is plenty for AprilTag tracking and keeps the robot loop fast.
-_REFRESH_INTERVAL = 0.05
+# How often the background thread polls for new results (seconds).
+_POLL_INTERVAL = 0.05  # 20 Hz
 
 
 class LimelightVisionProvider(VisionProvider):
     """
     Real Limelight implementation.
     Connects to a specific Limelight by hostname and reads AprilTag fiducial data.
+    All network I/O happens in a daemon thread -- public methods return cached data.
     """
 
     def __init__(self, host: str):
-        self._camera = None
-        self._results_lib = None
         self._host = host
         self._cached_targets: List[VisionTarget] = []
-        self._last_fetch = 0.0
+        self._lock = threading.Lock()
 
-        _log.info(f"Initializing Limelight at {host}...")
+        _log.info(f"Initializing Limelight at {host} (background)...")
 
+        thread = threading.Thread(
+            target=self._run, args=(host,), daemon=True
+        )
+        thread.start()
+
+    # ------------------------------------------------------------------
+    # Background thread
+    # ------------------------------------------------------------------
+
+    def _run(self, host: str):
+        """Connect then poll forever. Runs in a daemon thread."""
+        camera, results_lib = self._connect(host)
+        if camera is None:
+            return
+
+        while True:
+            try:
+                result = camera.get_latest_results()
+                parsed = results_lib.parse_results(result)
+            except Exception as e:
+                _log.debug(f"Poll failed for {host}: {e}")
+                with self._lock:
+                    self._cached_targets = []
+                time.sleep(_POLL_INTERVAL)
+                continue
+
+            targets = self._parse_targets(parsed)
+            with self._lock:
+                self._cached_targets = targets
+
+            time.sleep(_POLL_INTERVAL)
+
+    @staticmethod
+    def _connect(host: str):
+        """Blocking connect -- returns (camera, results_lib) or (None, None)."""
         try:
             import limelight
             import limelightresults
 
             _log.debug("limelightlib-python imported OK")
-            self._results_lib = limelightresults
 
-            self._camera = limelight.Limelight(host)
+            camera = limelight.Limelight(host)
             _log.debug(f"Limelight object created for {host}")
 
-            self._camera.pipeline_switch(0)  # AprilTag detection pipeline
+            camera.pipeline_switch(0)  # AprilTag detection pipeline
             _log.debug("Pipeline switched to 0 (AprilTag)")
 
-            self._camera.enable_websocket()
-            _log.info(f"Connected to Limelight at {host} - websocket enabled")
+            camera.enable_websocket()
+            _log.info(f"Connected to Limelight at {host} -- websocket enabled")
+            return camera, limelightresults
         except ImportError as e:
             _log.error(f"Limelight library not installed: {e}")
-            self._camera = None
         except Exception as e:
             _log.error(f"Failed to connect to Limelight at {host}: {e}")
-            self._camera = None
+        return None, None
 
-    def _refresh(self) -> None:
-        """Fetch new results from the Limelight if the cache is stale."""
-        now = time.monotonic()
-        if now - self._last_fetch < _REFRESH_INTERVAL:
-            return
-
-        self._last_fetch = now
-
-        if not self._camera or not self._results_lib:
-            self._cached_targets = []
-            return
-
-        try:
-            result = self._camera.get_latest_results()
-            parsed = self._results_lib.parse_results(result)
-        except Exception as e:
-            _log.debug(f"_refresh failed: {e}")
-            self._cached_targets = []
-            return
-
+    @staticmethod
+    def _parse_targets(parsed) -> List[VisionTarget]:
+        """Convert parsed Limelight results into VisionTarget list."""
         if not parsed or not hasattr(parsed, "fiducialResults"):
-            self._cached_targets = []
-            return
+            return []
 
         targets = []
         for fid in parsed.fiducialResults:
@@ -99,29 +117,32 @@ class LimelightVisionProvider(VisionProvider):
                 distance=dist,
                 yaw=fid.target_yaw if hasattr(fid, "target_yaw") else 0,
             ))
+        return targets
 
-        self._cached_targets = targets
+    # ------------------------------------------------------------------
+    # Public API (called from the robot loop -- never blocks)
+    # ------------------------------------------------------------------
 
     def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
         """Get target data from cached Limelight fiducial results."""
-        self._refresh()
+        with self._lock:
+            targets = list(self._cached_targets)
 
-        if not self._cached_targets:
+        if not targets:
             return None
 
         if tag_id is not None:
-            for t in self._cached_targets:
+            for t in targets:
                 if t.tag_id == tag_id:
                     return t
             return None
 
-        # Return closest target
-        return min(self._cached_targets, key=lambda t: t.distance)
+        return min(targets, key=lambda t: t.distance)
 
     def has_target(self, tag_id: Optional[int] = None) -> bool:
         return self.get_target(tag_id) is not None
 
     def get_all_targets(self) -> List[VisionTarget]:
         """Get all currently visible AprilTag targets."""
-        self._refresh()
-        return list(self._cached_targets)
+        with self._lock:
+            return list(self._cached_targets)
