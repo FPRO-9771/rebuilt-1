@@ -64,6 +64,15 @@ Published every cycle by `MatchSetup.update()`.
 3. In the widget properties, set **True color** to red and **False color** to blue
 4. Resize it big so the kids can see it from across the pit
 
+### Drive Mode & Pose (`controls/driver_controls.py`, `telemetry/swerve_telemetry.py`)
+
+| SmartDashboard Key | Type | Description |
+|--------------------|------|-------------|
+| `Drive/Robot Centric` | boolean | True = robot-centric, False = field-centric |
+| `Drive/Pose X (m)` | number | Robot X position on the field (meters) |
+| `Drive/Pose Y (m)` | number | Robot Y position on the field (meters) |
+| `Drive/Heading (deg)` | number | Robot heading in degrees |
+
 ### Shooter Targeting (`commands/auto_tracker.py`)
 
 Published directly by the AutoTracker command (not from the telemetry module).

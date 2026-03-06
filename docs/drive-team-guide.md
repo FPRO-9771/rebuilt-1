@@ -65,7 +65,7 @@ Quick reference for what every button does on each Xbox controller.
 
 ```
           Left Bumper               Right Bumper
-       Reset heading               (unused)
+       Reset heading          Toggle field/robot centric
 
        Left Trigger                 Right Trigger
        (unused)                     (unused)
@@ -97,6 +97,7 @@ Quick reference for what every button does on each Xbox controller.
 | **A button (hold)** | Brake | Locks wheels in X pattern |
 | **B button (hold)** | Point wheels | Aims wheels in left stick direction |
 | **Left bumper** | Reset field-centric heading | Press once when robot faces away from you |
+| **Right bumper** | Toggle field/robot centric | Dashboard shows current mode (Drive/Robot Centric) |
 | **Back + Y** | SysId dynamic forward | For motor characterization only |
 | **Back + X** | SysId dynamic reverse | For motor characterization only |
 | **Start + Y** | SysId quasistatic forward | For motor characterization only |
@@ -105,7 +106,9 @@ Quick reference for what every button does on each Xbox controller.
 ### Driving tips
 
 - **10% deadband** is applied to both sticks -- small bumps are ignored
-- Drive is **field-centric** -- pushing the stick "away from you" always drives away from the alliance wall, regardless of which way the robot is facing
+- Default mode is **field-centric** -- pushing the stick "away from you" always drives away from the alliance wall, regardless of which way the robot is facing
+- Press **right bumper** to switch to **robot-centric** (stick directions are relative to the robot's nose) -- useful for camera-guided maneuvering. Press again to switch back
+- Check **Drive/Robot Centric** on the dashboard to see which mode is active
 - If the heading drifts, press **left bumper** while the robot faces away from you to reset
 - Alliance color is detected automatically -- no need to configure red vs blue
 

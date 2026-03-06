@@ -66,11 +66,12 @@ When you add a new control:
 
 | Input | Binding | Action |
 |-------|---------|--------|
-| Left stick | Default command | Field-centric translation (X = strafe, Y = forward/back) |
-| Right stick X | Default command | Field-centric rotation |
+| Left stick | Default command | Drive translation (X = strafe, Y = forward/back) |
+| Right stick X | Default command | Rotation |
 | A button | `whileTrue` | Brake (lock wheels in X pattern) |
 | B button | `whileTrue` | Point wheels in left stick direction |
 | Left bumper | `onTrue` | Reset field-centric heading |
+| Right bumper | `onTrue` | Toggle field-centric / robot-centric |
 | Back + Y | `whileTrue` | SysId dynamic forward |
 | Back + X | `whileTrue` | SysId dynamic reverse |
 | Start + Y | `whileTrue` | SysId quasistatic forward |
