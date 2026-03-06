@@ -14,6 +14,8 @@ Controls:
 Idle request is applied automatically when the robot is disabled.
 """
 
+import math
+
 from commands2.button import Trigger
 from commands2.sysid import SysIdRoutine
 
@@ -23,8 +25,14 @@ from wpilib import DriverStation
 from wpimath.geometry import Rotation2d
 from wpimath.units import rotationsToRadians
 
+from constants.controls import CON_ROBOT
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
 from telemetry.swerve_telemetry import SwerveTelemetry
+
+
+def _apply_curve(value, exponent):
+    """Apply power curve to joystick input. Preserves sign, full range unchanged."""
+    return math.copysign(abs(value) ** exponent, value)
 
 
 def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
@@ -52,17 +60,20 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
 
     # --- Default command: field-centric drive ---
     # Note: X is forward, Y is left per WPILib convention
+    drive_exp = CON_ROBOT["drive_exponent"]
+    rot_exp = CON_ROBOT["rotation_exponent"]
+
     drivetrain.setDefaultCommand(
         drivetrain.apply_request(
             lambda: (
                 drive.with_velocity_x(
-                    -driver.getLeftY() * max_speed
+                    -_apply_curve(driver.getLeftY(), drive_exp) * max_speed
                 )
                 .with_velocity_y(
-                    -driver.getLeftX() * max_speed
+                    -_apply_curve(driver.getLeftX(), drive_exp) * max_speed
                 )
                 .with_rotational_rate(
-                    -driver.getRightX() * max_angular_rate
+                    -_apply_curve(driver.getRightX(), rot_exp) * max_angular_rate
                 )
             )
         )

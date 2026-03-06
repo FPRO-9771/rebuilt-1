@@ -23,6 +23,8 @@ CON_ROBOT = {
     "operator_controller_port": 1,
 
     "joystick_deadband": 0.1,
+    "drive_exponent": 2.0,       # Translation response curve (1.0 = linear)
+    "rotation_exponent": 2.0,    # Rotation response curve (1.0 = linear)
 
     # Drivetrain (placeholders until tuned)
     "max_speed_mps": 5.0,
