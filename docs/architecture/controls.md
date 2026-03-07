@@ -47,6 +47,7 @@ class RobotContainer:
             self.launcher, self.hood, self.vision["shooter"],
             self.match_setup,
             h_feed=self.h_feed, v_feed=self.v_feed, intake=self.intake,
+            intake_spinner=self.intake_spinner,
         )
 ```
 
@@ -96,9 +97,10 @@ When you add a new control:
 | Right stick Y | (via A toggle) | Launcher speed (stick maps to RPS range) |
 | A button | `toggleOnTrue` | Toggle manual launcher on/off |
 | B button | `toggleOnTrue` | Toggle feed system on/off (H feed + V feed) |
-| X button | `onTrue` | Toggle intake position (out/in) |
+| X button | | *unassigned* |
 | Y button | `toggleOnTrue` | Toggle auto-aim on/off |
 | Left bumper | `whileTrue` | Auto-shoot (vision distance -> launcher/hood from table) |
+| Right bumper | `toggleOnTrue` | Toggle intake deploy + spinner on/off |
 
 ### Source
 
@@ -117,7 +119,7 @@ The operator can mix manual and automatic controls freely. Each command is indep
 - **Left stick X** -- turret aim (works regardless of auto-aim state)
 - **A toggle + right stick Y** -- launcher speed
 - **B toggle** -- feed system
-- **X press** -- intake position
+- **Right bumper toggle** -- intake deploy + spinner
 
 ### Optional Auto
 - **Y toggle** -- auto-aim (turret tracks AprilTags via PD control). Dashboard shows `Shooter/AutoAim` status.
@@ -152,6 +154,7 @@ Commands interact through the WPILib requirement system:
 | ManualLauncher on, hold left bumper (AutoShoot) | AutoShoot requires launcher -> interrupts ManualLauncher. Release bumper, press A to restart manual. |
 | AutoAim on + AutoShoot held | Both run -- different subsystem requirements (turret vs launcher+hood) |
 | ManualLauncher on + AutoAim on | Both run -- different subsystem requirements (launcher vs turret) |
+| IntakeSpinner on + feeds on | Both run -- different subsystem requirements (intake_spinner vs h_feed/v_feed) |
 
 Key principle: commands that require different subsystems can run simultaneously. Commands that require the same subsystem will interrupt each other, with the most recently scheduled command winning.
 

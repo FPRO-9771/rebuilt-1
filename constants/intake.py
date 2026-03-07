@@ -9,17 +9,18 @@ CON_INTAKE = {
     "max_voltage": 10.0,        # Maximum voltage to apply
     "up_position": 0.0,         # Fully raised position (rotations)
     "gear_ratio": 5.0,          # 1:5 gearbox (motor turns 5x per arm turn)
-    "down_position": 1.2,       # Fully lowered position (motor rotations: 0.24 arm turns * 5)
+    "down_position": 0.1,       # TEST VALUE -- small move for safe tuning (was 1.2)
     "position_tolerance": 0.02, # "Close enough" tolerance (rotations)
+    "hold_down_voltage": 1.5,  # Small voltage to keep arms down without PID whine
     "inverted": False,
 
     # Slot 0 gains for closed-loop position control
-    # NEEDS TUNING -- start with low kP and increase
-    "slot0_kP": 1.0,
+    # NEEDS TUNING on the real robot
+    "slot0_kP": 24.0,
     "slot0_kI": 0.0,
-    "slot0_kD": 0.01,
-    "slot0_kS": 0.1,           # Static friction (volts to start moving)
+    "slot0_kD": 0.1,
+    "slot0_kS": 0.25,          # Static friction (volts to start moving)
     "slot0_kV": 0.0,
     "slot0_kA": 0.0,
-    "slot0_kG": 0.0,           # Gravity feedforward -- tune if arm drops
+    "slot0_kG": 1.5,           # Gravity feedforward -- tune if arm drops
 }

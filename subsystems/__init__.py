@@ -9,6 +9,7 @@ from .v_feed import VFeed
 from .turret import Turret
 from .launcher import Launcher
 from .hood import Hood
+from .intake_spinner import IntakeSpinner
 
 # TODO: Export other subsystems as they're built
 # from .drivetrain import Drivetrain

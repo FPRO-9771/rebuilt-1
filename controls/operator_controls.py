@@ -7,15 +7,16 @@ Controls:
     Right stick Y       -- Launcher speed (when toggled on via A)
     A button (toggle)   -- Launcher on/off (speed from right stick Y)
     B button (toggle)   -- Feed system on/off (H feed + V feed)
-    X button (press)    -- Toggle intake position (out/in)
+    X button            -- (unused)
     Y button (toggle)   -- Auto-aim on/off (turret tracks tags via PD)
     Left bumper (hold)  -- Auto-shoot (vision distance -> launcher/hood)
+    Right bumper (toggle) -- Intake deploy + spinner on/off
 """
 
-from commands2 import InstantCommand, ConditionalCommand, ParallelCommandGroup
+from commands2 import InstantCommand, ParallelCommandGroup
 from commands2.button import Trigger
 
-from constants import CON_ROBOT, CON_H_FEED, CON_V_FEED
+from constants import CON_ROBOT, CON_H_FEED, CON_V_FEED, CON_INTAKE_SPINNER
 from utils.logger import get_logger
 
 _log = get_logger("operator")
@@ -25,6 +26,7 @@ from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
 from subsystems.intake import Intake
+from subsystems.intake_spinner import IntakeSpinner
 from handlers.vision import VisionProvider
 from commands.auto_aim import AutoAim
 from commands.auto_shoot import AutoShoot
@@ -32,7 +34,8 @@ from commands.manual_launcher import ManualLauncher
 
 
 def configure_operator(operator, conveyor, turret, launcher, hood, vision,
-                       match_setup, h_feed=None, v_feed=None, intake=None):
+                       match_setup, h_feed=None, v_feed=None, intake=None,
+                       intake_spinner=None):
     """
     Wire all operator controller bindings.
     Call once from RobotContainer.__init__.
@@ -62,17 +65,23 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
         )
 
     # --- Intake: X button toggles between out/in ---
-    if intake is not None:
-        def _flip_intake():
-            state["intake_down"] = not state["intake_down"]
+    # COMMENTED OUT -- intake held down for practice, no toggle needed
+    # if intake is not None:
+    #     def _toggle_intake():
+    #         state["intake_down"] = not state["intake_down"]
+    #         if state["intake_down"]:
+    #             intake.go_down().schedule()
+    #         else:
+    #             intake.go_up().schedule()
+    #
+    #     operator.x().onTrue(InstantCommand(_toggle_intake))
 
-        operator.x().onTrue(
-            InstantCommand(_flip_intake).andThen(
-                ConditionalCommand(
-                    intake.go_down(),
-                    intake.go_up(),
-                    lambda: state["intake_down"],
-                )
+    # --- Intake deploy + spinner: right bumper toggle ---
+    if intake is not None and intake_spinner is not None:
+        operator.rightBumper().toggleOnTrue(
+            ParallelCommandGroup(
+                intake.hold_down(),
+                intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
             )
         )
 

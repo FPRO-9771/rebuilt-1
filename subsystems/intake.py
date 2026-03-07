@@ -80,6 +80,12 @@ class Intake(SubsystemBase):
         """Returns command to hold intake at a position. Never auto-finishes."""
         return self._GoToPositionCommand(self, position)
 
+    def hold_down(self) -> Command:
+        """Returns command to apply constant downward voltage. No PID whine."""
+        return self.run(
+            lambda: self._set_voltage(CON_INTAKE["hold_down_voltage"])
+        ).finallyDo(lambda interrupted: self._stop())
+
     def go_up(self) -> Command:
         """Returns command to raise intake to fully up position."""
         return self.go_to_position(CON_INTAKE["up_position"])

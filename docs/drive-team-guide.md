@@ -23,7 +23,7 @@ Quick reference for what every button does on each Xbox controller.
 |-------|--------|-------|
 | **A button** | Toggle launcher on/off | Speed controlled by right stick Y |
 | **B button** | Toggle feeds on/off | Runs H feed + V feed together |
-| **X button** | Toggle intake out/in | Alternates between down and up position each press |
+| **X button** | *unassigned* | |
 | **Y button** | Toggle auto-aim on/off | Dashboard shows Shooter/AutoAim status |
 
 ### Bumpers & Triggers
@@ -31,7 +31,7 @@ Quick reference for what every button does on each Xbox controller.
 | Input | Action | Notes |
 |-------|--------|-------|
 | **Left bumper (hold)** | Auto-shoot | Sets launcher speed + hood from vision distance |
-| **Right bumper** | *unassigned* | |
+| **Right bumper** | Toggle intake deploy + spinner | Lowers intake arm and spins rollers together |
 | **Left trigger** | *unassigned* | |
 | **Right trigger** | *unassigned* | |
 
@@ -44,21 +44,23 @@ Quick reference for what every button does on each Xbox controller.
 
 ### How to shoot (manual aim)
 
-1. Use **left stick** to aim the turret at the target
-2. Press **A** to toggle launcher on, use **right stick Y** to set speed
-3. Press **B** to start feeding Fuel
+1. Press **right bumper** to deploy intake and spin rollers
+2. Use **left stick** to aim the turret at the target
+3. Press **A** to toggle launcher on, use **right stick Y** to set speed
+4. Press **B** to start feeding Fuel
 
 ### How to shoot (auto-aim + auto-shoot)
 
-1. Press **Y** to enable auto-aim (turret tracks tags, check dashboard)
-2. Hold **left bumper** to auto-shoot (sets speed + hood from distance)
-3. Press **B** to start feeding Fuel
+1. Press **right bumper** to deploy intake and spin rollers
+2. Press **Y** to enable auto-aim (turret tracks tags, check dashboard)
+3. Hold **left bumper** to auto-shoot (sets speed + hood from distance)
+4. Press **B** to start feeding Fuel
 
 ### Testing workflow
 
-1. Press **A** to toggle launcher on, sweep **right stick Y** to find good speed
-2. Use **left stick** to aim turret manually
-3. Press **X** to lower intake
+1. Press **right bumper** to deploy intake and spin rollers (pulls Fuel in)
+2. Press **A** to toggle launcher on, sweep **right stick Y** to find good speed
+3. Use **left stick** to aim turret manually
 4. Press **B** to run feeds
 5. Try **Y** (auto-aim) and **left bumper** (auto-shoot) when ready
 
@@ -119,4 +121,5 @@ Quick reference for what every button does on each Xbox controller.
 - **Auto-aim (Y toggle)** can run alongside manual turret stick -- the stick temporarily overrides, and auto-aim resumes when released.
 - **Auto-shoot (left bumper)** takes over the launcher from manual mode (A toggle). Release the bumper, then press A again to go back to manual.
 - **Auto-aim and auto-shoot are independent** -- you can use one without the other. Manual aim + auto-shoot is a great combo.
+- **Right bumper** deploys the intake arm and spins the rollers together -- one button for the whole intake system.
 - SysId routines require holding **two buttons at once** (Back/Start + X/Y) so they can't be triggered accidentally.

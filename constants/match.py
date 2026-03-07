@@ -27,8 +27,8 @@ ALLIANCES = [
         "default": True,
         "tag_priority": [8, 9, 10, 11],
         "tag_offsets": {
-            8:  {"tx_offset": 0.0, "distance_offset": 0.0},
-            9:  {"tx_offset": 0.0, "distance_offset": 0.0},
+            8: {"tx_offset": 0.0, "distance_offset": 0.0},
+            9: {"tx_offset": 0.0, "distance_offset": 0.0},
             10: {"tx_offset": 0.0, "distance_offset": 0.0},
             11: {"tx_offset": 0.0, "distance_offset": 0.0},
         },
@@ -59,11 +59,12 @@ ALLIANCES = [
     },
     {
         "name": "Blue",
-        "tag_priority": [1, 3, 4],
+        "tag_priority": [25, 26, 24, 27],
         "tag_offsets": {
-            1: {"tx_offset": 0.0, "distance_offset": 0.0},
-            3: {"tx_offset": 0.0, "distance_offset": 0.0},
-            4: {"tx_offset": 0.0, "distance_offset": 0.0},
+            24: {"tx_offset": 0.0, "distance_offset": 0.0},
+            25: {"tx_offset": 0.0, "distance_offset": 0.0},
+            26: {"tx_offset": 0.0, "distance_offset": 0.0},
+            27: {"tx_offset": 0.0, "distance_offset": 0.0},
         },
         "poses": [
             {

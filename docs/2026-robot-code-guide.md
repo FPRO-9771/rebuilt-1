@@ -59,6 +59,7 @@ constants/
 ├── shooter.py         # CON_TURRET, CON_LAUNCHER, CON_HOOD, CON_SHOOTER
 ├── conveyor.py        # CON_CONVEYOR
 ├── controls.py        # CON_MANUAL, CON_ROBOT
+├── intake_spinner.py  # CON_INTAKE_SPINNER
 ├── simulation.py      # SIM_CALIBRATION, SIM_DT
 └── telemetry.py       # CON_TELEMETRY
 ```

@@ -39,6 +39,7 @@ class AutoAim(Command):
         self._prev_tx = 0.0
         self._locked_tag_id = None
         self._lost_count = 0
+        self._cycle_count = 0
 
         self.addRequirements(turret)
 
@@ -47,6 +48,7 @@ class AutoAim(Command):
         self._prev_tx = 0.0
         self._locked_tag_id = None
         self._lost_count = 0
+        self._cycle_count = 0
         SmartDashboard.putBoolean("Shooter/AutoAim", True)
         _log.info("AutoAim ENABLED")
 
@@ -95,6 +97,25 @@ class AutoAim(Command):
         voltage = max(-max_v, min(voltage, max_v))
         self.turret._set_voltage(voltage)
 
+        # Diagnostic log every 10 cycles (~5 Hz on a 50 Hz loop)
+        # self._cycle_count += 1
+        # if self._cycle_count % 10 == 0:
+        #     raw_tx = target.tx if target is not None else None
+        #     tag_id = target.tag_id if target is not None else None
+        #     _log.info(
+        #         f"[AIM] cycle={self._cycle_count}"
+        #         f" | tag={tag_id}"
+        #         f" | raw_tx={raw_tx}"
+        #         f" | adj_tx={self._last_tx:.3f}"
+        #         f" | prev_tx={self._prev_tx:.3f}"
+        #         f" | P={p_term:.4f} D={d_term:.4f}"
+        #         f" | sign={self._aim_sign}"
+        #         f" | raw_v={(p_term + d_term) * self._aim_sign:.4f}"
+        #         f" | clamp_v={voltage:.4f}"
+        #         f" | lost={self._lost_count}"
+        #         f" | locked={self._locked_tag_id}"
+        #     )
+        #
     def isFinished(self) -> bool:
         return False
 

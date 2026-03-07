@@ -13,6 +13,7 @@ from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
 from subsystems.intake import Intake
+from subsystems.intake_spinner import IntakeSpinner
 from controls import configure_driver, configure_operator
 from handlers import get_vision_providers
 from match_setup import MatchSetup
@@ -37,6 +38,7 @@ class RobotContainer:
         self.h_feed = HFeed()
         self.v_feed = VFeed()
         self.intake = Intake()
+        self.intake_spinner = IntakeSpinner()
 
         # --- Vision ---
         self.vision = get_vision_providers()
@@ -68,5 +70,5 @@ class RobotContainer:
             self.operator, None, self.turret,
             self.launcher, self.hood, self.vision["shooter"],
             self.match_setup, self.h_feed, self.v_feed,
-            self.intake,
+            self.intake, self.intake_spinner,
         )
