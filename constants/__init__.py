@@ -18,6 +18,7 @@ or from a specific file (from constants.shooter import CON_TURRET).
 from constants.ids import *
 from constants.shooter import *
 from constants.conveyor import *
+from constants.feed import *
 from constants.controls import *
 from constants.simulation import *
 from constants.telemetry import *

@@ -4,6 +4,7 @@ All operator button/stick mappings live here to keep robot_container short.
 
 Controls:
     Right stick Y   -- Conveyor manual
+    X button (hold) -- Run H feed + V feed simultaneously
     Y button (hold) -- Shoot (spin launcher + set hood; feeder when locked)
     Left stick X    -- Manual turret override
     A button        -- Toggle manual launcher on/off
@@ -16,10 +17,10 @@ Auto-tracking: turret auto-tracks scoring tags as its default command
 during teleop. Manual turret stick interrupts; tracking resumes on release.
 """
 
-from commands2 import Command, InstantCommand
+from commands2 import Command, InstantCommand, ParallelCommandGroup
 from commands2.button import Trigger
 
-from constants import CON_ROBOT, CON_MANUAL, CON_HOOD
+from constants import CON_ROBOT, CON_MANUAL, CON_HOOD, CON_H_FEED, CON_V_FEED
 from utils.logger import get_logger
 
 _log = get_logger("operator")
@@ -27,13 +28,15 @@ from subsystems.conveyor import Conveyor
 from subsystems.turret import Turret
 from subsystems.launcher import Launcher
 from subsystems.hood import Hood
+from subsystems.h_feed import HFeed
+from subsystems.v_feed import VFeed
 from handlers.vision import VisionProvider
 from commands.auto_tracker import AutoTracker
 from commands.shoot_command import ShootCommand
 
 
 def configure_operator(operator, conveyor, turret, launcher, hood, vision,
-                       match_setup):
+                       match_setup, h_feed=None, v_feed=None):
     """
     Wire all operator controller bindings.
     Call once from RobotContainer.__init__.
@@ -50,6 +53,15 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
     if conveyor is not None:
         Trigger(lambda: abs(operator.getRightY()) > deadband).whileTrue(
             conveyor.manual(lambda: -operator.getRightY())
+        )
+
+    # --- Feeds: X button (hold) -- run both feeds simultaneously ---
+    if h_feed is not None and v_feed is not None:
+        operator.x().whileTrue(
+            ParallelCommandGroup(
+                h_feed.run_at_voltage(CON_H_FEED["feed_voltage"]),
+                v_feed.run_at_voltage(CON_V_FEED["feed_voltage"]),
+            )
         )
 
     # --- Auto-tracker: turret default command (teleop only) ---

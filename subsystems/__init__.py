@@ -4,6 +4,8 @@ Each mechanism gets its own file here.
 """
 
 from .conveyor import Conveyor
+from .h_feed import HFeed
+from .v_feed import VFeed
 from .turret import Turret
 from .launcher import Launcher
 from .hood import Hood

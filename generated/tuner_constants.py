@@ -75,11 +75,11 @@ class TunerConstants:
 
     # CAN bus that the devices are located on;
     # All swerve devices must share the same CAN bus
-    canbus = CANBus("rio", "./logs/example.hoot")
+    canbus = CANBus("", "./logs/example.hoot")
 
     # Theoretical free speed (m/s) at 12 V applied output;
     # This needs to be tuned to your individual robot
-    speed_at_12_volts: units.meters_per_second = 6.29
+    speed_at_12_volts: units.meters_per_second = 5.72
 
     # Every 1 rotation of the azimuth results in _couple_ratio drive motor turns;
     # This may need to be tuned to your individual robot
@@ -87,7 +87,7 @@ class TunerConstants:
 
     _drive_gear_ratio = 5.4
     _steer_gear_ratio = 12.1
-    _wheel_radius: units.meter = inchesToMeters(2.2)
+    _wheel_radius: units.meter = inchesToMeters(2)
 
     _invert_left_side = False
     _invert_right_side = True
@@ -138,10 +138,10 @@ class TunerConstants:
 
 
     # Front Left
-    _front_left_drive_motor_id = 1
-    _front_left_steer_motor_id = 2
-    _front_left_encoder_id = 11
-    _front_left_encoder_offset: units.rotation = -0.283935546875
+    _front_left_drive_motor_id = 7
+    _front_left_steer_motor_id = 8
+    _front_left_encoder_id = 14
+    _front_left_encoder_offset: units.rotation = 0.291015625
     _front_left_steer_motor_inverted = True
     _front_left_encoder_inverted = False
 
@@ -149,10 +149,10 @@ class TunerConstants:
     _front_left_y_pos: units.meter = inchesToMeters(13)
 
     # Front Right
-    _front_right_drive_motor_id = 7
-    _front_right_steer_motor_id = 8
-    _front_right_encoder_id = 14
-    _front_right_encoder_offset: units.rotation = 0.2900390625
+    _front_right_drive_motor_id = 1
+    _front_right_steer_motor_id = 2
+    _front_right_encoder_id = 11
+    _front_right_encoder_offset: units.rotation = -0.28759765625
     _front_right_steer_motor_inverted = True
     _front_right_encoder_inverted = False
 
@@ -160,10 +160,10 @@ class TunerConstants:
     _front_right_y_pos: units.meter = inchesToMeters(-13)
 
     # Back Left
-    _back_left_drive_motor_id = 3
-    _back_left_steer_motor_id = 4
-    _back_left_encoder_id = 12
-    _back_left_encoder_offset: units.rotation = -0.034423828125
+    _back_left_drive_motor_id = 5
+    _back_left_steer_motor_id = 6
+    _back_left_encoder_id = 13
+    _back_left_encoder_offset: units.rotation = 0.37841796875
     _back_left_steer_motor_inverted = True
     _back_left_encoder_inverted = False
 
@@ -171,10 +171,10 @@ class TunerConstants:
     _back_left_y_pos: units.meter = inchesToMeters(13)
 
     # Back Right
-    _back_right_drive_motor_id = 5
-    _back_right_steer_motor_id = 6
-    _back_right_encoder_id = 13
-    _back_right_encoder_offset: units.rotation = 0.3828125
+    _back_right_drive_motor_id = 3
+    _back_right_steer_motor_id = 4
+    _back_right_encoder_id = 12
+    _back_right_encoder_offset: units.rotation = -0.039306640625
     _back_right_steer_motor_inverted = True
     _back_right_encoder_inverted = False
 
@@ -322,11 +322,11 @@ class TunerSwerveDrivetrain(
                                             CAN FD, and 100 Hz on CAN 2.0.
         :type odometry_update_frequency:    units.hertz
         :param odometry_standard_deviation: The standard deviation for odometry calculation
-                                            in the form [x, y, theta]T, with units in meters
+                                            in the form [x, y, theta]áµ€, with units in meters
                                             and radians
         :type odometry_standard_deviation:  tuple[float, float, float]
         :param vision_standard_deviation:   The standard deviation for vision calculation
-                                            in the form [x, y, theta]T, with units in meters
+                                            in the form [x, y, theta]áµ€, with units in meters
                                             and radians
         :type vision_standard_deviation:    tuple[float, float, float]
         :param modules:                     Constants for each specific module

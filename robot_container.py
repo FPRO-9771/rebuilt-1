@@ -10,6 +10,8 @@ from generated.tuner_constants import TunerConstants
 from subsystems.turret import Turret
 from subsystems.launcher import Launcher
 from subsystems.hood import Hood
+from subsystems.h_feed import HFeed
+from subsystems.v_feed import VFeed
 from controls import configure_driver, configure_operator
 from handlers import get_vision_providers
 from match_setup import MatchSetup
@@ -31,6 +33,8 @@ class RobotContainer:
         self.turret = Turret()
         self.launcher = Launcher()
         self.hood = Hood()
+        self.h_feed = HFeed()
+        self.v_feed = VFeed()
 
         # --- Vision ---
         self.vision = get_vision_providers()
@@ -48,7 +52,8 @@ class RobotContainer:
 
         # --- Telemetry ---
         setup_telemetry(None, self.turret, self.launcher,
-                        self.hood, self.vision)
+                        self.hood, self.vision,
+                        self.h_feed, self.v_feed)
 
     def _configure_bindings(self):
         """Wire controller inputs to commands."""
@@ -60,5 +65,5 @@ class RobotContainer:
         configure_operator(
             self.operator, None, self.turret,
             self.launcher, self.hood, self.vision["shooter"],
-            self.match_setup,
+            self.match_setup, self.h_feed, self.v_feed,
         )

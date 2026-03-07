@@ -16,8 +16,8 @@ MOTOR_IDS = {
 
     # Mechanisms
     "conveyor": {"can_id": 20, "type": "talon_fx", "bus": "op_sys", "wired": False},
-    # "arm":    {"can_id": 21, "type": "talon_fx", "bus": "op_sys", "wired": False},
-    # "intake": {"can_id": 22, "type": "talon_fx", "bus": "op_sys", "wired": False},
+    "h_feed":   {"can_id": 22, "type": "talon_fx", "bus": "op_sys", "wired": True},
+    "v_feed":   {"can_id": 23, "type": "talon_fx", "bus": "op_sys", "wired": True},
 
     # Shooter
     "turret":   {"can_id": 30, "type": "talon_fx",  "bus": "op_sys", "wired": True, "sim_rps_per_volt": 2.0},

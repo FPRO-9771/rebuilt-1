@@ -20,7 +20,8 @@ _cycle: int = 0
 _PUBLISH_EVERY_N = 4
 
 
-def setup_telemetry(conveyor, turret, launcher, hood, vision):
+def setup_telemetry(conveyor, turret, launcher, hood, vision,
+                    h_feed=None, v_feed=None):
     """Create all telemetry publishers. Call once from RobotContainer.
 
     Args:
@@ -28,7 +29,7 @@ def setup_telemetry(conveyor, turret, launcher, hood, vision):
     """
     global _motor, _command, _vision
 
-    _motor = MotorTelemetry(conveyor, turret, launcher, hood)
+    _motor = MotorTelemetry(conveyor, turret, launcher, hood, h_feed, v_feed)
     _command = CommandTelemetry()
     _command.setup()
     _vision = VisionTelemetry(vision)
