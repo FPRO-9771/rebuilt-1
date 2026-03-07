@@ -6,9 +6,8 @@ Controller and robot-wide settings.
 # MANUAL OVERRIDE CONTROLS
 # =============================================================================
 CON_MANUAL = {
-    "launcher_default_rps": 70.0,   # Starting speed for manual launcher
-    "launcher_max_rps": 100.0,       # Maximum manual launcher speed
-    "launcher_speed_step": 5.0,     # Per-press increment (~5% of max)
+    "launcher_min_rps": 40.0,        # Stick full back (-1) = 40 RPS
+    "launcher_max_rps": 100.0,       # Stick full forward (1) = 100 RPS
     "hood_default_position": 0.0,    # Start at zero (where motor initializes)
     "hood_position_step": 0.0125,    # Per-press nudge (~5% of range)
 }

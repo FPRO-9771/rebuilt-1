@@ -1,6 +1,4 @@
 """
 Commands package.
-Multi-subsystem commands that don't belong inside a single subsystem file.
+Small, single-concern command modules composed in operator_controls.
 """
-
-from .shooter_orchestrator import ShooterOrchestrator

@@ -2,9 +2,9 @@
 
 **Team 9771 FPRO - 2026**
 
-This doc covers how controller bindings are organized to keep `robot_container.py` short, and how manual override controls work alongside the automated shooter.
+This doc covers how controller bindings are organized to keep `robot_container.py` short, and how the operator's manual and automatic controls work together.
 
-> **When to read this:** You're adding new button bindings, wondering how manual controls interact with the auto shooter, or trying to keep robot_container from growing out of control.
+> **When to read this:** You're adding new button bindings, wondering how manual controls interact with auto-aim/auto-shoot, or trying to keep robot_container from growing out of control.
 
 ---
 
@@ -13,8 +13,8 @@ This doc covers how controller bindings are organized to keep `robot_container.p
 1. [Binding Extraction Pattern](#1-binding-extraction-pattern)
 2. [Driver Control Map](#2-driver-control-map)
 3. [Operator Control Map](#3-operator-control-map)
-4. [Manual Override Design](#4-manual-override-design)
-5. [How Overrides Interact with Auto Shooter](#5-how-overrides-interact-with-auto-shooter)
+4. [Manual vs Auto Modes](#4-manual-vs-auto-modes)
+5. [How Commands Interact](#5-how-commands-interact)
 
 ---
 
@@ -25,7 +25,7 @@ As the robot gains mechanisms, `robot_container.py` grows fast. Every new button
 ### Before (everything in robot_container)
 
 ```python
-# robot_container.py — gets long fast
+# robot_container.py -- gets long fast
 class RobotContainer:
     def _configure_bindings(self):
         # 10 lines of operator controls...
@@ -45,6 +45,8 @@ class RobotContainer:
         configure_operator(
             self.operator, self.conveyor, self.turret,
             self.launcher, self.hood, self.vision["shooter"],
+            self.match_setup,
+            h_feed=self.h_feed, v_feed=self.v_feed, intake=self.intake,
         )
 ```
 
@@ -77,12 +79,6 @@ When you add a new control:
 | Start + Y | `whileTrue` | SysId quasistatic forward |
 | Start + X | `whileTrue` | SysId quasistatic reverse |
 
-The driver controls also set up:
-- **Idle request while disabled** -- applies the configured neutral mode to drive motors when the robot is disabled
-- **Swerve telemetry** -- publishes pose, module states, and chassis speeds to NetworkTables and SignalLogger
-
-All swerve requests and speed limits are derived from `TunerConstants` (the Phoenix Tuner X generated config). Max speed comes from `TunerConstants.speed_at_12_volts`, and max angular rate is 3/4 rotation per second. A 10% deadband is applied to both translation and rotation.
-
 ### Source
 
 - `controls/driver_controls.py` -- all driver bindings
@@ -96,92 +92,72 @@ All swerve requests and speed limits are derived from `TunerConstants` (the Phoe
 
 | Input | Binding | Action |
 |-------|---------|--------|
-| Right stick Y | `whileTrue` | Conveyor manual control |
-| Y button | `whileTrue` | Hold to shoot (pre-spin + feeder when locked) |
-| Left stick X | `whileTrue` | Manual turret override |
-| A button | `toggleOnTrue` | Manual launcher on/off |
-| Left bumper | `onTrue` | Increase launcher speed (+5%) |
-| Left trigger | `onTrue` | Decrease launcher speed (-5%) |
-| Right bumper | `onTrue` | Nudge hood up |
-| Right trigger | `onTrue` | Nudge hood down |
+| Left stick X | `whileTrue` | Manual turret aim |
+| Right stick Y | (via A toggle) | Launcher speed (stick maps to RPS range) |
+| A button | `toggleOnTrue` | Toggle manual launcher on/off |
+| B button | `toggleOnTrue` | Toggle feed system on/off (H feed + V feed) |
+| X button | `onTrue` | Toggle intake position (out/in) |
+| Y button | `toggleOnTrue` | Toggle auto-aim on/off |
+| Left bumper | `whileTrue` | Auto-shoot (vision distance -> launcher/hood from table) |
 
-The manual launcher and hood controls exist for two purposes:
-- **Testing** — verify mechanisms work before enabling the auto shooter
-- **Emergency override** — if the auto shooter fails during a match, the operator can aim and shoot manually
+### Source
 
----
-
-## 4. Manual Override Design
-
-The manual controls need mutable state — the launcher speed can be adjusted while it's running, and the hood position accumulates nudges over multiple presses.
-
-### Mutable State in a Closure
-
-The `configure_operator` function creates a `state` dict that lives as long as the bindings do:
-
-```python
-def configure_operator(operator, conveyor, turret, launcher, hood, vision):
-    state = {
-        "launcher_rps": CON_MANUAL["launcher_default_rps"],
-        "hood_position": CON_MANUAL["hood_default_position"],
-    }
-    # ... bindings reference `state` via closures
-```
-
-### Dynamic Launcher Speed
-
-The A button toggles a command that reads from `state["launcher_rps"]` each cycle. The bumper/trigger adjust that value. The running command picks up the new speed on its next execute:
-
-```python
-# A button toggles the launcher — reads speed each cycle
-operator.a().toggleOnTrue(
-    _LauncherToggleCommand(launcher, lambda: state["launcher_rps"])
-)
-
-# Bumper/trigger adjust speed — no subsystem requirement, won't interrupt
-operator.leftBumper().onTrue(
-    InstantCommand(lambda: adjust_launcher_rps(state, step))
-)
-```
-
-The speed adjustment uses `InstantCommand` with **no subsystem requirement**. This is critical — it means pressing the bumper changes the speed variable without interrupting the running launcher command. The launcher command reads the updated value on its next cycle.
-
-### Hood Nudge
-
-Each press of right bumper/trigger nudges the hood by a small increment. The state tracks the accumulated position:
-
-```python
-operator.rightBumper().onTrue(
-    hood.runOnce(lambda: nudge_hood(state, hood_step, hood))
-)
-```
-
-This uses `hood.runOnce()`, which **does** require the hood subsystem. After the instant command ends, the Phoenix 6 firmware holds the new position — no running command needed.
+- `controls/operator_controls.py` -- all operator bindings
+- `commands/auto_aim.py` -- PD turret tracking
+- `commands/auto_shoot.py` -- distance-based launcher/hood
+- `commands/manual_launcher.py` -- stick-to-RPS mapping
 
 ---
 
-## 5. How Overrides Interact with Auto Shooter
+## 4. Manual vs Auto Modes
 
-The system uses two independent commands: `AutoTracker` (turret default command) and `ShootCommand` (Y hold). Manual controls interact through the WPILib requirement system:
+The operator can mix manual and automatic controls freely. Each command is independent:
+
+### Always Manual
+- **Left stick X** -- turret aim (works regardless of auto-aim state)
+- **A toggle + right stick Y** -- launcher speed
+- **B toggle** -- feed system
+- **X press** -- intake position
+
+### Optional Auto
+- **Y toggle** -- auto-aim (turret tracks AprilTags via PD control). Dashboard shows `Shooter/AutoAim` status.
+- **Left bumper hold** -- auto-shoot (vision distance sets launcher RPS and hood position from lookup table)
+
+### Typical Workflows
+
+**Full manual (testing/practice):**
+1. Use left stick to aim turret
+2. Press A to toggle launcher on, use right stick Y to set speed
+3. Press B to run feeds
+
+**Manual aim + auto shoot:**
+1. Use left stick to aim turret at target
+2. Hold left bumper -- auto-shoot reads distance and sets launcher speed + hood automatically
+3. Press B to run feeds
+
+**Full auto (when auto-aim is working):**
+1. Press Y to enable auto-aim (turret tracks tags automatically)
+2. Hold left bumper for auto-shoot
+3. Press B to run feeds
+
+---
+
+## 5. How Commands Interact
+
+Commands interact through the WPILib requirement system:
 
 | Action | What Happens |
 |--------|-------------|
-| Tracker running, push left stick (manual turret) | Manual turret requires turret -> interrupts tracker; tracker resumes when stick released |
-| Hold Y (shoot), press A (launcher toggle) | Both require launcher -> launcher toggle cancels shoot |
-| Hold Y (shoot), press right bumper (hood nudge) | Both require hood -> hood nudge cancels shoot |
-| Press left bumper (speed adjust) | No requirement -> nothing interrupted |
+| AutoAim on, push left stick (manual turret) | Manual turret requires turret -> interrupts AutoAim; AutoAim resumes when stick released (still toggled on) |
+| ManualLauncher on, hold left bumper (AutoShoot) | AutoShoot requires launcher -> interrupts ManualLauncher. Release bumper, press A to restart manual. |
+| AutoAim on + AutoShoot held | Both run -- different subsystem requirements (turret vs launcher+hood) |
+| ManualLauncher on + AutoAim on | Both run -- different subsystem requirements (launcher vs turret) |
 
-Key differences from the old orchestrator design:
-- **AutoTracker always runs** as the turret's default command during teleop -- no button press needed
-- **ShootCommand is hold-to-shoot** (Y whileTrue) instead of toggle -- releasing Y stops launcher/hood
-- **AutoTracker and ShootCommand run simultaneously** because they require different subsystems (turret vs launcher+hood)
-- **Manual turret stick** only interrupts the tracker, not the shoot command -- launcher keeps spinning
-
-The speed adjustment (left bumper/trigger) changes a variable without requiring a subsystem, so it never interrupts anything.
+Key principle: commands that require different subsystems can run simultaneously. Commands that require the same subsystem will interrupt each other, with the most recently scheduled command winning.
 
 ---
 
 **See also:**
-- [Shooter System](shooter-system.md) - How the auto shooter orchestrates subsystems
+- [Shooter System](shooter-system.md) - How the command modules and distance table work
 - [Commands & Controls](commands-and-controls.md) - Button binding patterns and command lifecycle
 - [Hardware & Subsystems](hardware-and-subsystems.md) - Subsystem template

@@ -8,100 +8,100 @@ Quick reference for what every button does on each Xbox controller.
 
 ## Operator Controller (Port 1)
 
-```
-          Left Bumper               Right Bumper
-       Launcher speed +             Hood nudge up
-
-       Left Trigger                 Right Trigger
-       Launcher speed -             Hood nudge down
-
-    ┌────────────────────────────────────────────┐
-    │                                            │
-    │   ┌───┐                        (Y)        │
-    │   │ L │  Left Stick         Hold to Shoot  │
-    │   │   │  X = Manual       (spins up,       │
-    │   │   │  turret           feeds when lock)  │
-    │   └───┘                 (X)        (B)     │
-    │                                            │
-    │                            (A)             │
-    │                     Manual Launcher        │
-    │              ┌───┐  toggle on/off          │
-    │              │ R │                          │
-    │              │   │  Right Stick             │
-    │              │   │  Y = Conveyor            │
-    │              └───┘                          │
-    │                                            │
-    └────────────────────────────────────────────┘
-```
+### Joysticks
 
 | Input | Action | Notes |
 |-------|--------|-------|
-| **Y button (hold)** | Hold to shoot | Spins launcher, sets hood; feeds when lock indicator is green |
-| **Left stick X** | Manual turret aim | Interrupts auto-tracking; resumes on release |
-| **A button** | Toggle manual launcher on/off | Cancels shoot command if running |
-| **Left bumper** | Increase launcher speed | +5% step, works without interrupting launcher |
-| **Left trigger** | Decrease launcher speed | -5% step, works without interrupting launcher |
-| **Right bumper** | Nudge hood up | Cancels shoot command if running |
-| **Right trigger** | Nudge hood down | Cancels shoot command if running |
-| **Right stick Y** | Manual conveyor | Runs while stick is held |
+| **Left stick X** | Manual turret aim | Interrupts auto-aim; auto-aim resumes on release |
+| **Left stick Y** | *unassigned* | |
+| **Right stick X** | *unassigned* | |
+| **Right stick Y** | Launcher speed | Only active when launcher is toggled on (A). Forward = fast, back = slow |
 
-### How shooting works
+### Face Buttons
 
-1. **Turret auto-tracks** scoring tags automatically during teleop -- no button needed
-2. Watch the **Shooter/Lock** indicator on the dashboard (green = ready to fire)
-3. **Hold Y** to spin up the launcher and set the hood -- feeder engages when locked
-4. Release Y to stop
+| Input | Action | Notes |
+|-------|--------|-------|
+| **A button** | Toggle launcher on/off | Speed controlled by right stick Y |
+| **B button** | Toggle feeds on/off | Runs H feed + V feed together |
+| **X button** | Toggle intake out/in | Alternates between down and up position each press |
+| **Y button** | Toggle auto-aim on/off | Dashboard shows Shooter/AutoAim status |
+
+### Bumpers & Triggers
+
+| Input | Action | Notes |
+|-------|--------|-------|
+| **Left bumper (hold)** | Auto-shoot | Sets launcher speed + hood from vision distance |
+| **Right bumper** | *unassigned* | |
+| **Left trigger** | *unassigned* | |
+| **Right trigger** | *unassigned* | |
+
+### D-pad / Other
+
+| Input | Action | Notes |
+|-------|--------|-------|
+| **D-pad** | *unassigned* | |
+| **Back / Start** | *unassigned* | |
+
+### How to shoot (manual aim)
+
+1. Use **left stick** to aim the turret at the target
+2. Press **A** to toggle launcher on, use **right stick Y** to set speed
+3. Press **B** to start feeding Fuel
+
+### How to shoot (auto-aim + auto-shoot)
+
+1. Press **Y** to enable auto-aim (turret tracks tags, check dashboard)
+2. Hold **left bumper** to auto-shoot (sets speed + hood from distance)
+3. Press **B** to start feeding Fuel
 
 ### Testing workflow
 
-1. Use **A** to toggle launcher on, adjust speed with **left bumper/trigger**
-2. Use **right bumper/trigger** to set hood angle
-3. Use **left stick** to aim turret manually (auto-tracking resumes when released)
-4. Hold **Y** to test the full shoot sequence
+1. Press **A** to toggle launcher on, sweep **right stick Y** to find good speed
+2. Use **left stick** to aim turret manually
+3. Press **X** to lower intake
+4. Press **B** to run feeds
+5. Try **Y** (auto-aim) and **left bumper** (auto-shoot) when ready
 
 ---
 
 ## Driver Controller (Port 0)
 
-```
-          Left Bumper               Right Bumper
-       Reset heading          Toggle field/robot centric
-
-       Left Trigger                 Right Trigger
-       (unused)                     (unused)
-
-    +-------------------------------------------------+
-    |                                                 |
-    |   +---+                        (Y)             |
-    |   | L |  Left Stick         SysId (with        |
-    |   |   |  X = Strafe         Back or Start)     |
-    |   |   |  Y = Forward/Back                      |
-    |   +---+                 (X)          (B)       |
-    |                        SysId      Point wheels  |
-    |                        (combo)    in stick dir  |
-    |                            (A)                  |
-    |                          Brake                  |
-    |              +---+                              |
-    |              | R |                              |
-    |              |   |  Right Stick                 |
-    |              |   |  X = Rotation                |
-    |              +---+                              |
-    |                                                 |
-    +-------------------------------------------------+
-```
+### Joysticks
 
 | Input | Action | Notes |
 |-------|--------|-------|
-| **Left stick** | Field-centric drive (translation) | X = strafe, Y = forward/back |
+| **Left stick X** | Strafe | Field-centric by default |
+| **Left stick Y** | Forward / back | Field-centric by default |
 | **Right stick X** | Rotation | Counterclockwise with left input |
+| **Right stick Y** | *unassigned* | |
+
+### Face Buttons
+
+| Input | Action | Notes |
+|-------|--------|-------|
 | **A button (hold)** | Brake | Locks wheels in X pattern |
 | **B button (hold)** | Point wheels | Aims wheels in left stick direction |
+| **X button** | *unassigned* | SysId combo only (Back/Start + X) |
+| **Y button** | *unassigned* | SysId combo only (Back/Start + Y) |
+
+### Bumpers & Triggers
+
+| Input | Action | Notes |
+|-------|--------|-------|
 | **Left bumper** | Reset field-centric heading | Press once when robot faces away from you |
-| **Right bumper** | Toggle field/robot centric | Dashboard shows current mode (Drive/Robot Centric) |
-| **Back + Y** | SysId dynamic forward | For motor characterization only |
-| **Back + X** | SysId dynamic reverse | For motor characterization only |
-| **Start + Y** | SysId quasistatic forward | For motor characterization only |
-| **Start + X** | SysId quasistatic reverse | For motor characterization only |
+| **Right bumper** | Toggle field/robot centric | Dashboard shows current mode |
+| **Left trigger** | *unassigned* | |
+| **Right trigger** | *unassigned* | |
+
+### D-pad / Other
+
+| Input | Action | Notes |
+|-------|--------|-------|
+| **D-pad** | *unassigned* | |
+| **Back + Y** | SysId dynamic forward | Motor characterization only |
+| **Back + X** | SysId dynamic reverse | Motor characterization only |
+| **Start + Y** | SysId quasistatic forward | Motor characterization only |
+| **Start + X** | SysId quasistatic reverse | Motor characterization only |
 
 ### Driving tips
 
@@ -116,7 +116,7 @@ Quick reference for what every button does on each Xbox controller.
 
 ## Important Interactions
 
-- **Turret auto-tracks** continuously. Manual turret stick temporarily overrides; tracking resumes on release.
-- Hood nudge or launcher toggle will **cancel the shoot command** if Y is held. Release and re-hold Y to resume.
-- Launcher speed adjustments (bumper/trigger) **never** cancel anything -- they just change the target speed for next time.
+- **Auto-aim (Y toggle)** can run alongside manual turret stick -- the stick temporarily overrides, and auto-aim resumes when released.
+- **Auto-shoot (left bumper)** takes over the launcher from manual mode (A toggle). Release the bumper, then press A again to go back to manual.
+- **Auto-aim and auto-shoot are independent** -- you can use one without the other. Manual aim + auto-shoot is a great combo.
 - SysId routines require holding **two buttons at once** (Back/Start + X/Y) so they can't be triggered accidentally.

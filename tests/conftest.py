@@ -80,9 +80,8 @@ TEST_CON_SHOOTER = {
 }
 
 TEST_CON_MANUAL = {
-    "launcher_default_rps": 50.0,
+    "launcher_min_rps": 20.0,
     "launcher_max_rps": 100.0,
-    "launcher_speed_step": 10.0,
     "hood_default_position": 0.5,
     "hood_position_step": 0.1,
 }
@@ -134,14 +133,13 @@ def _patch_constants(monkeypatch):
     monkeypatch.setattr("subsystems.hood.CON_HOOD", TEST_CON_HOOD)
     monkeypatch.setattr("subsystems.conveyor.CON_CONVEYOR", TEST_CON_CONVEYOR)
 
-    # Shooter lookup + orchestrator + tracker + shoot command
+    # Shooter lookup
     monkeypatch.setattr("subsystems.shooter_lookup.CON_SHOOTER", TEST_CON_SHOOTER)
-    monkeypatch.setattr("commands.shooter_orchestrator.CON_SHOOTER", TEST_CON_SHOOTER)
-    monkeypatch.setattr("commands.auto_tracker.CON_SHOOTER", TEST_CON_SHOOTER)
+
+    # Command modules
+    monkeypatch.setattr("commands.auto_aim.CON_SHOOTER", TEST_CON_SHOOTER)
     monkeypatch.setattr(
-        "commands.auto_tracker.TARGET_LOCK_LOST_CYCLES",
+        "commands.auto_aim.TARGET_LOCK_LOST_CYCLES",
         TEST_TARGET_LOCK_LOST_CYCLES,
     )
-    # Operator controls
-    monkeypatch.setattr("controls.operator_controls.CON_MANUAL", TEST_CON_MANUAL)
-    monkeypatch.setattr("controls.operator_controls.CON_HOOD", TEST_CON_HOOD)
+    monkeypatch.setattr("commands.manual_launcher.CON_MANUAL", TEST_CON_MANUAL)

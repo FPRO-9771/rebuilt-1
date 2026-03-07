@@ -1,141 +1,35 @@
 """
-Tests for operator manual controls.
+Tests for operator controls wiring.
+Individual command behavior is tested in dedicated test files
+(test_auto_aim, test_auto_shoot, test_manual_launcher).
+This file tests the configure_operator function itself.
 """
 
-from subsystems.launcher import Launcher
-from subsystems.hood import Hood
-from controls.operator_controls import (
-    adjust_launcher_rps,
-    nudge_hood,
-    _LauncherToggleCommand,
-)
-from tests.conftest import TEST_CON_MANUAL, TEST_CON_HOOD
+from unittest.mock import MagicMock
+
+from controls.operator_controls import configure_operator
 
 
-# --- Launcher speed adjustment ---
-
-def test_adjust_launcher_rps_increases():
-    """Verify bumper increases launcher speed."""
-    step = TEST_CON_MANUAL["launcher_speed_step"]
-    start = TEST_CON_MANUAL["launcher_default_rps"]
-    state = {"launcher_rps": start}
-
-    adjust_launcher_rps(state, step)
-    assert state["launcher_rps"] == start + step
+def _make_mock_operator():
+    """Create a mock operator controller with numeric return values."""
+    operator = MagicMock()
+    operator.getLeftX.return_value = 0.0
+    operator.getRightY.return_value = 0.0
+    return operator
 
 
-def test_adjust_launcher_rps_decreases():
-    """Verify trigger decreases launcher speed."""
-    step = TEST_CON_MANUAL["launcher_speed_step"]
-    start = TEST_CON_MANUAL["launcher_default_rps"]
-    state = {"launcher_rps": start}
+def test_configure_operator_returns_state():
+    """configure_operator returns mutable state dict."""
+    operator = _make_mock_operator()
+    turret = MagicMock()
+    launcher = MagicMock()
+    hood = MagicMock()
+    vision = MagicMock()
+    match_setup = MagicMock()
 
-    adjust_launcher_rps(state, -step)
-    assert state["launcher_rps"] == start - step
+    state = configure_operator(
+        operator, None, turret, launcher, hood, vision, match_setup
+    )
 
-
-def test_adjust_launcher_rps_clamps_at_max():
-    """Verify speed can't exceed max."""
-    step = TEST_CON_MANUAL["launcher_speed_step"]
-    state = {"launcher_rps": TEST_CON_MANUAL["launcher_max_rps"]}
-
-    adjust_launcher_rps(state, step)
-    assert state["launcher_rps"] == TEST_CON_MANUAL["launcher_max_rps"]
-
-
-def test_adjust_launcher_rps_clamps_at_zero():
-    """Verify speed can't go below zero."""
-    step = TEST_CON_MANUAL["launcher_speed_step"]
-    # Start below one step so decrementing would go negative
-    state = {"launcher_rps": step * 0.5}
-
-    adjust_launcher_rps(state, -step)
-    assert state["launcher_rps"] == 0
-
-
-# --- Launcher toggle command ---
-
-def test_launcher_toggle_reads_dynamic_rps():
-    """Verify toggle command reads current RPS each cycle."""
-    launcher = Launcher()
-    start = TEST_CON_MANUAL["launcher_default_rps"]
-    step = TEST_CON_MANUAL["launcher_speed_step"]
-    state = {"launcher_rps": start}
-
-    cmd = _LauncherToggleCommand(launcher, lambda: state["launcher_rps"])
-    cmd.initialize()
-    cmd.execute()
-    assert launcher.motor._velocity == start
-
-    # Change speed mid-run — next execute picks it up
-    state["launcher_rps"] = start + step
-    cmd.execute()
-    assert launcher.motor._velocity == start + step
-
-
-def test_launcher_toggle_never_finishes():
-    """Verify toggle command never auto-finishes."""
-    launcher = Launcher()
-    rps = TEST_CON_MANUAL["launcher_default_rps"]
-    cmd = _LauncherToggleCommand(launcher, lambda: rps)
-    cmd.initialize()
-
-    for _ in range(50):
-        cmd.execute()
-        assert cmd.isFinished() is False
-
-
-def test_launcher_toggle_stops_on_end():
-    """Verify toggle command stops launcher when ended."""
-    launcher = Launcher()
-    rps = TEST_CON_MANUAL["launcher_default_rps"]
-    cmd = _LauncherToggleCommand(launcher, lambda: rps)
-    cmd.initialize()
-    cmd.execute()
-
-    cmd.end(False)
-    assert launcher.motor.get_last_voltage() == 0
-
-
-# --- Hood nudge ---
-
-def test_nudge_hood_increases_position():
-    """Verify bumper nudges hood position up."""
-    step = TEST_CON_MANUAL["hood_position_step"]
-    start = TEST_CON_MANUAL["hood_default_position"]
-    state = {"hood_position": start}
-
-    nudge_hood(state, step)
-
-    assert state["hood_position"] == start + step
-
-
-def test_nudge_hood_decreases_position():
-    """Verify trigger nudges hood position down."""
-    step = TEST_CON_MANUAL["hood_position_step"]
-    start = TEST_CON_MANUAL["hood_default_position"]
-    state = {"hood_position": start}
-
-    nudge_hood(state, -step)
-
-    assert state["hood_position"] == start - step
-
-
-def test_nudge_hood_clamps_at_max():
-    """Verify hood can't be nudged past max."""
-    max_pos = TEST_CON_HOOD["max_position"]
-    state = {"hood_position": max_pos}
-
-    nudge_hood(state, 1.0)
-
-    assert state["hood_position"] == max_pos
-
-
-def test_nudge_hood_clamps_at_min():
-    """Verify hood can't be nudged below min."""
-    min_pos = TEST_CON_HOOD["min_position"]
-    state = {"hood_position": min_pos}
-
-    nudge_hood(state, -1.0)
-
-    assert state["hood_position"] == min_pos
+    assert "intake_down" in state
+    assert state["intake_down"] is False

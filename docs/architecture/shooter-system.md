@@ -2,9 +2,9 @@
 
 **Team 9771 FPRO - 2026**
 
-This doc covers the automated shooter: a turret, flywheel launcher, and adjustable hood coordinated by vision to aim and fire without operator input.
+This doc covers the shooter system: a turret, flywheel launcher, and adjustable hood. The system is built from small, independent command modules that can be used individually or composed together.
 
-> **When to read this:** You're tuning the shooter, adding a new mechanism to the system, or trying to understand how multi-subsystem coordination works.
+> **When to read this:** You're tuning the shooter, adding a new mechanism to the system, or trying to understand how the command modules compose.
 
 ---
 
@@ -13,41 +13,35 @@ This doc covers the automated shooter: a turret, flywheel launcher, and adjustab
 1. [System Overview](#1-system-overview)
 2. [Subsystem Patterns](#2-subsystem-patterns)
 3. [Distance Lookup Table](#3-distance-lookup-table)
-4. [Shooter Orchestrator](#4-shooter-orchestrator)
-5. [Multi-Subsystem Commands](#5-multi-subsystem-commands)
+4. [Command Modules](#4-command-modules)
+5. [How Commands Compose](#5-how-commands-compose)
 
 ---
 
 ## 1. System Overview
 
-The shooter has three mechanisms and a camera, all working together:
+The shooter has three mechanisms and a camera. Three independent command modules control them:
 
 ```
-Limelight Camera (on turret)
-        │
-        ▼
-┌──────────────────────────────┐
-│     AutoTracker              │
-│  (turret default command)    │
-│                              │
-│  vision ──► tx, distance     │
-│  PD aim ──► turret voltage   │
-│  publishes Shooter/Lock      │
-│  requires: turret            │
-└──────────────────────────────┘
-        │ is_locked()
-        │ get_distance()
-        ▼
-┌──────────────────────────────┐
-│     ShootCommand             │
-│  (Y button whileTrue)       │
-│                              │
-│  distance ──► lookup table   │
-│  launcher ──► _set_velocity  │
-│  hood ──► _set_position      │
-│  feeder ──► placeholder      │
-│  requires: launcher, hood    │
-└──────────────────────────────┘
+                   +-----------------------+
+                   |   AutoAim             |
+                   |   (Y button toggle)   |
+                   |                       |
+                   |   vision --> tx        |
+                   |   PD aim --> turret    |
+                   |   publishes AutoAim   |
+                   |   requires: turret    |
+                   +-----------------------+
+
++-----------------------+       +-----------------------+
+|   ManualLauncher      |       |   AutoShoot           |
+|   (A button toggle)   |       |   (left bumper hold)  |
+|                       |       |                       |
+|   stick --> RPS       |       |   vision --> distance  |
+|   requires: launcher  |       |   table --> RPS, hood  |
+|                       |       |   requires: launcher,  |
++-----------------------+       |             hood       |
+                                +-----------------------+
 ```
 
 | Component | Motor | Controller | Control Mode |
@@ -56,7 +50,7 @@ Limelight Camera (on turret)
 | Launcher | Kraken X60 | TalonFX | Closed-loop velocity |
 | Hood | WCP | TalonFXS | Closed-loop position |
 
-All three are "dumb" subsystems -- they don't know about each other or about vision. Two commands coordinate them: `AutoTracker` (always-on turret aiming) and `ShootCommand` (hold-to-shoot).
+All three are "dumb" subsystems -- they don't know about each other or about vision. Small command modules coordinate them, and the operator chooses which to enable.
 
 ---
 
@@ -90,7 +84,7 @@ The key insight: soft limits allow the motor to return (negative voltage at max,
 
 ### Launcher: Closed-Loop Velocity
 
-The flywheel needs consistent speed regardless of battery voltage. Phoenix 6's `VelocityVoltage` handles PID internally — we just command a target RPS:
+The flywheel needs consistent speed regardless of battery voltage. Phoenix 6's `VelocityVoltage` handles PID internally -- we just command a target RPS:
 
 ```python
 # subsystems/launcher.py (key pattern)
@@ -104,7 +98,7 @@ def is_at_speed(self, target_rps: float) -> bool:
     return abs(self.get_velocity() - target_rps) <= CON_LAUNCHER["velocity_tolerance"]
 ```
 
-The `spin_up()` command never finishes — it holds speed until canceled. This is the correct pattern for a flywheel that should keep spinning.
+The `spin_up()` command never finishes -- it holds speed until canceled. This is the correct pattern for a flywheel that should keep spinning.
 
 ### Hood: Closed-Loop Position with Clamping
 
@@ -125,18 +119,16 @@ The hood uses `create_motor_fxs()` instead of `create_motor()` because the WCP m
 
 ## 3. Distance Lookup Table
 
-Instead of a formula, we use a table of measured (distance, launcher_rps, hood_position) tuples. This is easier to tune at competition — just edit numbers in `constants.py`.
+Instead of a formula, we use a table of measured (distance, launcher_rps, hood_position) tuples. This is easier to tune at competition -- just edit numbers in `constants/shooter.py`.
 
 ```python
-# constants.py
+# constants/shooter.py
 CON_SHOOTER = {
     "distance_table": [
         # (distance_m, launcher_rps, hood_position)
-        (1.0, 30.0, 0.05),
-        (2.0, 45.0, 0.10),
-        (3.0, 55.0, 0.15),
-        (4.0, 65.0, 0.20),
-        (5.0, 75.0, 0.24),
+        (1, 70.0, 0.05),
+        (2.0, 85.0, 0.10),
+        (3.0, 100.0, 0.15),
     ],
 }
 ```
@@ -144,82 +136,77 @@ CON_SHOOTER = {
 The lookup function in `subsystems/shooter_lookup.py` linearly interpolates between entries:
 
 ```python
-# At 2.5m → halfway between (2.0, 45, 0.10) and (3.0, 55, 0.15)
-rps, hood = get_shooter_settings(2.5)
-# rps = 50.0, hood = 0.125
+# At 1.5m --> halfway between (1, 70, 0.05) and (2.0, 85, 0.10)
+rps, hood = get_shooter_settings(1.5)
+# rps = 77.5, hood = 0.075
 ```
 
-Distances outside the table range clamp to the nearest entry. This prevents extrapolation errors — if you're closer than 1m or farther than 5m, you get the closest known-good settings.
+Distances outside the table range clamp to the nearest entry. This prevents extrapolation errors -- if you're closer than 1m or farther than 3m, you get the closest known-good settings.
 
 ### Tuning at Competition
 
 1. Set up at a known distance from the target
-2. Use manual controls (A button + bumpers) to find the RPS and hood angle that score
-3. Record the values in the distance table
-4. Repeat at 3-5 distances
-5. The interpolation handles everything in between
+2. Use **A button** to toggle launcher on, adjust speed with **right stick Y**
+3. Record the RPS and hood angle that score
+4. Update the distance table in `constants/shooter.py`
+5. Repeat at 3-5 distances
+6. The interpolation handles everything in between
 
 ---
 
-## 4. AutoTracker + ShootCommand
+## 4. Command Modules
 
-The shooter is split into two independent commands:
+The shooter is split into three independent, small command files:
 
-### AutoTracker (`commands/auto_tracker.py`)
+### AutoAim (`commands/auto_aim.py`)
 
-The turret's **default command** during teleop. Runs continuously, aiming at scoring AprilTags via PD control. Uses priority-based targeting with stickiness to avoid oscillation between tags.
-
-Each `execute()` cycle:
-1. Check `DriverStation.isTeleopEnabled()` -- skip if not in teleop
-2. Select target using priority list + stickiness logic
-3. Apply per-tag offsets to tx and distance
-4. PD control: `voltage = (tx * p_gain + d_term) * aim_sign`
-5. Publish `Shooter/Lock` boolean to SmartDashboard
-
-**Lock conditions** (`is_locked()`):
-- Target is visible
-- Turret is aligned (tx within tolerance)
-- Distance is within the lookup table range
-
-Manual turret override (left stick X) interrupts AutoTracker via WPILib requirements. When the stick is released, AutoTracker resumes automatically as the default command.
-
-### ShootCommand (`commands/shoot_command.py`)
-
-Bound to **Y button whileTrue** -- hold to shoot. Receives the AutoTracker instance to query lock status and distance.
+PD turret tracking at AprilTags. Toggled on/off with **Y button**. Publishes `Shooter/AutoAim` boolean to SmartDashboard so the drive team can see if it's active.
 
 Each `execute()` cycle:
-1. Look up RPS + hood position from `tracker.get_distance()`
-2. Always: spin launcher, set hood (pre-spin while aiming)
-3. If `tracker.is_locked()`: engage feeder (placeholder for now)
-4. Else: disengage feeder
+1. Select target using priority list + stickiness logic
+2. Apply per-tag offsets to tx
+3. PD control: `voltage = (tx * p_gain + d_term) * aim_sign`
 
-On `end()`: stops launcher, stops hood, disengages feeder.
+Manual turret override (left stick X) interrupts AutoAim via WPILib requirements. When the stick is released, AutoAim resumes (if still toggled on).
 
-### Interaction Between Commands
+### AutoShoot (`commands/auto_shoot.py`)
 
-AutoTracker only requires **turret**. ShootCommand requires **launcher + hood**. They run simultaneously without conflict -- the operator can hold Y to pre-spin the launcher while the tracker is still acquiring lock.
+Reads distance from vision, looks up launcher RPS and hood position from the distance table. Bound to **left bumper whileTrue** -- hold to engage.
+
+Each `execute()` cycle:
+1. Find distance from highest-priority visible tag
+2. Look up RPS + hood position via `get_shooter_settings()`
+3. Set launcher velocity and hood position
+
+Holds last known distance when target is temporarily lost.
+
+### ManualLauncher (`commands/manual_launcher.py`)
+
+Maps the right stick Y axis to a launcher RPS range. Toggled on/off with **A button**.
+
+- Stick full forward (1.0) = `CON_MANUAL["launcher_max_rps"]` (100 RPS)
+- Stick full back (-1.0) = `CON_MANUAL["launcher_min_rps"]` (40 RPS)
+- Stick center (0.0) = midpoint (70 RPS)
 
 ---
 
-## 5. Multi-Subsystem Commands
+## 5. How Commands Compose
 
-Most commands are inner classes of a single subsystem (see the template in [Hardware & Subsystems](hardware-and-subsystems.md)). But some commands need to coordinate multiple subsystems. These live in `commands/`:
+Each command requires different subsystems, so they can run simultaneously without conflict:
 
 ```
 commands/
-├── auto_tracker.py          # Requires turret only (default command)
-├── shoot_command.py         # Requires launcher + hood
-└── shooter_orchestrator.py  # Legacy -- requires turret + launcher + hood
++-- auto_aim.py          # Requires: turret
++-- auto_shoot.py        # Requires: launcher, hood
++-- manual_launcher.py   # Requires: launcher
 ```
 
-The new pattern splits subsystem requirements so commands can run in parallel:
-
-```python
-class AutoTracker(Command):       # Requires: turret
-class ShootCommand(Command):      # Requires: launcher, hood
-```
-
-AutoTracker and ShootCommand can run simultaneously because they require different subsystems. ShootCommand reads from the tracker instance (not a subsystem requirement) to get distance and lock status.
+| Scenario | What Happens |
+|----------|-------------|
+| AutoAim on + manual turret stick | Stick interrupts AutoAim; resumes on release |
+| ManualLauncher on + hold left bumper (AutoShoot) | AutoShoot takes launcher -> interrupts ManualLauncher. Release bumper, press A to restart manual. |
+| AutoAim on + AutoShoot held | Both run simultaneously (different subsystem requirements) |
+| ManualLauncher on + AutoAim on | Both run simultaneously (different subsystem requirements) |
 
 Vision is not a subsystem (no `addRequirements`), so multiple commands can read from it simultaneously.
 
@@ -228,5 +215,5 @@ Vision is not a subsystem (no `addRequirements`), so multiple commands can read 
 **See also:**
 - [Hardware & Subsystems](hardware-and-subsystems.md) - Subsystem template and TalonFXS support
 - [Vision](vision.md) - How the Limelight provides `tx` and `distance`
-- [Controls](controls.md) - Manual override controls for testing and emergency use
+- [Controls](controls.md) - Full operator control map and override patterns
 - [Commands & Controls](commands-and-controls.md) - Command lifecycle and composition

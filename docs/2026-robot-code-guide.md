@@ -32,7 +32,7 @@ The codebase is organized by responsibility, not by file type:
 - **`robot_container.py`** — Central hub that creates all subsystems and wires them together. The only place that knows about everything.
 - **`hardware/`** — Abstraction layer between subsystem code and real motors/sensors. Subsystems program against the `MotorController` ABC; the factory decides whether to return a real TalonFX or a mock. This is the big improvement over 2025.
 - **`subsystems/`** — One file per mechanism. Each subsystem owns its hardware, exposes Commands, and enforces safety limits. Also contains pure-logic helpers like `shooter_lookup.py`.
-- **`commands/`** — Multi-subsystem commands that don't belong inside a single subsystem file (e.g., `ShooterOrchestrator` coordinates turret + launcher + hood).
+- **`commands/`** — Small, single-concern command modules that coordinate subsystems (e.g., `AutoAim` tracks tags, `AutoShoot` sets launcher from distance, `ManualLauncher` maps stick to RPS). Composed in `controls/operator_controls.py`.
 - **`autonomous/`** — Auto routine composition, field-position constants, and dashboard chooser. See [Autonomous](architecture/autonomous.md).
 - **`handlers/`** — External system integrations (vision/Limelight). Same abstraction pattern as hardware.
 - **`controls/`** — Controller bindings (driver and operator). Keeps button-wiring logic out of `robot_container.py`.
