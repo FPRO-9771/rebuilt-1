@@ -79,6 +79,15 @@ class AutoAim(Command):
     def execute(self):
         target = self._select_target()
         tag_offsets = self._tag_offsets_supplier()
+        tag_priority = self._tag_priority_supplier()
+
+        # Diagnostic telemetry -- shows what the aimer is actually doing
+        SmartDashboard.putNumberArray("AutoAim/TagPriority", tag_priority)
+        SmartDashboard.putNumber("AutoAim/LockedTagID",
+                                self._locked_tag_id if self._locked_tag_id is not None else -1)
+        SmartDashboard.putBoolean("AutoAim/HasTarget", target is not None)
+        visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
+        SmartDashboard.putNumberArray("AutoAim/VisibleTags", visible_ids)
 
         if target is not None and target.tag_id in tag_offsets:
             self._last_tx = target.tx + tag_offsets[target.tag_id]["tx_offset"]

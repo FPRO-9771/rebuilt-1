@@ -141,6 +141,22 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         drivetrain.sys_id_quasistatic(SysIdRoutine.Direction.kReverse)
     )
 
+    # --- Y button: drive straight forward (alignment test) ---
+    drive_straight = (
+        swerve.requests.RobotCentric()
+        .with_drive_request_type(
+            swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
+        )
+    )
+    driver.y().whileTrue(
+        drivetrain.apply_request(
+            lambda: drive_straight
+            .with_velocity_x(max_speed * 0.25)
+            .with_velocity_y(0)
+            .with_rotational_rate(0)
+        )
+    )
+
     # --- Register swerve telemetry ---
     drivetrain.register_telemetry(
         lambda state: logger.telemeterize(state)
