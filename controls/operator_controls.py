@@ -12,6 +12,8 @@ Controls:
     Left trigger    -- Decrease launcher speed (-5%)
     Right bumper    -- Nudge hood up
     Right trigger   -- Nudge hood down
+    D-pad left      -- Intake down
+    D-pad right     -- Intake up
 
 Auto-tracking: turret auto-tracks scoring tags as its default command
 during teleop. Manual turret stick interrupts; tracking resumes on release.
@@ -20,7 +22,7 @@ during teleop. Manual turret stick interrupts; tracking resumes on release.
 from commands2 import Command, InstantCommand, ParallelCommandGroup
 from commands2.button import Trigger
 
-from constants import CON_ROBOT, CON_MANUAL, CON_HOOD, CON_H_FEED, CON_V_FEED
+from constants import CON_ROBOT, CON_MANUAL, CON_HOOD, CON_H_FEED, CON_V_FEED, CON_INTAKE
 from utils.logger import get_logger
 
 _log = get_logger("operator")
@@ -30,13 +32,14 @@ from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
+from subsystems.intake import Intake
 from handlers.vision import VisionProvider
 from commands.auto_tracker import AutoTracker
 from commands.shoot_command import ShootCommand
 
 
 def configure_operator(operator, conveyor, turret, launcher, hood, vision,
-                       match_setup, h_feed=None, v_feed=None):
+                       match_setup, h_feed=None, v_feed=None, intake=None):
     """
     Wire all operator controller bindings.
     Call once from RobotContainer.__init__.
@@ -64,19 +67,26 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             )
         )
 
+    # --- Intake: D-pad left (down) / D-pad right (up) ---
+    if intake is not None:
+        operator.povLeft().whileTrue(intake.go_down())
+        operator.povRight().whileTrue(intake.go_up())
+
     # --- Auto-tracker: turret default command (teleop only) ---
-    # Tag priority and offsets come from match_setup (SmartDashboard choosers)
-    tracker = AutoTracker(
-        turret, vision,
-        tag_priority_supplier=match_setup.get_tag_priority,
-        tag_offsets_supplier=match_setup.get_tag_offsets,
-    )
-    turret.setDefaultCommand(tracker)
+    # TODO: Re-enable auto-tracker when vision targeting is fixed
+    # tracker = AutoTracker(
+    #     turret, vision,
+    #     tag_priority_supplier=match_setup.get_tag_priority,
+    #     tag_offsets_supplier=match_setup.get_tag_offsets,
+    # )
+    # turret.setDefaultCommand(tracker)
+    tracker = None
 
     # --- Shoot: Y button hold ---
-    operator.y().whileTrue(
-        ShootCommand(tracker, launcher, hood)
-    )
+    # TODO: Re-enable when auto-tracker is back
+    # operator.y().whileTrue(
+    #     ShootCommand(tracker, launcher, hood)
+    # )
 
     # --- Manual turret: left stick X ---
     Trigger(lambda: abs(operator.getLeftX()) > deadband).whileTrue(

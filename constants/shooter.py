@@ -8,9 +8,9 @@ These stay together because the shooter is one coordinated system.
 # =============================================================================
 CON_TURRET = {
     "max_voltage": 4.0,         # Maximum voltage to apply
-    "manual_speed_factor": 0.10, # Manual mode runs at 20% of max voltage
-    "min_position": -4.2,       # Soft limit: leftmost rotation (rotations)
-    "max_position": 0,        # Soft limit: rightmost rotation (rotations)
+    "manual_speed_factor": 0.20, # Manual mode runs at 20% of max voltage
+    "min_position": 0,       # Soft limit: leftmost rotation (rotations)
+    "max_position": 9.5,        # Soft limit: rightmost rotation (rotations)
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
     "inverted": False,
 }
@@ -74,10 +74,8 @@ CON_SHOOTER = {
     # Distance lookup table: (distance_m, launcher_rps, hood_position)
     # Sorted by distance -- interpolated at runtime
     "distance_table": [
-        (1.3, 25.0, 0.05),
-        (2.0, 40.0, 0.10),
-        (3.0, 57.0, 0.15),
-        (4.0, 70.0, 0.20),
-        (5.0, 97.0, 0.24),
+        (1, 70.0, 0.05),
+        (2.0, 85.0, 0.10),
+        (3.0, 100.0, 0.15),
     ],
 }

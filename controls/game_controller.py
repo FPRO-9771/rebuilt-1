@@ -55,6 +55,20 @@ class GameController:
     def start(self):
         return self._ctrl.options() if self._use_ps4 else self._ctrl.start()
 
+    # --- D-pad / POV (same on both) ---
+
+    def povLeft(self):
+        return self._ctrl.povLeft()
+
+    def povRight(self):
+        return self._ctrl.povRight()
+
+    def povUp(self):
+        return self._ctrl.povUp()
+
+    def povDown(self):
+        return self._ctrl.povDown()
+
     # --- Axes (same on both) ---
 
     def getLeftX(self):

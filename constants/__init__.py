@@ -19,6 +19,7 @@ from constants.ids import *
 from constants.shooter import *
 from constants.conveyor import *
 from constants.feed import *
+from constants.intake import *
 from constants.controls import *
 from constants.simulation import *
 from constants.telemetry import *
