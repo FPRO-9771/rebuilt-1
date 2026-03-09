@@ -62,11 +62,11 @@ CON_HOOD = {
 # SHOOTER SYSTEM CONFIGURATION
 # =============================================================================
 CON_SHOOTER = {
-    "turret_p_gain": 0.04,               # Proportional gain (volts per degree) -- drives toward target
-    "turret_d_gain": 0.02,               # Derivative gain (volts per degree/cycle) -- brakes oscillation
+    "turret_p_gain": 0.08,               # Proportional gain (volts per degree) -- drives toward target
+    "turret_d_gain": 0.04,               # Derivative gain (volts per degree/cycle) -- brakes oscillation
     "turret_aim_inverted": False,        # Positive tx (target right) -> positive voltage (turret right)
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
-    "turret_max_auto_voltage": 0.7,     # Max voltage during auto-aim (keep low for testing)
+    "turret_max_auto_voltage": 2.0,      # Max voltage during auto-aim
 
     # Per-tag offsets and priorities moved to constants/match.py.
     # They are now per-alliance and selected via SmartDashboard.
