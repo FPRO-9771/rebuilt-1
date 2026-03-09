@@ -129,7 +129,13 @@ class AutoAim(Command):
         d_term = -turret_vel * CON_SHOOTER["turret_d_velocity_gain"]
 
         voltage = p_term * self._aim_sign + d_term
-        max_v = CON_SHOOTER["turret_max_auto_voltage"]
+
+        # Asymmetric voltage limits: allow more braking force than driving force.
+        # When voltage opposes current turret motion, use the brake limit.
+        if turret_vel != 0 and (voltage * turret_vel) < 0:
+            max_v = CON_SHOOTER["turret_max_brake_voltage"]
+        else:
+            max_v = CON_SHOOTER["turret_max_auto_voltage"]
         voltage = max(-max_v, min(voltage, max_v))
 
         self.turret._set_voltage(voltage)
