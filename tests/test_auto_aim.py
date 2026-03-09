@@ -16,7 +16,8 @@ from tests.conftest import (
 _MID_POS = (TEST_CON_TURRET["min_position"] + TEST_CON_TURRET["max_position"]) / 2
 
 
-def _make_auto_aim(tag_priority=None, tag_offsets=None):
+def _make_auto_aim(tag_priority=None, tag_offsets=None,
+                   robot_velocity_supplier=None):
     turret = Turret()
     turret.motor.simulate_position(_MID_POS)
     vision = MockVisionProvider()
@@ -26,6 +27,7 @@ def _make_auto_aim(tag_priority=None, tag_offsets=None):
         turret, vision,
         tag_priority_supplier=lambda: priority,
         tag_offsets_supplier=lambda: offsets,
+        robot_velocity_supplier=robot_velocity_supplier,
     )
     return cmd, turret, vision
 
@@ -138,3 +140,38 @@ def test_stickiness_unlocks_after_threshold(mock_sd):
         cmd.execute()
 
     assert cmd._locked_tag_id is None
+
+
+@patch("commands.auto_aim.SmartDashboard")
+def test_velocity_compensation_shifts_aim(mock_sd):
+    """Strafing right shifts aim further right (positive lead)."""
+    # No velocity -- baseline
+    cmd_still, turret_still, vision_still = _make_auto_aim(
+        robot_velocity_supplier=lambda: (0.0, 0.0),
+    )
+    vision_still.simulate_target_centered(tag_id=4, distance=3.0)
+    cmd_still.initialize()
+    cmd_still.execute()
+    v_still = turret_still.motor.get_last_voltage()
+
+    # Strafing right at 2 m/s
+    cmd_moving, turret_moving, vision_moving = _make_auto_aim(
+        robot_velocity_supplier=lambda: (0.0, 2.0),
+    )
+    vision_moving.simulate_target_centered(tag_id=4, distance=3.0)
+    cmd_moving.initialize()
+    cmd_moving.execute()
+    v_moving = turret_moving.motor.get_last_voltage()
+
+    # Moving right should produce more positive voltage than standing still
+    assert v_moving > v_still
+
+
+@patch("commands.auto_aim.SmartDashboard")
+def test_no_velocity_supplier_works(mock_sd):
+    """AutoAim still works when no velocity supplier is provided."""
+    cmd, turret, vision = _make_auto_aim(robot_velocity_supplier=None)
+    vision.simulate_target_right(tag_id=4, offset_degrees=10, distance=2.0)
+    cmd.initialize()
+    cmd.execute()
+    assert turret.motor.get_last_voltage() > 0

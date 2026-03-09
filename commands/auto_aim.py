@@ -4,6 +4,7 @@ Toggleable via operator button. Publishes status to SmartDashboard.
 Does NOT track distance or lock status (that is auto_shoot's job).
 """
 
+import math
 from typing import Callable
 
 from commands2 import Command
@@ -27,12 +28,14 @@ class AutoAim(Command):
         vision: VisionProvider,
         tag_priority_supplier: Callable[[], list[int]],
         tag_offsets_supplier: Callable[[], dict],
+        robot_velocity_supplier: Callable[[], tuple[float, float]] | None = None,
     ):
         super().__init__()
         self.turret = turret
         self.vision = vision
         self._tag_priority_supplier = tag_priority_supplier
         self._tag_offsets_supplier = tag_offsets_supplier
+        self._robot_velocity_supplier = robot_velocity_supplier
         self._aim_sign = -1.0 if CON_SHOOTER["turret_aim_inverted"] else 1.0
 
         self._last_tx = 0.0
@@ -101,6 +104,18 @@ class AutoAim(Command):
             self._last_tx = target.tx
         else:
             self._last_tx = 0.0
+
+        # Velocity compensation -- lead the target based on robot movement.
+        # If the robot is strafing right, the target appears to drift left,
+        # so we aim further right to compensate for ball flight time.
+        if target is not None and self._robot_velocity_supplier is not None:
+            vx, vy = self._robot_velocity_supplier()
+            flight_time = CON_SHOOTER["ball_flight_time"]
+            dist = target.distance
+            if dist > 0.5:
+                lead_m = vy * flight_time
+                lead_deg = math.degrees(math.atan2(lead_m, dist))
+                self._last_tx += lead_deg
 
         # PD control
         p_term = self._last_tx * CON_SHOOTER["turret_p_gain"]

@@ -67,6 +67,7 @@ CON_SHOOTER = {
     "turret_aim_inverted": False,        # Positive tx (target right) -> positive voltage (turret right)
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
     "turret_max_auto_voltage": 2.0,      # Max voltage during auto-aim
+    "ball_flight_time": 0.5,              # Estimated ball flight time (seconds) -- tune on real robot
 
     # Per-tag offsets and priorities moved to constants/match.py.
     # They are now per-alliance and selected via SmartDashboard.

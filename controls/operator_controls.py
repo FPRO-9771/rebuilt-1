@@ -35,7 +35,7 @@ from commands.manual_launcher import ManualLauncher
 
 def configure_operator(operator, conveyor, turret, launcher, hood, vision,
                        match_setup, h_feed=None, v_feed=None, intake=None,
-                       intake_spinner=None):
+                       intake_spinner=None, drivetrain=None):
     """
     Wire all operator controller bindings.
     Call once from RobotContainer.__init__.
@@ -86,11 +86,21 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
         )
 
     # --- Auto-aim: Y button toggle ---
+    # Build velocity supplier from drivetrain if available.
+    # Returns (vx, vy) in m/s from the swerve chassis speeds.
+    vel_supplier = None
+    if drivetrain is not None:
+        def _get_robot_velocity():
+            state = drivetrain.get_state()
+            return (state.speeds.vx, state.speeds.vy)
+        vel_supplier = _get_robot_velocity
+
     operator.y().toggleOnTrue(
         AutoAim(
             turret, vision,
             tag_priority_supplier=match_setup.get_tag_priority,
             tag_offsets_supplier=match_setup.get_tag_offsets,
+            robot_velocity_supplier=vel_supplier,
         )
     )
 
