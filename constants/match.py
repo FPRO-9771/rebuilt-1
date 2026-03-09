@@ -25,10 +25,9 @@ ALLIANCES = [
     {
         "name": "Red",
         "default": True,
-        "tag_priority": [8, 9, 10, 11],
+        "tag_priority": [8, 10, 11],
         "tag_offsets": {
             8: {"tx_offset": 0.0, "distance_offset": 0.0},
-            9: {"tx_offset": 0.0, "distance_offset": 0.0},
             10: {"tx_offset": 0.0, "distance_offset": 0.0},
             11: {"tx_offset": 0.0, "distance_offset": 0.0},
         },
