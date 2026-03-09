@@ -39,7 +39,7 @@ class AutoAim(Command):
         self._aim_sign = -1.0 if CON_SHOOTER["turret_aim_inverted"] else 1.0
 
         self._last_tx = 0.0
-        self._prev_tx = 0.0
+        self._filtered_tx = 0.0
         self._locked_tag_id = None
         self._lost_count = 0
         self._cycle_count = 0
@@ -54,7 +54,7 @@ class AutoAim(Command):
 
     def initialize(self):
         self._last_tx = 0.0
-        self._prev_tx = 0.0
+        self._filtered_tx = 0.0
         self._locked_tag_id = None
         self._lost_count = 0
         self._cycle_count = 0
@@ -117,35 +117,36 @@ class AutoAim(Command):
                 lead_deg = math.degrees(math.atan2(lead_m, dist))
                 self._last_tx += lead_deg
 
-        # PD control
-        p_term = self._last_tx * CON_SHOOTER["turret_p_gain"]
-        d_term = (self._last_tx - self._prev_tx) * CON_SHOOTER["turret_d_gain"]
-        self._prev_tx = self._last_tx
+        # Smooth tx with EMA filter to reduce noise-induced derivative kick
+        alpha = CON_SHOOTER["turret_tx_filter_alpha"]
+        self._filtered_tx = alpha * self._last_tx + (1 - alpha) * self._filtered_tx
 
-        voltage = (p_term + d_term) * self._aim_sign
+        # PD control -- P on tx error, D on turret encoder velocity.
+        # Velocity-based D brakes the turret's own motion directly, which is
+        # more stable than D on tx (which mixes target motion with turret motion).
+        turret_vel = self.turret.get_velocity()
+        p_term = self._filtered_tx * CON_SHOOTER["turret_p_gain"]
+        d_term = -turret_vel * CON_SHOOTER["turret_d_velocity_gain"]
+
+        voltage = p_term * self._aim_sign + d_term
         max_v = CON_SHOOTER["turret_max_auto_voltage"]
         voltage = max(-max_v, min(voltage, max_v))
+
         self.turret._set_voltage(voltage)
 
-        # Diagnostic log every 10 cycles (~5 Hz on a 50 Hz loop)
-        # self._cycle_count += 1
-        # if self._cycle_count % 10 == 0:
-        #     raw_tx = target.tx if target is not None else None
-        #     tag_id = target.tag_id if target is not None else None
-        #     _log.info(
-        #         f"[AIM] cycle={self._cycle_count}"
-        #         f" | tag={tag_id}"
-        #         f" | raw_tx={raw_tx}"
-        #         f" | adj_tx={self._last_tx:.3f}"
-        #         f" | prev_tx={self._prev_tx:.3f}"
-        #         f" | P={p_term:.4f} D={d_term:.4f}"
-        #         f" | sign={self._aim_sign}"
-        #         f" | raw_v={(p_term + d_term) * self._aim_sign:.4f}"
-        #         f" | clamp_v={voltage:.4f}"
-        #         f" | lost={self._lost_count}"
-        #         f" | locked={self._locked_tag_id}"
-        #     )
-        #
+        # Debug log every 2 cycles (~25 Hz)
+        self._cycle_count += 1
+        if self._cycle_count % 2 == 0:
+            raw_tx = f"{target.tx:.2f}" if target is not None else "none"
+            _log.debug(
+                f"[AIM] tag={self._locked_tag_id} "
+                f"raw_tx={raw_tx} "
+                f"filtered_tx={self._filtered_tx:.2f} "
+                f"P={p_term:.3f} D={d_term:.3f} "
+                f"vel={turret_vel:.3f} "
+                f"voltage={voltage:.3f} "
+                f"lost={self._lost_count}"
+            )
     def isFinished(self) -> bool:
         return False
 
