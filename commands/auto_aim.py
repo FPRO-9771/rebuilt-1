@@ -43,6 +43,12 @@ class AutoAim(Command):
 
         self.addRequirements(turret)
 
+        # Publish diagnostic keys at boot so Elastic can find them immediately
+        SmartDashboard.putNumberArray("AutoAim/TagPriority", [])
+        SmartDashboard.putNumber("AutoAim/LockedTagID", -1)
+        SmartDashboard.putBoolean("AutoAim/HasTarget", False)
+        SmartDashboard.putNumberArray("AutoAim/VisibleTags", [])
+
     def initialize(self):
         self._last_tx = 0.0
         self._prev_tx = 0.0
