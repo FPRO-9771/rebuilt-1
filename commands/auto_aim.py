@@ -81,7 +81,10 @@ class AutoAim(Command):
             target = self.vision.get_target(tag_id)
             if target is not None:
                 self._locked_tag_id = tag_id
-                _log.debug(f"Locked onto tag {tag_id}")
+                # Seed filter with new tag's actual tx so we don't inherit
+                # a stale value from the previous tag and spike the output.
+                self._filtered_tx = target.tx
+                _log.debug(f"Locked onto tag {tag_id} tx={target.tx:.2f}")
                 return target
         return None
 
@@ -95,8 +98,11 @@ class AutoAim(Command):
         SmartDashboard.putNumber("AutoAim/LockedTagID",
                                 self._locked_tag_id if self._locked_tag_id is not None else -1)
         SmartDashboard.putBoolean("AutoAim/HasTarget", target is not None)
-        visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
-        SmartDashboard.putNumberArray("AutoAim/VisibleTags", visible_ids)
+        # Rate-limit get_all_targets() -- it makes a blocking network call to
+        # Limelight and can cause 100+ ms loop overruns if called every cycle.
+        if self._cycle_count % 25 == 0:
+            visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
+            SmartDashboard.putNumberArray("AutoAim/VisibleTags", visible_ids)
 
         if target is not None and target.tag_id in tag_offsets:
             self._last_tx = target.tx + tag_offsets[target.tag_id]["tx_offset"]
