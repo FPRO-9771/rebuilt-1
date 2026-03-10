@@ -73,7 +73,7 @@ CON_SHOOTER = {
     "turret_max_auto_voltage": 1.0,     # Max voltage during auto-aim
     "turret_max_brake_voltage": 2.0,    # Brake limit -- matched to drive limit (velocity D disabled)
     "turret_tx_filter_alpha": 0.6,       # EMA smoothing for tx (0=max smooth, 1=no filter)
-    "ball_flight_time": 0.5,              # Estimated ball flight time (seconds) -- tune on real robot
+    "ball_flight_time": 3.5,              # Estimated ball flight time (seconds) -- tune on real robot
 
     # Per-tag offsets and priorities moved to constants/match.py.
     # They are now per-alliance and selected via SmartDashboard.
@@ -81,8 +81,8 @@ CON_SHOOTER = {
     # Distance lookup table: (distance_m, launcher_rps, hood_position)
     # Sorted by distance -- interpolated at runtime
     "distance_table": [
-        (1, 60.0, 0.05),
-        (2.0, 75.0, 0.10),
-        (3.0, 90.0, 0.15),
+        (1, 55.0, 0.05),
+        (2.0, 70.0, 0.10),
+        (3.0, 85.0, 0.15),
     ],
 }
