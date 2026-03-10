@@ -65,13 +65,13 @@ CON_HOOD = {
 # SHOOTER SYSTEM CONFIGURATION
 # =============================================================================
 CON_SHOOTER = {
-    "turret_p_gain": 0.10,               # Proportional gain (volts per degree) -- drives toward target
-    "turret_d_velocity_gain": 1.0,       # Damping on turret encoder velocity (volts per rot/s) -- brakes overshoot
+    "turret_p_gain": 0.08,               # Proportional gain (volts per degree) -- drives toward target
+    "turret_d_velocity_gain": 0.0,       # Velocity damping -- disabled (encoder readings too noisy on hardware)
     "turret_aim_inverted": False,        # Positive tx (target right) -> positive voltage (turret right)
-    "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
+    "turret_alignment_tolerance": 1.0,   # Degrees of tx offset considered "aligned"
 
-    "turret_max_auto_voltage": 0.75,     # Max voltage when driving toward target
-    "turret_max_brake_voltage": 2.0,     # Max voltage when braking (opposes motion) -- can be higher safely
+    "turret_max_auto_voltage": 0.75,     # Max voltage during auto-aim
+    "turret_max_brake_voltage": 0.75,    # Brake limit -- matched to drive limit (velocity D disabled)
     "turret_tx_filter_alpha": 0.6,       # EMA smoothing for tx (0=max smooth, 1=no filter)
     "ball_flight_time": 0.5,              # Estimated ball flight time (seconds) -- tune on real robot
 
