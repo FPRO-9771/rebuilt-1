@@ -16,7 +16,7 @@ MOTOR_IDS = {
 
     # Mechanisms
     "conveyor": {"can_id": 20, "type": "talon_fx", "bus": "op_sys", "wired": False},
-    "h_feed":   {"can_id": 22, "type": "talon_fx", "bus": "op_sys", "wired": False},
+    "h_feed":   {"can_id": 22, "type": "talon_fx", "bus": "op_sys", "wired": True},
     "v_feed":   {"can_id": 23, "type": "talon_fx", "bus": "op_sys", "wired": True},
 
     # Intake
