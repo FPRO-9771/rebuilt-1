@@ -24,6 +24,9 @@ TEST_CON_TURRET = {
     "max_position": 5.0,
     "position_tolerance": 0.1,
     "inverted": False,
+    "search_voltage": 3.0,
+    "search_brake_voltage": 5.0,
+    "search_brake_cycles": 3,
 }
 
 TEST_CON_LAUNCHER = {
@@ -145,4 +148,5 @@ def _patch_constants(monkeypatch):
         "commands.auto_aim.TARGET_LOCK_LOST_CYCLES",
         TEST_TARGET_LOCK_LOST_CYCLES,
     )
+    monkeypatch.setattr("commands.find_target.CON_TURRET", TEST_CON_TURRET)
     monkeypatch.setattr("commands.manual_launcher.CON_MANUAL", TEST_CON_MANUAL)

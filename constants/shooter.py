@@ -13,6 +13,9 @@ CON_TURRET = {
     "max_position": 9.5,        # Soft limit: rightmost rotation (rotations)
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
     "inverted": False,
+    "search_voltage": 0.5,      # Voltage during FindTarget sweep (tune on robot)
+    "search_brake_voltage": 3.0, # Brake voltage when sweep hits a soft limit
+    "search_brake_cycles": 5,   # How many cycles to brake at a soft limit before reversing
 }
 
 # =============================================================================

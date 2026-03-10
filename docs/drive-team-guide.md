@@ -23,7 +23,7 @@ Quick reference for what every button does on each Xbox controller.
 |-------|--------|-------|
 | **A button** | Toggle launcher on/off | Speed controlled by right stick Y |
 | **B button** | Toggle feeds on/off | Runs H feed + V feed together |
-| **X button** | *unassigned* | |
+| **X button** | **TEMP:** Toggle FindTarget sweep | Turret sweeps to find tags. Remove after testing. |
 | **Y button** | Toggle auto-aim on/off | Dashboard shows Shooter/AutoAim status |
 
 ### Bumpers & Triggers

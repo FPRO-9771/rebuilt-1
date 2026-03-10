@@ -7,7 +7,7 @@ Controls:
     Right stick Y       -- Launcher speed (when toggled on via A)
     A button (toggle)   -- Launcher on/off (speed from right stick Y)
     B button (toggle)   -- Feed system on/off (H feed + V feed)
-    X button            -- (unused)
+    X button (toggle)   -- TEMP: FindTarget sweep (turret sweeps to find tags)
     Y button (toggle)   -- Auto-aim on/off (turret tracks tags via PD)
     Left bumper (hold)  -- Auto-shoot (vision distance -> launcher/hood)
     Right bumper (toggle) -- Intake deploy + spinner on/off
@@ -30,6 +30,7 @@ from subsystems.intake_spinner import IntakeSpinner
 from handlers.vision import VisionProvider
 from commands.auto_aim import AutoAim
 from commands.auto_shoot import AutoShoot
+from commands.find_target import FindTarget
 from commands.manual_launcher import ManualLauncher
 
 
@@ -63,6 +64,15 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
                 v_feed.run_at_voltage(CON_V_FEED["feed_voltage"]),
             )
         )
+
+    # --- TEMP: FindTarget sweep on X button (toggle) ---
+    # For testing the sweep on the real robot. Remove once integrated with AutoAim.
+    operator.x().toggleOnTrue(
+        FindTarget(
+            turret, vision,
+            tag_priority_supplier=match_setup.get_tag_priority,
+        )
+    )
 
     # --- Intake: X button toggles between out/in ---
     # COMMENTED OUT -- intake held down for practice, no toggle needed
