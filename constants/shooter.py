@@ -65,13 +65,13 @@ CON_HOOD = {
 # SHOOTER SYSTEM CONFIGURATION
 # =============================================================================
 CON_SHOOTER = {
-    "turret_p_gain": 0.08,               # Proportional gain (volts per degree) -- drives toward target
-    "turret_d_velocity_gain": 0.0,       # Velocity damping -- disabled (encoder readings too noisy on hardware)
+    "turret_p_gain": 0.1,               # Proportional gain (volts per degree) -- drives toward target
+    "turret_d_velocity_gain": 0.3,       # Velocity damping -- disabled (encoder readings too noisy on hardware)
     "turret_aim_inverted": False,        # Positive tx (target right) -> positive voltage (turret right)
     "turret_alignment_tolerance": 1.0,   # Degrees of tx offset considered "aligned"
 
-    "turret_max_auto_voltage": 0.75,     # Max voltage during auto-aim
-    "turret_max_brake_voltage": 0.75,    # Brake limit -- matched to drive limit (velocity D disabled)
+    "turret_max_auto_voltage": 1.0,     # Max voltage during auto-aim
+    "turret_max_brake_voltage": 2.0,    # Brake limit -- matched to drive limit (velocity D disabled)
     "turret_tx_filter_alpha": 0.6,       # EMA smoothing for tx (0=max smooth, 1=no filter)
     "ball_flight_time": 0.5,              # Estimated ball flight time (seconds) -- tune on real robot
 
@@ -81,8 +81,8 @@ CON_SHOOTER = {
     # Distance lookup table: (distance_m, launcher_rps, hood_position)
     # Sorted by distance -- interpolated at runtime
     "distance_table": [
-        (1, 70.0, 0.05),
-        (2.0, 85.0, 0.10),
-        (3.0, 100.0, 0.15),
+        (1, 60.0, 0.05),
+        (2.0, 75.0, 0.10),
+        (3.0, 90.0, 0.15),
     ],
 }
