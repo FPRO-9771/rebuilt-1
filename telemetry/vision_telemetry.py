@@ -20,12 +20,19 @@ class VisionTelemetry:
         self._cameras = cameras
         self._cycle = 0
 
+    _TELEMETRY_RATE = 5  # publish vision telemetry every N cycles (~3 Hz at 13 Hz loop)
+
     def update(self):
         """Publish current vision data to SmartDashboard."""
         sd = wpilib.SmartDashboard
         self._cycle += 1
         should_log = False
         # should_log = self._cycle % self._LOG_EVERY_N == 0
+
+        # Skip heavy Limelight network calls on most cycles -- get_all_targets()
+        # is a blocking network request that causes loop overruns if called every cycle.
+        if self._cycle % self._TELEMETRY_RATE != 0:
+            return
 
         if should_log:
             _log.debug("---- vision telemetry start ----")
