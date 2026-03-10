@@ -30,6 +30,10 @@ class MotorTelemetry:
         if self._hood._enabled:
             sd.putNumber("Motors/Hood Position", self._hood.get_position())
         if self._h_feed is not None:
-            sd.putNumber("Motors/H Feed Velocity", self._h_feed.get_velocity())
+            h_vel = self._h_feed.get_velocity()
+            sd.putNumber("Motors/H Feed Velocity", h_vel)
+            sd.putBoolean("Motors/H Feed Running", abs(h_vel) > 0.1)
         if self._v_feed is not None:
-            sd.putNumber("Motors/V Feed Velocity", self._v_feed.get_velocity())
+            v_vel = self._v_feed.get_velocity()
+            sd.putNumber("Motors/V Feed Velocity", v_vel)
+            sd.putBoolean("Motors/V Feed Running", abs(v_vel) > 0.1)
