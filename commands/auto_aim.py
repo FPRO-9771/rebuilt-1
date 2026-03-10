@@ -114,14 +114,18 @@ class AutoAim(Command):
         # Velocity compensation -- lead the target based on robot movement.
         # If the robot is strafing right, the target appears to drift left,
         # so we aim further right to compensate for ball flight time.
+        _vx, _vy, _lead_deg = 0.0, 0.0, 0.0
         if target is not None and self._robot_velocity_supplier is not None:
-            vx, vy = self._robot_velocity_supplier()
+            _vx, _vy = self._robot_velocity_supplier()
             flight_time = CON_SHOOTER["ball_flight_time"]
             dist = target.distance
             if dist > 0.5:
-                lead_m = vy * flight_time
-                lead_deg = math.degrees(math.atan2(lead_m, dist))
-                self._last_tx += lead_deg
+                lead_m = _vy * flight_time
+                _lead_deg = math.degrees(math.atan2(lead_m, dist))
+                self._last_tx += _lead_deg
+        SmartDashboard.putNumber("AutoAim/RobotVX", _vx)
+        SmartDashboard.putNumber("AutoAim/RobotVY", _vy)
+        SmartDashboard.putNumber("AutoAim/LeadDeg", _lead_deg)
 
         # Smooth tx with EMA filter to reduce noise-induced derivative kick
         alpha = CON_SHOOTER["turret_tx_filter_alpha"]
@@ -157,7 +161,8 @@ class AutoAim(Command):
                 f"P={p_term:.3f} D={d_term:.3f} "
                 f"vel={turret_vel:.3f} "
                 f"voltage={voltage:.3f} "
-                f"lost={self._lost_count}"
+                f"lost={self._lost_count} "
+                f"| robot vx={_vx:.2f} vy={_vy:.2f} lead={_lead_deg:.2f}deg"
             )
     def isFinished(self) -> bool:
         return False
