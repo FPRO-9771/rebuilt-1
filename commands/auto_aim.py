@@ -98,8 +98,8 @@ class AutoAim(Command):
         SmartDashboard.putNumber("AutoAim/LockedTagID",
                                 self._locked_tag_id if self._locked_tag_id is not None else -1)
         SmartDashboard.putBoolean("AutoAim/HasTarget", target is not None)
-        # Rate-limit get_all_targets() -- it makes a blocking network call to
-        # Limelight and can cause 100+ ms loop overruns if called every cycle.
+        # Rate-limit get_all_targets() -- reads cached data but the
+        # SmartDashboard publish is unnecessary every cycle.
         if self._cycle_count % 25 == 0:
             visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
             SmartDashboard.putNumberArray("AutoAim/VisibleTags", visible_ids)
@@ -115,9 +115,10 @@ class AutoAim(Command):
             self._cycle_count += 1
             if self._cycle_count % 2 == 0:
                 _log.debug(
-                    f"[AIM] tag={self._locked_tag_id} "
-                    f"raw_tx=none filtered_tx={self._filtered_tx:.2f} "
-                    f"P=0.000 D=0.000 vel=0.000 voltage=0.000 "
+                    f"[AIM] t={self._locked_tag_id} "
+                    f"tx=-- ftx={self._filtered_tx:.2f} "
+                    f"P=0.000 D=0.000 rv=0.000 v=0.000 [--] "
+                    f"vel=0.000 pos={self.turret.get_position():.3f} "
                     f"lost={self._lost_count}"
                 )
             return
@@ -154,31 +155,30 @@ class AutoAim(Command):
         p_term = self._filtered_tx * CON_SHOOTER["turret_p_gain"]
         d_term = -turret_vel * CON_SHOOTER["turret_d_velocity_gain"]
 
-        voltage = p_term * self._aim_sign + d_term
+        raw_voltage = p_term * self._aim_sign + d_term
 
         # Asymmetric voltage limits: allow more braking force than driving force.
         # When voltage opposes current turret motion, use the brake limit.
-        if turret_vel != 0 and (voltage * turret_vel) < 0:
+        if turret_vel != 0 and (raw_voltage * turret_vel) < 0:
             max_v = CON_SHOOTER["turret_max_brake_voltage"]
         else:
             max_v = CON_SHOOTER["turret_max_auto_voltage"]
-        voltage = max(-max_v, min(voltage, max_v))
+        voltage = max(-max_v, min(raw_voltage, max_v))
+        saturated = abs(raw_voltage) > max_v
 
         self.turret._set_voltage(voltage)
 
         # Debug log every 2 cycles (~25 Hz)
         self._cycle_count += 1
         if self._cycle_count % 2 == 0:
-            raw_tx = f"{target.tx:.2f}"
+            sat = "SAT" if saturated else "ok"
             _log.debug(
-                f"[AIM] tag={self._locked_tag_id} "
-                f"raw_tx={raw_tx} "
-                f"filtered_tx={self._filtered_tx:.2f} "
+                f"[AIM] t={self._locked_tag_id} "
+                f"tx={target.tx:.2f} ftx={self._filtered_tx:.2f} "
                 f"P={p_term:.3f} D={d_term:.3f} "
-                f"vel={turret_vel:.3f} "
-                f"voltage={voltage:.3f} "
-                f"lost={self._lost_count} "
-                f"| robot vx={_vx:.2f} vy={_vy:.2f} lead={_lead_deg:.2f}deg"
+                f"rv={raw_voltage:.3f} v={voltage:.3f} [{sat}] "
+                f"vel={turret_vel:.3f} pos={self.turret.get_position():.3f} "
+                f"vx={_vx:.2f} vy={_vy:.2f} ld={_lead_deg:.2f}"
             )
     def isFinished(self) -> bool:
         return False
