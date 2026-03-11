@@ -84,7 +84,7 @@ Quick reference for what every button does on each Xbox controller.
 | **A button (hold)** | Brake | Locks wheels in X pattern |
 | **B button (hold)** | Point wheels | Aims wheels in left stick direction |
 | **X button** | *unassigned* | SysId combo only (Back/Start + X) |
-| **Y button** | *unassigned* | SysId combo only (Back/Start + Y) |
+| **Y button (hold)** | Drive straight forward | Alignment test -- 25% speed, robot-centric |
 
 ### Bumpers & Triggers
 

@@ -75,6 +75,7 @@ When you add a new control:
 | B button | `whileTrue` | Point wheels in left stick direction |
 | Left bumper | `onTrue` | Reset field-centric heading |
 | Right bumper | `onTrue` | Toggle field-centric / robot-centric |
+| Y button | `whileTrue` | Drive straight forward (alignment test, 25% speed) |
 | Back + Y | `whileTrue` | SysId dynamic forward |
 | Back + X | `whileTrue` | SysId dynamic reverse |
 | Start + Y | `whileTrue` | SysId quasistatic forward |
