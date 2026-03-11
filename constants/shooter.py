@@ -72,9 +72,10 @@ CON_SHOOTER = {
 
     "turret_max_auto_voltage": 0.50,     # Max voltage during auto-aim (sqrt P handles decel now)
     "turret_max_brake_voltage": 0.50,    # Brake limit -- higher than drive to stop quickly
+    "turret_min_move_voltage": 0.35,    # Deadband comp -- minimum voltage to overcome static friction
     "turret_velocity_ff_gain": 0.15,     # Feedforward: volts per (m/s) of lateral robot velocity
     "turret_tx_filter_alpha": 0.85,      # EMA smoothing for tx (0=max smooth, 1=no filter)
-    "ball_flight_time": 0.5,              # Estimated ball flight time (seconds) -- tune on real robot
+    "ball_flight_time": 1,              # Estimated ball flight time (seconds) -- tune on real robot
 
     # Per-tag offsets and priorities moved to constants/match.py.
     # They are now per-alliance and selected via SmartDashboard.

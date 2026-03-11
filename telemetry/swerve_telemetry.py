@@ -13,6 +13,8 @@ from wpilib import Color, Color8Bit, Mechanism2d, MechanismLigament2d, SmartDash
 from wpimath.geometry import Pose2d
 from wpimath.kinematics import ChassisSpeeds, SwerveModulePosition, SwerveModuleState
 
+from constants.debug import DEBUG
+
 
 class SwerveTelemetry:
     # Publish every Nth call (8 = ~2.5 Hz at 20 Hz loop rate).
@@ -96,6 +98,8 @@ class SwerveTelemetry:
         Accept the swerve drive state and telemeterize it to SmartDashboard and SignalLogger.
         """
         self._cycle += 1
+        if not DEBUG["debug_telemetry"]:
+            return
         if self._cycle % self._PUBLISH_EVERY_N != self._PUBLISH_OFFSET:
             return
 

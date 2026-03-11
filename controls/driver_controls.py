@@ -28,6 +28,7 @@ from wpimath.geometry import Rotation2d
 from wpimath.units import rotationsToRadians
 
 from constants.controls import CON_ROBOT
+from constants.debug import DEBUG
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
 from telemetry.swerve_telemetry import SwerveTelemetry
 
@@ -78,9 +79,10 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
 
     def get_drive_request():
         req = drive_rc if state["robot_centric"] else drive_fc
-        SmartDashboard.putBoolean(
-            "Drive/Robot Centric", state["robot_centric"]
-        )
+        if DEBUG["debug_telemetry"]:
+            SmartDashboard.putBoolean(
+                "Drive/Robot Centric", state["robot_centric"]
+            )
         return (
             req.with_velocity_x(
                 -_apply_curve(driver.getLeftY(), drive_exp) * max_speed

@@ -72,6 +72,7 @@ TEST_CON_SHOOTER = {
     "turret_alignment_tolerance": 2.0,
     "turret_max_auto_voltage": 5.0,
     "turret_max_brake_voltage": 5.0,
+    "turret_min_move_voltage": 0.0,
     "turret_velocity_ff_gain": 0.15,
     "turret_tx_filter_alpha": 1.0,
     "ball_flight_time": 0.5,

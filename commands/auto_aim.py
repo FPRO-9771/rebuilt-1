@@ -107,50 +107,51 @@ class AutoAim(Command):
                 visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
                 SmartDashboard.putNumberArray("AutoAim/VisibleTags", visible_ids)
 
-        # No target -- stop the turret immediately. Without this early
-        # return the D term feeds back on residual turret velocity and
-        # keeps the motor spinning even though there is nothing to aim at.
-        # Keep _filtered_tx so recovery is smooth when the tag reappears
-        # (resetting to 0 caused a spike on re-acquire).
-        if target is None:
+        # Truly lost -- no locked tag at all.  Stop the turret.
+        if target is None and self._locked_tag_id is None:
             self._last_tx = 0.0
+            self._filtered_tx = 0.0
             self.turret._set_voltage(0.0)
             self._cycle_count += 1
             if self._cycle_count % 2 == 0:
                 _log.debug(
-                    f"[AIM] t={self._locked_tag_id} "
-                    f"tx=-- ftx={self._filtered_tx:.2f} "
+                    f"[AIM] t=-- tx=-- ftx=0.00 "
                     f"P=0.000 D=0.000 rv=0.000 v=0.000 [--] "
                     f"vel=0.000 pos={self.turret.get_position():.3f} "
-                    f"lost={self._lost_count}"
+                    f"lost=0"
                 )
             return
 
-        if target.tag_id in tag_offsets:
-            self._last_tx = target.tx + tag_offsets[target.tag_id]["tx_offset"]
-        else:
-            self._last_tx = target.tx
+        # Brief dropout -- tag temporarily missing but lock held.
+        # Coast on last filtered_tx so the turret doesn't jerk to a stop
+        # on every dropped Limelight frame.  Fall through to PD loop.
 
-        # Velocity compensation -- lead the target based on robot movement.
-        # If the robot is strafing right, the target appears to drift left,
-        # so we aim further right to compensate for ball flight time.
+        # Update measurement only when we have a fresh target.
+        # During brief dropouts, _filtered_tx holds its last value.
         _vx, _vy, _lead_deg = 0.0, 0.0, 0.0
-        if self._robot_velocity_supplier is not None:
-            _vx, _vy = self._robot_velocity_supplier()
-            flight_time = CON_SHOOTER["ball_flight_time"]
-            dist = target.distance
-            if dist > 0.5:
-                lead_m = _vy * flight_time
-                _lead_deg = math.degrees(math.atan2(lead_m, dist))
-                self._last_tx += _lead_deg
-        if DEBUG["debug_telemetry"] and self._cycle_count % 10 == 5:
-            SmartDashboard.putNumber("AutoAim/RobotVX", _vx)
-            SmartDashboard.putNumber("AutoAim/RobotVY", _vy)
-            SmartDashboard.putNumber("AutoAim/LeadDeg", _lead_deg)
+        if target is not None:
+            if target.tag_id in tag_offsets:
+                self._last_tx = target.tx + tag_offsets[target.tag_id]["tx_offset"]
+            else:
+                self._last_tx = target.tx
 
-        # Smooth tx with EMA filter to reduce noise-induced derivative kick
-        alpha = CON_SHOOTER["turret_tx_filter_alpha"]
-        self._filtered_tx = alpha * self._last_tx + (1 - alpha) * self._filtered_tx
+            # Velocity compensation -- lead the target based on robot movement.
+            if self._robot_velocity_supplier is not None:
+                _vx, _vy = self._robot_velocity_supplier()
+                flight_time = CON_SHOOTER["ball_flight_time"]
+                dist = target.distance
+                if dist > 0.5:
+                    lead_m = _vy * flight_time
+                    _lead_deg = math.degrees(math.atan2(lead_m, dist))
+                    self._last_tx += _lead_deg
+            if DEBUG["debug_telemetry"] and self._cycle_count % 10 == 5:
+                SmartDashboard.putNumber("AutoAim/RobotVX", _vx)
+                SmartDashboard.putNumber("AutoAim/RobotVY", _vy)
+                SmartDashboard.putNumber("AutoAim/LeadDeg", _lead_deg)
+
+            # Smooth tx with EMA filter to reduce noise-induced derivative kick
+            alpha = CON_SHOOTER["turret_tx_filter_alpha"]
+            self._filtered_tx = alpha * self._last_tx + (1 - alpha) * self._filtered_tx
 
         # PD control -- P on tx error, D on turret encoder velocity.
         # Velocity-based D brakes the turret's own motion directly, which is
@@ -181,17 +182,29 @@ class AutoAim(Command):
         voltage = max(-max_v, min(raw_voltage, max_v))
         saturated = abs(raw_voltage) > max_v
 
+        # Deadband compensation -- overcome static friction when starting
+        # from standstill.  Once the turret is moving, dynamic friction is
+        # much lower and the PD controller can output small voltages to
+        # brake and settle without being overridden.
+        min_move = CON_SHOOTER["turret_min_move_voltage"]
+        if (abs(turret_vel) < 0.05
+                and abs(voltage) > 0.01
+                and abs(voltage) < min_move):
+            voltage = math.copysign(min_move, voltage)
+
         self.turret._set_voltage(voltage)
 
         # Debug log every 2 cycles (~25 Hz)
         self._cycle_count += 1
         if self._cycle_count % 2 == 0:
             sat = "SAT" if saturated else "ok"
+            raw_tx = f"{target.tx:.2f}" if target is not None else "--"
+            coast = f" coast={self._lost_count}" if target is None else ""
             _log.debug(
                 f"[AIM] t={self._locked_tag_id} "
-                f"tx={target.tx:.2f} ftx={self._filtered_tx:.2f} "
+                f"tx={raw_tx} ftx={self._filtered_tx:.2f} "
                 f"P={p_term:.3f} D={d_term:.3f} FF={ff_term:.3f} "
-                f"rv={raw_voltage:.3f} v={voltage:.3f} [{sat}] "
+                f"rv={raw_voltage:.3f} v={voltage:.3f} [{sat}]{coast} "
                 f"vel={turret_vel:.3f} pos={self.turret.get_position():.3f} "
                 f"vx={_vx:.2f} vy={_vy:.2f} ld={_lead_deg:.2f}"
             )
