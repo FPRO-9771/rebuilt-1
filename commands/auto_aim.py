@@ -104,18 +104,34 @@ class AutoAim(Command):
             visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
             SmartDashboard.putNumberArray("AutoAim/VisibleTags", visible_ids)
 
-        if target is not None and target.tag_id in tag_offsets:
-            self._last_tx = target.tx + tag_offsets[target.tag_id]["tx_offset"]
-        elif target is not None:
-            self._last_tx = target.tx
-        else:
+        # No target -- stop the turret immediately. Without this early
+        # return the D term feeds back on residual turret velocity and
+        # keeps the motor spinning even though there is nothing to aim at.
+        # Keep _filtered_tx so recovery is smooth when the tag reappears
+        # (resetting to 0 caused a spike on re-acquire).
+        if target is None:
             self._last_tx = 0.0
+            self.turret._set_voltage(0.0)
+            self._cycle_count += 1
+            if self._cycle_count % 2 == 0:
+                _log.debug(
+                    f"[AIM] tag={self._locked_tag_id} "
+                    f"raw_tx=none filtered_tx={self._filtered_tx:.2f} "
+                    f"P=0.000 D=0.000 vel=0.000 voltage=0.000 "
+                    f"lost={self._lost_count}"
+                )
+            return
+
+        if target.tag_id in tag_offsets:
+            self._last_tx = target.tx + tag_offsets[target.tag_id]["tx_offset"]
+        else:
+            self._last_tx = target.tx
 
         # Velocity compensation -- lead the target based on robot movement.
         # If the robot is strafing right, the target appears to drift left,
         # so we aim further right to compensate for ball flight time.
         _vx, _vy, _lead_deg = 0.0, 0.0, 0.0
-        if target is not None and self._robot_velocity_supplier is not None:
+        if self._robot_velocity_supplier is not None:
             _vx, _vy = self._robot_velocity_supplier()
             flight_time = CON_SHOOTER["ball_flight_time"]
             dist = target.distance
@@ -153,7 +169,7 @@ class AutoAim(Command):
         # Debug log every 2 cycles (~25 Hz)
         self._cycle_count += 1
         if self._cycle_count % 2 == 0:
-            raw_tx = f"{target.tx:.2f}" if target is not None else "none"
+            raw_tx = f"{target.tx:.2f}"
             _log.debug(
                 f"[AIM] tag={self._locked_tag_id} "
                 f"raw_tx={raw_tx} "

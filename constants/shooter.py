@@ -66,13 +66,13 @@ CON_HOOD = {
 # =============================================================================
 CON_SHOOTER = {
     "turret_p_gain": 0.08,               # Proportional gain (volts per degree) -- drives toward target
-    "turret_d_velocity_gain": 0.4,       # Velocity damping -- disabled (encoder readings too noisy on hardware)
+    "turret_d_velocity_gain": 0.03,      # Velocity damping -- light braking only (too high causes oscillation)
     "turret_aim_inverted": False,        # Positive tx (target right) -> positive voltage (turret right)
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
 
-    "turret_max_auto_voltage": 0.75,     # Max voltage during auto-aim
-    "turret_max_brake_voltage": 0.75,    # Brake limit -- matched to drive limit (velocity D disabled)
-    "turret_tx_filter_alpha": 0.6,       # EMA smoothing for tx (0=max smooth, 1=no filter)
+    "turret_max_auto_voltage": 0.35,     # Max voltage during auto-aim (lower = less overshoot)
+    "turret_max_brake_voltage": 0.50,    # Brake limit -- higher than drive to stop quickly
+    "turret_tx_filter_alpha": 0.85,      # EMA smoothing for tx (0=max smooth, 1=no filter)
     "ball_flight_time": 0.5,              # Estimated ball flight time (seconds) -- tune on real robot
 
     # Per-tag offsets and priorities moved to constants/match.py.

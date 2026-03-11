@@ -175,3 +175,29 @@ def test_no_velocity_supplier_works(mock_sd):
     cmd.initialize()
     cmd.execute()
     assert turret.motor.get_last_voltage() > 0
+
+
+@patch("commands.auto_aim.SmartDashboard")
+def test_no_target_stops_turret_even_with_velocity(mock_sd):
+    """Turret with residual velocity must get 0 volts when target is lost.
+
+    Regression: the D term was feeding back on turret velocity and keeping
+    the motor spinning indefinitely after the target disappeared.
+    """
+    cmd, turret, vision = _make_auto_aim()
+    vision.simulate_target_right(tag_id=4, offset_degrees=10, distance=2.0)
+
+    cmd.initialize()
+    cmd.execute()
+    assert turret.motor.get_last_voltage() != 0
+
+    # Simulate target lost while turret is still spinning
+    vision.simulate_no_target()
+    turret.motor.simulate_velocity(2.0)
+
+    # Run enough cycles to expire stickiness
+    for _ in range(TEST_TARGET_LOCK_LOST_CYCLES):
+        cmd.execute()
+
+    # Turret must get zero voltage -- no D-term feedback loop
+    assert turret.motor.get_last_voltage() == 0
