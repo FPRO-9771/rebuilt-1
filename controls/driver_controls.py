@@ -151,7 +151,7 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
     driver.y().whileTrue(
         drivetrain.apply_request(
             lambda: drive_straight
-            .with_velocity_x(max_speed * 0.25)
+            .with_velocity_x(max_speed * 0.07)
             .with_velocity_y(0)
             .with_rotational_rate(0)
         )
