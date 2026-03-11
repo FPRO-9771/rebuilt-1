@@ -127,7 +127,8 @@ def test_pose_telemetry_tracks_state(mock_sd, _mock_logger):
 
     # Telemetry only publishes every Nth call; warm up the cycle counter.
     warmup = _make_drive_state(0, 0, 0)
-    for _ in range(telem._PUBLISH_EVERY_N - 1):
+    # Advance until one cycle before the next publish
+    while (telem._cycle + 1) % telem._PUBLISH_EVERY_N != telem._PUBLISH_OFFSET:
         telem.telemeterize(warmup)
 
     # First pose
@@ -142,7 +143,8 @@ def test_pose_telemetry_tracks_state(mock_sd, _mock_logger):
     mock_sd.reset_mock()
 
     # Second pose -- different values prove output changes with input
-    for _ in range(telem._PUBLISH_EVERY_N - 1):
+    # Advance until one cycle before the next publish
+    while (telem._cycle + 1) % telem._PUBLISH_EVERY_N != telem._PUBLISH_OFFSET:
         telem.telemeterize(warmup)
     state2 = _make_drive_state(-3.21, 0.07, -145.3)
     telem.telemeterize(state2)
@@ -162,7 +164,8 @@ def test_pose_telemetry_rounds_values(mock_sd, _mock_logger):
     telem = SwerveTelemetry(5.0)
     # Warm up the cycle counter so the next call publishes.
     warmup = _make_drive_state(0, 0, 0)
-    for _ in range(telem._PUBLISH_EVERY_N - 1):
+    # Advance until one cycle before the next publish
+    while (telem._cycle + 1) % telem._PUBLISH_EVERY_N != telem._PUBLISH_OFFSET:
         telem.telemeterize(warmup)
     state = _make_drive_state(1.23456, 7.89012, 123.456)
     telem.telemeterize(state)

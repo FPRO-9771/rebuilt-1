@@ -39,6 +39,7 @@ class MatchSetup:
                     alliance["name"], alliance
                 )
         SmartDashboard.putData("Alliance", self._alliance_chooser)
+        self._update_cycle = 0
 
         # --- Pose chooser ---
         # Pose names are the same across alliances (Left/Center/Right),
@@ -93,6 +94,9 @@ class MatchSetup:
         return self.get_alliance()["tag_offsets"]
 
     def update(self):
-        """Publish alliance indicator. Call every cycle from robotPeriodic()."""
+        """Publish alliance indicator. Rate-limited -- alliance doesn't change mid-match."""
+        self._update_cycle += 1
+        if self._update_cycle % 50 != 1:
+            return
         is_red = self.get_alliance()["name"] == "Red"
         SmartDashboard.putBoolean("Match/Is Red Alliance", is_red)

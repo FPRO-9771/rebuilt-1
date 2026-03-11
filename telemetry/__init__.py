@@ -9,15 +9,16 @@ from telemetry.motor_telemetry import MotorTelemetry
 from telemetry.command_telemetry import CommandTelemetry
 from telemetry.vision_telemetry import VisionTelemetry
 from telemetry.camera_telemetry import setup_camera_streams
+from constants.debug import DEBUG
 
 _motor: MotorTelemetry | None = None
 _command: CommandTelemetry | None = None
 _vision: VisionTelemetry | None = None
 _cycle: int = 0
 
-# Publish telemetry every Nth cycle (4 = ~3 Hz at 13 Hz loop rate).
+# Publish telemetry every Nth cycle (8 = ~2.5 Hz at 20 Hz loop rate).
 # Keeps the robot loop fast on the roboRIO.
-_PUBLISH_EVERY_N = 4
+_PUBLISH_EVERY_N = 8
 
 
 def setup_telemetry(conveyor, turret, launcher, hood, vision,
@@ -37,15 +38,18 @@ def setup_telemetry(conveyor, turret, launcher, hood, vision,
 
 
 def update_telemetry():
-    """Publish all telemetry data. Call every cycle from robotPeriodic()."""
+    """Publish telemetry data, staggered so no two hit the same cycle."""
     global _cycle
     _cycle += 1
-    if _cycle % _PUBLISH_EVERY_N != 0:
-        return
 
-    if _motor:
+    # Motor telemetry handles its own match/debug split internally.
+    if _motor and _cycle % _PUBLISH_EVERY_N == 0:
         _motor.update()
-    if _command:
+
+    # Command and vision telemetry are debug-only.
+    if not DEBUG["debug_telemetry"]:
+        return
+    if _command and _cycle % _PUBLISH_EVERY_N == 3:
         _command.update()
-    if _vision:
+    if _vision and _cycle % _PUBLISH_EVERY_N == 6:
         _vision.update()

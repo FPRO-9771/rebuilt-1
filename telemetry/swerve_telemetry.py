@@ -15,8 +15,10 @@ from wpimath.kinematics import ChassisSpeeds, SwerveModulePosition, SwerveModule
 
 
 class SwerveTelemetry:
-    # Publish every Nth call (4 = ~3 Hz at 13 Hz loop rate).
-    _PUBLISH_EVERY_N = 4
+    # Publish every Nth call (8 = ~2.5 Hz at 20 Hz loop rate).
+    # Offset staggers this publisher away from other telemetry.
+    _PUBLISH_EVERY_N = 8
+    _PUBLISH_OFFSET = 4
 
     def __init__(self, max_speed: units.meters_per_second):
         """
@@ -94,7 +96,7 @@ class SwerveTelemetry:
         Accept the swerve drive state and telemeterize it to SmartDashboard and SignalLogger.
         """
         self._cycle += 1
-        if self._cycle % self._PUBLISH_EVERY_N != 0:
+        if self._cycle % self._PUBLISH_EVERY_N != self._PUBLISH_OFFSET:
             return
 
         # Telemeterize the swerve drive state

@@ -15,7 +15,7 @@ class Robot(wpilib.TimedRobot):
     # The default 20 ms loop is too fast for Python on the roboRIO.
     # 50 ms (20 Hz) keeps us within budget. Drivetrain odometry runs
     # on its own high-frequency thread so driving is not affected.
-    _LOOP_PERIOD = 0.075
+    _LOOP_PERIOD = 0.050
 
     def __init__(self):
         super().__init__(self._LOOP_PERIOD)

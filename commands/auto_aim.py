@@ -13,6 +13,7 @@ from wpilib import SmartDashboard
 from handlers.vision import VisionProvider
 from subsystems.turret import Turret
 from constants import CON_SHOOTER
+from constants.debug import DEBUG
 from constants.match import TARGET_LOCK_LOST_CYCLES
 from utils.logger import get_logger
 
@@ -93,16 +94,18 @@ class AutoAim(Command):
         tag_offsets = self._tag_offsets_supplier()
         tag_priority = self._tag_priority_supplier()
 
-        # Diagnostic telemetry -- shows what the aimer is actually doing
-        SmartDashboard.putNumberArray("AutoAim/TagPriority", tag_priority)
-        SmartDashboard.putNumber("AutoAim/LockedTagID",
-                                self._locked_tag_id if self._locked_tag_id is not None else -1)
-        SmartDashboard.putBoolean("AutoAim/HasTarget", target is not None)
-        # Rate-limit get_all_targets() -- reads cached data but the
-        # SmartDashboard publish is unnecessary every cycle.
-        if self._cycle_count % 25 == 0:
-            visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
-            SmartDashboard.putNumberArray("AutoAim/VisibleTags", visible_ids)
+        # Match-critical telemetry (always published, rate-limited)
+        if self._cycle_count % 10 == 1:
+            SmartDashboard.putBoolean("AutoAim/HasTarget", target is not None)
+            SmartDashboard.putNumber("AutoAim/LockedTagID",
+                                    self._locked_tag_id if self._locked_tag_id is not None else -1)
+        # Debug-only telemetry
+        if DEBUG["debug_telemetry"]:
+            if self._cycle_count % 10 == 1:
+                SmartDashboard.putNumberArray("AutoAim/TagPriority", tag_priority)
+            if self._cycle_count % 50 == 25:
+                visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
+                SmartDashboard.putNumberArray("AutoAim/VisibleTags", visible_ids)
 
         # No target -- stop the turret immediately. Without this early
         # return the D term feeds back on residual turret velocity and
@@ -140,9 +143,10 @@ class AutoAim(Command):
                 lead_m = _vy * flight_time
                 _lead_deg = math.degrees(math.atan2(lead_m, dist))
                 self._last_tx += _lead_deg
-        SmartDashboard.putNumber("AutoAim/RobotVX", _vx)
-        SmartDashboard.putNumber("AutoAim/RobotVY", _vy)
-        SmartDashboard.putNumber("AutoAim/LeadDeg", _lead_deg)
+        if DEBUG["debug_telemetry"] and self._cycle_count % 10 == 5:
+            SmartDashboard.putNumber("AutoAim/RobotVX", _vx)
+            SmartDashboard.putNumber("AutoAim/RobotVY", _vy)
+            SmartDashboard.putNumber("AutoAim/LeadDeg", _lead_deg)
 
         # Smooth tx with EMA filter to reduce noise-induced derivative kick
         alpha = CON_SHOOTER["turret_tx_filter_alpha"]
@@ -152,10 +156,21 @@ class AutoAim(Command):
         # Velocity-based D brakes the turret's own motion directly, which is
         # more stable than D on tx (which mixes target motion with turret motion).
         turret_vel = self.turret.get_velocity()
-        p_term = self._filtered_tx * CON_SHOOTER["turret_p_gain"]
+        # Sqrt P -- compresses large errors so voltage grows gradually
+        # instead of saturating at the clamp.  Small errors (~1 deg) are
+        # nearly linear; large errors get moderate voltage, not full blast.
+        abs_tx = abs(self._filtered_tx)
+        p_term = (math.sqrt(abs_tx) * math.copysign(1, self._filtered_tx)
+                  * CON_SHOOTER["turret_p_gain"])
         d_term = -turret_vel * CON_SHOOTER["turret_d_velocity_gain"]
 
-        raw_voltage = p_term * self._aim_sign + d_term
+        # Velocity feedforward -- drive the turret proportionally to lateral
+        # robot speed so P doesn't have to close the entire tracking gap.
+        ff_term = 0.0
+        if self._robot_velocity_supplier is not None:
+            ff_term = _vy * CON_SHOOTER["turret_velocity_ff_gain"] * self._aim_sign
+
+        raw_voltage = p_term * self._aim_sign + d_term + ff_term
 
         # Asymmetric voltage limits: allow more braking force than driving force.
         # When voltage opposes current turret motion, use the brake limit.
@@ -175,7 +190,7 @@ class AutoAim(Command):
             _log.debug(
                 f"[AIM] t={self._locked_tag_id} "
                 f"tx={target.tx:.2f} ftx={self._filtered_tx:.2f} "
-                f"P={p_term:.3f} D={d_term:.3f} "
+                f"P={p_term:.3f} D={d_term:.3f} FF={ff_term:.3f} "
                 f"rv={raw_voltage:.3f} v={voltage:.3f} [{sat}] "
                 f"vel={turret_vel:.3f} pos={self.turret.get_position():.3f} "
                 f"vx={_vx:.2f} vy={_vy:.2f} ld={_lead_deg:.2f}"

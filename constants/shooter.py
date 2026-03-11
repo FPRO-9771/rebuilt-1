@@ -70,8 +70,9 @@ CON_SHOOTER = {
     "turret_aim_inverted": False,        # Positive tx (target right) -> positive voltage (turret right)
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
 
-    "turret_max_auto_voltage": 0.35,     # Max voltage during auto-aim (lower = less overshoot)
+    "turret_max_auto_voltage": 0.50,     # Max voltage during auto-aim (sqrt P handles decel now)
     "turret_max_brake_voltage": 0.50,    # Brake limit -- higher than drive to stop quickly
+    "turret_velocity_ff_gain": 0.15,     # Feedforward: volts per (m/s) of lateral robot velocity
     "turret_tx_filter_alpha": 0.85,      # EMA smoothing for tx (0=max smooth, 1=no filter)
     "ball_flight_time": 0.5,              # Estimated ball flight time (seconds) -- tune on real robot
 
