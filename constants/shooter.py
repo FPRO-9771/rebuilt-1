@@ -75,16 +75,20 @@ CON_SHOOTER = {
     "turret_min_move_voltage": 0.35,    # Deadband comp -- minimum voltage to overcome static friction
     "turret_velocity_ff_gain": 0.15,     # Feedforward: volts per (m/s) of lateral robot velocity
     "turret_tx_filter_alpha": 0.85,      # EMA smoothing for tx (0=max smooth, 1=no filter)
-    "ball_flight_time": 1,              # Estimated ball flight time (seconds) -- tune on real robot
+    "velocity_lead_enabled": False,      # Enable velocity lead compensation (aim ahead while moving)
+    "parallax_correction_enabled": False, # Enable parallax correction (aim at Hub center, not tag)
 
     # Per-tag offsets and priorities moved to constants/match.py.
     # They are now per-alliance and selected via SmartDashboard.
 
-    # Distance lookup table: (distance_m, launcher_rps, hood_position)
+    # Distance lookup table: (distance_m, launcher_rps, hood_position, ball_speed_mps)
+    # ball_speed_mps: estimated ball speed at this distance -- used for
+    # velocity lead compensation (how far ahead to aim while moving).
+    # Tune per-entry on real robot by shooting while strafing.
     # Sorted by distance -- interpolated at runtime
     "distance_table": [
-        (1, 65.0, 0.05),
-        (2.0, 80.0, 0.10),
-        (3.0, 95.0, 0.15),
+        (1, 65.0, 0.05, 5.0),
+        (2.0, 80.0, 0.10, 7.0),
+        (3.0, 95.0, 0.15, 9.0),
     ],
 }

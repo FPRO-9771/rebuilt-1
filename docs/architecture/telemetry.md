@@ -73,22 +73,9 @@ Published every cycle by `MatchSetup.update()`.
 | `Drive/Pose Y (m)` | number | Robot Y position on the field (meters) |
 | `Drive/Heading (deg)` | number | Robot heading in degrees |
 
-### Shooter Targeting (`commands/auto_tracker.py`)
+### Shooter / Auto-Aim Targeting
 
-Published directly by the AutoTracker command (not from the telemetry module).
-
-| SmartDashboard Key | Type | Description |
-|--------------------|------|-------------|
-| `Shooter/Lock` | boolean | True when turret is aligned, target is visible, and distance is in the lookup table range |
-| `Shooter/Locked Tag` | number | AprilTag ID the turret is currently tracking (-1 = no target) |
-
-These update every cycle during teleop. When the robot is disabled or not in teleop, both reset (Lock = false, Locked Tag = -1).
-
-**How to use in Elastic:**
-
-1. Drag `Shooter/Lock` onto your layout -- use a **Boolean Box** widget (shows green/red)
-2. Drag `Shooter/Locked Tag` onto your layout -- use a **Number** widget
-3. When the number shows -1, no scoring tag is visible. Any other number is the tag ID the turret is aiming at.
+AutoAim publishes its own telemetry keys (`Shooter/AutoAim`, `Shooter/AutoAim/HasTarget`, `Shooter/AutoAim/LockedTag`, plus debug-only velocity/lead keys). See the [Auto-Aim System](auto-aim.md#9-debugging-guide) doc for the full key list, console log format, and debugging walkthrough.
 
 ### Vision Telemetry (`vision_telemetry.py`)
 

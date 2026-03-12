@@ -178,6 +178,78 @@ def test_no_velocity_supplier_works(mock_sd):
 
 
 @patch("commands.auto_aim.SmartDashboard")
+def test_within_tolerance_outputs_zero_voltage(mock_sd):
+    """Turret outputs zero when target is within alignment tolerance.
+
+    Regression: without this check, the deadband compensation would snap
+    small PD outputs up to turret_min_move_voltage, causing stutter at rest.
+    """
+    cmd, turret, vision = _make_auto_aim()
+    tolerance = TEST_CON_SHOOTER["turret_alignment_tolerance"]
+    # Target just inside tolerance -- should NOT drive
+    vision.set_target(VisionTarget(
+        tag_id=4, tx=tolerance * 0.5, ty=0, distance=2.0, yaw=0,
+    ))
+
+    cmd.initialize()
+    cmd.execute()
+
+    assert turret.motor.get_last_voltage() == 0
+
+
+@patch("commands.auto_aim.SmartDashboard")
+def test_outside_tolerance_outputs_nonzero_voltage(mock_sd):
+    """Turret drives when target is outside alignment tolerance."""
+    cmd, turret, vision = _make_auto_aim()
+    tolerance = TEST_CON_SHOOTER["turret_alignment_tolerance"]
+    # Target just outside tolerance -- should drive
+    vision.set_target(VisionTarget(
+        tag_id=4, tx=tolerance + 1.0, ty=0, distance=2.0, yaw=0,
+    ))
+
+    cmd.initialize()
+    cmd.execute()
+
+    assert turret.motor.get_last_voltage() != 0
+
+
+@patch("commands.auto_aim.SmartDashboard")
+def test_parallax_disabled_no_correction(mock_sd):
+    """With parallax disabled, a centered target on an offset tag stays centered."""
+    # Tag 5 has offsets but parallax is disabled in test constants
+    assert TEST_CON_SHOOTER["parallax_correction_enabled"] is False
+    cmd, turret, vision = _make_auto_aim()
+    vision.simulate_target_centered(tag_id=5, distance=3.0)
+    cmd.initialize()
+    cmd.execute()
+    # Centered target -> within tolerance -> zero voltage
+    assert turret.motor.get_last_voltage() == 0
+    assert cmd._last_parallax_deg == 0.0
+
+
+@patch("commands.auto_aim.SmartDashboard")
+def test_parallax_enabled_shifts_aim(mock_sd):
+    """With parallax enabled, an offset tag produces a nonzero correction.
+
+    Tag 5 has tag_y_offset_m=-1.0, tag_x_offset_m=0.5. When the robot
+    sees it off to the side, the parallax correction should shift the
+    filtered tx so the turret aims at the Hub center, not the tag.
+    """
+    # Override to enable parallax for this test
+    shooter_with_parallax = {**TEST_CON_SHOOTER, "parallax_correction_enabled": True}
+    with patch("commands.auto_aim.CON_SHOOTER", shooter_with_parallax):
+        cmd, turret, vision = _make_auto_aim()
+        # Tag 5 at tx=10 (off to the right), distance=3m
+        vision.set_target(VisionTarget(
+            tag_id=5, tx=10.0, ty=0, distance=3.0, yaw=0,
+        ))
+        cmd.initialize()
+        cmd.execute()
+        # Parallax correction should be nonzero
+        assert cmd._last_parallax_deg != 0.0
+
+
+@patch("commands.auto_aim.SmartDashboard")
 def test_no_target_stops_turret_even_with_velocity(mock_sd):
     """Turret with residual velocity must get 0 volts when target is lost.
 

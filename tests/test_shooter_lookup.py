@@ -2,14 +2,14 @@
 Tests for shooter lookup table.
 
 Uses the test distance table from conftest (not the real one):
-    (1.0, 20, 0.10)
-    (2.0, 40, 0.20)
-    (3.0, 60, 0.30)
-    (4.0, 80, 0.40)
+    (1.0, 20, 0.10, 4.0)
+    (2.0, 40, 0.20, 6.0)
+    (3.0, 60, 0.30, 8.0)
+    (4.0, 80, 0.40, 10.0)
 """
 
 import pytest
-from subsystems.shooter_lookup import get_shooter_settings
+from subsystems.shooter_lookup import get_shooter_settings, get_ball_speed
 from tests.conftest import TEST_CON_SHOOTER
 
 _TABLE = TEST_CON_SHOOTER["distance_table"]
@@ -17,7 +17,7 @@ _TABLE = TEST_CON_SHOOTER["distance_table"]
 
 def test_exact_table_distance():
     """Verify exact table entries return exact values."""
-    for dist, expected_rps, expected_hood in _TABLE:
+    for dist, expected_rps, expected_hood, _bs in _TABLE:
         rps, hood = get_shooter_settings(dist)
         assert rps == expected_rps
         assert hood == expected_hood
@@ -25,7 +25,7 @@ def test_exact_table_distance():
 
 def test_interpolation_between_entries():
     """Verify linear interpolation between table entries."""
-    # Midpoint between first two: (1.0, 20, 0.10) and (2.0, 40, 0.20)
+    # Midpoint between first two: (1.0, 20, 0.10, 4.0) and (2.0, 40, 0.20, 6.0)
     rps, hood = get_shooter_settings(1.5)
 
     assert rps == pytest.approx(30.0)   # midpoint of 20 and 40
@@ -58,8 +58,34 @@ def test_clamp_above_max():
 
 def test_quarter_interpolation():
     """Verify interpolation at 25% between entries."""
-    # 25% between (1.0, 20, 0.10) and (2.0, 40, 0.20) = distance 1.25
+    # 25% between (1.0, 20, 0.10, 4.0) and (2.0, 40, 0.20, 6.0) = distance 1.25
     rps, hood = get_shooter_settings(1.25)
 
     assert rps == pytest.approx(25.0)    # 20 + 0.25 * 20
     assert hood == pytest.approx(0.125)  # 0.10 + 0.25 * 0.10
+
+
+# =========================================================================
+# Ball speed lookup
+# =========================================================================
+
+def test_ball_speed_exact():
+    """Verify exact table entries return exact ball speed."""
+    for dist, _rps, _hood, expected_bs in _TABLE:
+        assert get_ball_speed(dist) == expected_bs
+
+
+def test_ball_speed_interpolation():
+    """Verify ball speed interpolates between entries."""
+    # Midpoint between (1.0, ..., 4.0) and (2.0, ..., 6.0)
+    assert get_ball_speed(1.5) == pytest.approx(5.0)
+
+
+def test_ball_speed_clamp_below():
+    """Ball speed clamps to first entry below table range."""
+    assert get_ball_speed(0.0) == _TABLE[0][3]
+
+
+def test_ball_speed_clamp_above():
+    """Ball speed clamps to last entry above table range."""
+    assert get_ball_speed(100.0) == _TABLE[-1][3]

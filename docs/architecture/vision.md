@@ -681,6 +681,7 @@ def test_two_piece_auto_sequence(setup_mocks):
 ---
 
 **See also:**
+- [Auto-Aim System](auto-aim.md) - How AutoAim uses vision tx for PD turret tracking
 - [Hardware & Subsystems](hardware-and-subsystems.md) - Hardware abstraction that makes vision testable
 - [Autonomous](autonomous.md) - Using vision alignment in auto routines
 - [Testing & Simulation](testing-and-simulation.md) - Full physics simulation with vision

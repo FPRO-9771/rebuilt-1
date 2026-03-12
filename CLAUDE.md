@@ -111,6 +111,7 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 | `docs/architecture/hardware-and-subsystems.md` | Hardware abstraction layer and subsystem design patterns |
 | `docs/architecture/commands-and-controls.md` | Command-based architecture and controller bindings |
 | `docs/architecture/shooter-system.md` | Shooter subsystems, distance lookup table, and orchestrator |
+| `docs/architecture/auto-aim.md` | Auto-aim deep dive: data flow, PD controller, corrections, debugging |
 | `docs/architecture/controls.md` | Binding extraction pattern, operator control map, manual overrides |
 | `docs/architecture/match-setup.md` | Pre-match alliance/pose selection, tag priorities, SmartDashboard choosers |
 | `docs/architecture/autonomous.md` | Autonomous system: routines, constants, chooser setup |

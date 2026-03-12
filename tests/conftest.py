@@ -75,15 +75,16 @@ TEST_CON_SHOOTER = {
     "turret_min_move_voltage": 0.0,
     "turret_velocity_ff_gain": 0.15,
     "turret_tx_filter_alpha": 1.0,
-    "ball_flight_time": 0.5,
+    "velocity_lead_enabled": True,
+    "parallax_correction_enabled": False,
     "target_tags": {
-        4: {"tx_offset": 0.0, "distance_offset": 0.0},
+        4: {"tag_y_offset_m": 0.0, "tag_x_offset_m": 0.0},
     },
     "distance_table": [
-        (1.0, 20.0, 0.10),
-        (2.0, 40.0, 0.20),
-        (3.0, 60.0, 0.30),
-        (4.0, 80.0, 0.40),
+        (1.0, 20.0, 0.10, 4.0),
+        (2.0, 40.0, 0.20, 6.0),
+        (3.0, 60.0, 0.30, 8.0),
+        (4.0, 80.0, 0.40, 10.0),
     ],
 }
 
@@ -99,10 +100,11 @@ TEST_CON_MANUAL = {
 TEST_TAG_PRIORITY = [4, 5, 6]
 
 # Per-tag offsets for testing -- matches the tags in TEST_TAG_PRIORITY.
+# Tag 4: centered on Hub (no offset). Tags 5/6: offset for parallax tests.
 TEST_TAG_OFFSETS = {
-    4: {"tx_offset": 0.0, "distance_offset": 0.0},
-    5: {"tx_offset": 1.0, "distance_offset": 0.5},
-    6: {"tx_offset": -1.0, "distance_offset": -0.5},
+    4: {"tag_y_offset_m": 0.0, "tag_x_offset_m": 0.0},
+    5: {"tag_y_offset_m": -1.0, "tag_x_offset_m": 0.5},
+    6: {"tag_y_offset_m": -1.0, "tag_x_offset_m": -0.5},
 }
 
 # How many cycles before the tracker gives up on a lost locked tag.
@@ -152,3 +154,9 @@ def _patch_constants(monkeypatch):
     )
     monkeypatch.setattr("commands.find_target.CON_TURRET", TEST_CON_TURRET)
     monkeypatch.setattr("commands.manual_launcher.CON_MANUAL", TEST_CON_MANUAL)
+
+    # Auto-aim telemetry and logging modules
+    _test_debug = {"debug_telemetry": False, "verbose": False,
+                   "auto_aim_logging": True}
+    monkeypatch.setattr("telemetry.auto_aim_telemetry.DEBUG", _test_debug)
+    monkeypatch.setattr("telemetry.auto_aim_logging.DEBUG", _test_debug)

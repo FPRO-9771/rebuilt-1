@@ -160,14 +160,9 @@ The shooter is split into three independent, small command files:
 
 ### AutoAim (`commands/auto_aim.py`)
 
-PD turret tracking at AprilTags. Toggled on/off with **Y button**. Publishes `Shooter/AutoAim` boolean to SmartDashboard so the drive team can see if it's active.
+PD turret tracking at AprilTags. Toggled on/off with **Y button**. Vision tx flows through parallax correction, velocity lead, EMA filtering, and a PD controller with deadband compensation before reaching the turret motor. Manual turret override (left stick X) interrupts AutoAim via WPILib requirements; it resumes on release.
 
-Each `execute()` cycle:
-1. Select target using priority list + stickiness logic
-2. Apply per-tag offsets to tx
-3. PD control: `voltage = (tx * p_gain + d_term) * aim_sign`
-
-Manual turret override (left stick X) interrupts AutoAim via WPILib requirements. When the stick is released, AutoAim resumes (if still toggled on).
+> **Full deep dive:** [Auto-Aim System](auto-aim.md) -- data flow, PD controller math, correction pipeline, constants reference, and debugging guide.
 
 ### AutoShoot (`commands/auto_shoot.py`)
 
@@ -213,6 +208,7 @@ Vision is not a subsystem (no `addRequirements`), so multiple commands can read 
 ---
 
 **See also:**
+- [Auto-Aim System](auto-aim.md) - Full auto-aim deep dive: data flow, PD controller, corrections, debugging
 - [Hardware & Subsystems](hardware-and-subsystems.md) - Subsystem template and TalonFXS support
 - [Vision](vision.md) - How the Limelight provides `tx` and `distance`
 - [Controls](controls.md) - Full operator control map and override patterns

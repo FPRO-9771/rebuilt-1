@@ -15,21 +15,32 @@ The first entry with "default": True is pre-selected in SmartDashboard.
 # =============================================================================
 # Each alliance defines its Hub's scoring AprilTags in priority order.
 # tag_priority: ordered list -- orchestrator locks onto the first visible tag.
-# tag_offsets: per-tag corrections when aiming at the Hub.
-#   tx_offset (degrees): positive = Hub is to the right of this tag
-#   distance_offset (meters): positive = Hub is farther than this tag
-#   All zeros to start -- tune on the real robot.
+# tag_offsets: where each tag is relative to the Hub center.
+#   Uses field coordinates:
+#     Y axis: driver station wall = 0, positive = deeper into field.
+#     X axis: positive = right, negative = left (from driver station).
+#   Tags are always closer to the wall than the Hub, so tag_y_offset_m
+#   is always negative.
 #
-# TODO: Update tag IDs and offsets for the real 2026 field.
+#   tag_y_offset_m: tag's Y position relative to Hub center (meters).
+#     Negative = tag is closer to driver station than Hub.
+#   tag_x_offset_m: tag's X position relative to Hub center (meters).
+#     Positive = tag is to the right of Hub, negative = to the left.
+#
+#   Used for parallax correction -- computing the angle between
+#   "pointing at tag" and "pointing at Hub center" from the robot's
+#   position. Set parallax_correction_enabled in CON_SHOOTER to use.
+#
+# TODO: Measure real offsets on the 2026 field.
 ALLIANCES = [
     {
         "name": "Red",
         "default": True,
         "tag_priority": [8, 10, 11],
         "tag_offsets": {
-            8: {"tx_offset": 0.0, "distance_offset": 0.0},
-            10: {"tx_offset": 0.0, "distance_offset": 0.0},
-            11: {"tx_offset": 0.0, "distance_offset": 0.0},
+            8: {"tag_y_offset_m": -0.4, "tag_x_offset_m": -0.4},
+            10: {"tag_y_offset_m": -0.6, "tag_x_offset_m": 0.0},
+            11: {"tag_y_offset_m": -0.4, "tag_x_offset_m": 0.4},
         },
         "poses": [
             {
@@ -60,10 +71,10 @@ ALLIANCES = [
         "name": "Blue",
         "tag_priority": [25, 26, 24, 27],
         "tag_offsets": {
-            24: {"tx_offset": 0.0, "distance_offset": 0.0},
-            25: {"tx_offset": 0.0, "distance_offset": 0.0},
-            26: {"tx_offset": 0.0, "distance_offset": 0.0},
-            27: {"tx_offset": 0.0, "distance_offset": 0.0},
+            24: {"tag_y_offset_m": -0.4, "tag_x_offset_m": -0.4},
+            25: {"tag_y_offset_m": -0.6, "tag_x_offset_m": 0.0},
+            26: {"tag_y_offset_m": -0.6, "tag_x_offset_m": 0.0},
+            27: {"tag_y_offset_m": -0.4, "tag_x_offset_m": 0.4},
         },
         "poses": [
             {
