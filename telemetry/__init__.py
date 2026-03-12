@@ -16,13 +16,14 @@ _command: CommandTelemetry | None = None
 _vision: VisionTelemetry | None = None
 _cycle: int = 0
 
-# Publish telemetry every Nth cycle (8 = ~2.5 Hz at 20 Hz loop rate).
-# Keeps the robot loop fast on the roboRIO.
-_PUBLISH_EVERY_N = 8
+# Match-mode keys publish on a 10-cycle (500 ms) period, each on a
+# unique offset so at most one SmartDashboard put lands per cycle.
+# Debug-only telemetry uses the same period with its own offsets.
+_PERIOD = 10
 
 
 def setup_telemetry(conveyor, turret, launcher, hood, vision,
-                    h_feed=None, v_feed=None):
+                    h_feed=None, v_feed=None, intake_spinner=None):
     """Create all telemetry publishers. Call once from RobotContainer.
 
     Args:
@@ -30,7 +31,8 @@ def setup_telemetry(conveyor, turret, launcher, hood, vision,
     """
     global _motor, _command, _vision
 
-    _motor = MotorTelemetry(conveyor, turret, launcher, hood, h_feed, v_feed)
+    _motor = MotorTelemetry(conveyor, turret, launcher, hood, h_feed, v_feed,
+                            intake_spinner)
     _command = CommandTelemetry()
     _command.setup()
     _vision = VisionTelemetry(vision)
@@ -42,14 +44,14 @@ def update_telemetry():
     global _cycle
     _cycle += 1
 
-    # Motor telemetry handles its own match/debug split internally.
-    if _motor and _cycle % _PUBLISH_EVERY_N == 0:
-        _motor.update()
+    # Motor telemetry staggers each key internally using the cycle count.
+    if _motor:
+        _motor.update(_cycle)
 
     # Command and vision telemetry are debug-only.
     if not DEBUG["debug_telemetry"]:
         return
-    if _command and _cycle % _PUBLISH_EVERY_N == 3:
+    if _command and _cycle % _PERIOD == 3:
         _command.update()
-    if _vision and _cycle % _PUBLISH_EVERY_N == 6:
+    if _vision and _cycle % _PERIOD == 7:
         _vision.update()

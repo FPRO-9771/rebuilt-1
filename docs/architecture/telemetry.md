@@ -38,6 +38,9 @@ Each publisher is a small class with an `update()` method that pushes data to `w
 | `Motors/Launcher Target RPS` | `launcher._target_rps` |
 | `Motors/Launcher Actual RPS` | `launcher.get_velocity()` |
 | `Motors/Launcher At Speed` | `launcher.is_at_speed(target_rps)` |
+| `Motors/Feeder Running` | True if h_feed or v_feed velocity > 0.1 |
+| `Motors/Intake Running` | True if intake spinner velocity > 0.1 |
+| `Motors/Turret Clear` | True if turret is not near a soft limit (slow: ~320ms) |
 | `Motors/Hood Position` | `hood.get_position()` |
 
 ### Command Telemetry (`command_telemetry.py`)

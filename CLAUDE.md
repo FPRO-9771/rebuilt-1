@@ -120,6 +120,7 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 | `docs/architecture/testing-and-simulation.md` | Testing with mocks, physics simulation, and calibration |
 | `docs/architecture/telemetry.md` | Telemetry dashboard module, published keys, and how to extend |
 | `docs/dashboard-setup.md` | How to open Shuffleboard / Glass / Elastic and view live telemetry |
+| `docs/drive-team-dashboard.md` | Drive team dashboard: pre-match setup tab and driving tab layout |
 | `docs/drive-team-guide.md` | Xbox controller button maps for driver and operator |
 | `docs/PYTHON_SETUP.md` | Python installation for Mac and Windows |
 | `docs/roborio-deploy.md` | RoboRIO setup, deployment, and troubleshooting |

@@ -57,6 +57,7 @@ class AutoAim(Command):
         self._last_lead_deg = 0.0
         self._last_ball_speed = 0.0
         self._last_parallax_deg = 0.0
+        self._active = False
 
         self.addRequirements(turret)
         init_auto_aim_keys()
@@ -71,6 +72,7 @@ class AutoAim(Command):
         self._locked_tag_id = None
         self._lost_count = 0
         self._cycle_count = 0
+        self._active = True
         SmartDashboard.putBoolean("Shooter/AutoAim", True)
         _log.info("AutoAim ENABLED")
 
@@ -102,8 +104,10 @@ class AutoAim(Command):
         return False
 
     def end(self, interrupted: bool):
+        self._active = False
         self.turret._stop()
         SmartDashboard.putBoolean("Shooter/AutoAim", False)
+        SmartDashboard.putBoolean("AutoAim/OnTarget", False)
         _log.info(f"AutoAim DISABLED (interrupted={interrupted})")
 
     # ===================================================================
@@ -161,6 +165,14 @@ class AutoAim(Command):
         """
         tolerance = CON_SHOOTER["turret_alignment_tolerance"]
         return abs(self._filtered_tx) <= tolerance
+
+    def is_on_target(self):
+        """Public: True if auto-aim is active and turret is aligned.
+
+        Safe to call from other commands. Returns False when auto-aim
+        is not running, so callers never see stale state.
+        """
+        return self._active and self._is_on_target()
 
     # ===================================================================
     # Measurement update
@@ -253,13 +265,11 @@ class AutoAim(Command):
 
     def _publish_telemetry(self, target):
         """Delegate all SmartDashboard publishing to telemetry module."""
-        visible_ids = [t.tag_id for t in self.vision.get_all_targets()]
         publish_auto_aim(
             self._cycle_count,
             has_target=target is not None,
             locked_tag_id=self._locked_tag_id,
-            tag_priority=self._tag_priority_supplier(),
-            visible_tag_ids=visible_ids,
+            on_target=self._is_on_target(),
         )
         if target is not None:
             publish_velocity_debug(

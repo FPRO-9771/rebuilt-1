@@ -6,44 +6,69 @@ Publishes position and velocity for each motor to SmartDashboard.
 import wpilib
 
 from constants.debug import DEBUG
+from constants.shooter import CON_TURRET
 
 
 class MotorTelemetry:
     """Publishes motor data for all shooter subsystems."""
 
-    def __init__(self, conveyor, turret, launcher, hood, h_feed=None, v_feed=None):
+    # Stagger offsets within a 10-cycle (500 ms) period so at most one
+    # SmartDashboard put lands per cycle.  AutoAim/OnTarget uses offset 1
+    # (in auto_aim_telemetry), so we avoid that here.
+    _PERIOD = 10
+    _OFF_LAUNCHER = 0
+    _OFF_FEEDER = 2
+    _OFF_INTAKE = 4
+    _OFF_TURRET_CLEAR = 6
+    _OFF_DEBUG = 8
+
+    def __init__(self, conveyor, turret, launcher, hood, h_feed=None,
+                 v_feed=None, intake_spinner=None):
         self._conveyor = conveyor
         self._turret = turret
         self._launcher = launcher
         self._hood = hood
         self._h_feed = h_feed
         self._v_feed = v_feed
+        self._intake_spinner = intake_spinner
 
-    def update(self):
-        """Publish current motor data to SmartDashboard."""
+    def update(self, cycle):
+        """Publish motor data, one key per cycle on staggered offsets."""
         sd = wpilib.SmartDashboard
+        slot = cycle % self._PERIOD
 
-        # -- Match-critical (always published) --
-        sd.putBoolean("Motors/Launcher At Speed", self._launcher.is_at_speed(self._launcher._target_rps))
-        if self._v_feed is not None:
-            v_vel = self._v_feed.get_velocity()
-            sd.putBoolean("Motors/V Feed Running", abs(v_vel) > 0.1)
+        # -- Match-critical (one put per offset) --
+        if slot == self._OFF_LAUNCHER:
+            sd.putBoolean("Motors/Launcher At Speed",
+                          self._launcher.is_at_speed(self._launcher._target_rps))
 
-        if not DEBUG["debug_telemetry"]:
-            return
+        elif slot == self._OFF_FEEDER:
+            feeder_running = False
+            if self._h_feed is not None:
+                feeder_running = feeder_running or abs(self._h_feed.get_velocity()) > 0.1
+            if self._v_feed is not None:
+                feeder_running = feeder_running or abs(self._v_feed.get_velocity()) > 0.1
+            if self._h_feed is not None or self._v_feed is not None:
+                sd.putBoolean("Motors/Feeder Running", feeder_running)
 
-        # -- Debug only --
-        if self._conveyor is not None:
-            sd.putNumber("Motors/Conveyor Velocity", self._conveyor.get_velocity())
-        sd.putNumber("Motors/Turret Position", self._turret.get_position())
-        sd.putNumber("Motors/Turret Velocity", self._turret.get_velocity())
-        sd.putNumber("Motors/Launcher Target RPS", self._launcher._target_rps)
-        sd.putNumber("Motors/Launcher Actual RPS", self._launcher.get_velocity())
-        if self._hood._enabled:
-            sd.putNumber("Motors/Hood Position", self._hood.get_position())
-        if self._h_feed is not None:
-            h_vel = self._h_feed.get_velocity()
-            sd.putNumber("Motors/H Feed Velocity", h_vel)
-            sd.putBoolean("Motors/H Feed Running", abs(h_vel) > 0.1)
-        if self._v_feed is not None:
-            sd.putNumber("Motors/V Feed Velocity", v_vel)
+        elif slot == self._OFF_INTAKE:
+            if self._intake_spinner is not None:
+                sd.putBoolean("Motors/Intake Running",
+                              abs(self._intake_spinner.get_velocity()) > 0.1)
+
+        elif slot == self._OFF_TURRET_CLEAR:
+            pos = self._turret.get_position()
+            tol = CON_TURRET["position_tolerance"]
+            clear = (pos > CON_TURRET["min_position"] + tol
+                     and pos < CON_TURRET["max_position"] - tol)
+            sd.putBoolean("Motors/Turret Clear", clear)
+
+        elif slot == self._OFF_DEBUG and DEBUG["debug_telemetry"]:
+            if self._conveyor is not None:
+                sd.putNumber("Motors/Conveyor Velocity", self._conveyor.get_velocity())
+            sd.putNumber("Motors/Turret Position", self._turret.get_position())
+            sd.putNumber("Motors/Turret Velocity", self._turret.get_velocity())
+            sd.putNumber("Motors/Launcher Target RPS", self._launcher._target_rps)
+            sd.putNumber("Motors/Launcher Actual RPS", self._launcher.get_velocity())
+            if self._hood._enabled:
+                sd.putNumber("Motors/Hood Position", self._hood.get_position())

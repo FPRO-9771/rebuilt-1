@@ -6,7 +6,7 @@ The kids set these in SmartDashboard/Elastic before each match.
 The rest of the code reads the active config at runtime.
 """
 
-from wpilib import SendableChooser, SmartDashboard
+from wpilib import DriverStation, SendableChooser, SmartDashboard
 
 from constants.match import ALLIANCES
 from utils.logger import get_logger
@@ -94,7 +94,9 @@ class MatchSetup:
         return self.get_alliance()["tag_offsets"]
 
     def update(self):
-        """Publish alliance indicator. Rate-limited -- alliance doesn't change mid-match."""
+        """Publish alliance indicator while disabled (pre-match only)."""
+        if DriverStation.isEnabled():
+            return
         self._update_cycle += 1
         if self._update_cycle % 50 != 1:
             return

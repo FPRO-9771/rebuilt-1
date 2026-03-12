@@ -10,6 +10,7 @@ Controls:
     X button (toggle)   -- TEMP: FindTarget sweep (turret sweeps to find tags)
     Y button (toggle)   -- Auto-aim on/off (turret tracks tags via PD)
     Left bumper (hold)  -- Auto-shoot (vision distance -> launcher/hood)
+    Left trigger (hold) -- Shoot when ready (launcher + feed when on target)
     Right bumper (toggle) -- Intake deploy + spinner on/off
 """
 
@@ -32,6 +33,7 @@ from commands.auto_aim import AutoAim
 from commands.auto_shoot import AutoShoot
 from commands.find_target import FindTarget
 from commands.manual_launcher import ManualLauncher
+from commands.shoot_when_ready import ShootWhenReady
 
 
 def configure_operator(operator, conveyor, turret, launcher, hood, vision,
@@ -105,19 +107,29 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             return (state.speeds.vx, state.speeds.vy)
         vel_supplier = _get_robot_velocity
 
-    operator.y().toggleOnTrue(
-        AutoAim(
-            turret, vision,
-            tag_priority_supplier=match_setup.get_tag_priority,
-            tag_offsets_supplier=match_setup.get_tag_offsets,
-            robot_velocity_supplier=vel_supplier,
-        )
+    auto_aim = AutoAim(
+        turret, vision,
+        tag_priority_supplier=match_setup.get_tag_priority,
+        tag_offsets_supplier=match_setup.get_tag_offsets,
+        robot_velocity_supplier=vel_supplier,
     )
+    operator.y().toggleOnTrue(auto_aim)
 
     # --- Auto-shoot: left bumper hold ---
     operator.leftBumper().whileTrue(
         AutoShoot(launcher, hood, vision,
                   tag_priority_supplier=match_setup.get_tag_priority)
     )
+
+    # --- Shoot when ready: left trigger hold ---
+    # Spins launcher immediately; feeds only when at speed AND on target.
+    if h_feed is not None and v_feed is not None:
+        operator.leftTrigger().whileTrue(
+            ShootWhenReady(
+                launcher, hood, h_feed, v_feed, vision,
+                tag_priority_supplier=match_setup.get_tag_priority,
+                on_target_supplier=auto_aim.is_on_target,
+            )
+        )
 
     return state

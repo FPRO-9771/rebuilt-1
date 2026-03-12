@@ -28,7 +28,9 @@ def test_motor_telemetry_publishes_all_keys(mock_wpilib):
     hood = Hood()
 
     publisher = MotorTelemetry(conveyor, turret, launcher, hood)
-    publisher.update()
+    # Call with each stagger offset so all keys get published
+    for cycle in range(MotorTelemetry._PERIOD):
+        publisher.update(cycle)
 
     expected_number_keys = [
         "Motors/Conveyor Velocity",
