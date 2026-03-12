@@ -10,7 +10,7 @@ This doc covers the shooter system: a turret, flywheel launcher, and adjustable 
 
 ## Table of Contents
 
-1. [System Overview](#1-system-overview)
+1. [System Overview](#1-system-overview) (includes [Turret Motor Swap](#turret-motor-swap-kraken-vs-minion))
 2. [Subsystem Patterns](#2-subsystem-patterns)
 3. [Distance Lookup Table](#3-distance-lookup-table)
 4. [Command Modules](#4-command-modules)
@@ -46,11 +46,55 @@ The shooter has three mechanisms and a camera. Three independent command modules
 
 | Component | Motor | Controller | Control Mode |
 |-----------|-------|------------|--------------|
-| Turret | Kraken X60 | TalonFX | Voltage (P-control from vision) |
+| Turret (default) | Kraken X60 | TalonFX | Voltage (P-control from vision) |
+| Turret (alternate) | Minion | TalonFXS | Voltage (same P-control) |
 | Launcher | Kraken X60 | TalonFX | Closed-loop velocity |
 | Hood | WCP | TalonFXS | Closed-loop position |
 
 All three are "dumb" subsystems -- they don't know about each other or about vision. Small command modules coordinate them, and the operator chooses which to enable.
+
+### Turret Motor Swap: Kraken vs Minion
+
+We have two turret subsystem files with identical public interfaces so all commands (AutoAim, FindTarget, manual control) work with either motor:
+
+| | Kraken X60 (default) | Minion (alternate) |
+|---|---|---|
+| Subsystem file | `subsystems/turret.py` | `subsystems/turret_minion.py` |
+| Constants | `CON_TURRET` | `CON_TURRET_MINION` |
+| Motor ID entry | `MOTOR_IDS["turret"]` | `MOTOR_IDS["turret_minion"]` |
+| Controller type | TalonFX | TalonFXS |
+| Gear ratio | 18:90 (5:1) | 18:90 (5:1) |
+| Free speed | ~6000 RPM | ~7700 RPM |
+| Stall torque | ~7.09 Nm | ~3.17 Nm |
+| Weight | ~1.1 lbs | 0.65 lbs |
+
+The Minion has higher free speed but lower torque. Both are more than sufficient for turret rotation through the 5:1 gear ratio at the low voltages we use (0.35-0.8V typical).
+
+**How to switch between Kraken and Minion:**
+
+1. In `constants/ids.py`, flip the `wired` flags:
+   ```python
+   # For Kraken (default):
+   "turret":        {..., "wired": True},
+   "turret_minion": {..., "wired": False},
+
+   # For Minion:
+   "turret":        {..., "wired": False},
+   "turret_minion": {..., "wired": True},
+   ```
+
+2. In `robot_container.py`, swap the import:
+   ```python
+   # For Kraken (default):
+   from subsystems.turret import Turret
+
+   # For Minion:
+   from subsystems.turret_minion import TurretMinion as Turret
+   ```
+
+3. Tune constants for whichever motor is active. The Minion variant uses `CON_TURRET_MINION` in `constants/shooter.py`, which includes slot0 PID gains for closed-loop position hold and brake mode.
+
+**Why two files instead of a flag?** The TalonFXS needs brake mode and slot0 PID gains passed at construction time, which is different enough from the TalonFX path that a clean separate file is easier to read and debug than conditionals. Both files are short and follow the same pattern.
 
 ---
 
@@ -59,6 +103,8 @@ All three are "dumb" subsystems -- they don't know about each other or about vis
 Each shooter subsystem follows the standard template from [Hardware & Subsystems](hardware-and-subsystems.md) but demonstrates a different control pattern.
 
 ### Turret: Voltage Control with Soft Limits
+
+> **Two variants exist:** `subsystems/turret.py` (Kraken/TalonFX) and `subsystems/turret_minion.py` (Minion/TalonFXS). Both use the same pattern below. See [Turret Motor Swap](#turret-motor-swap-kraken-vs-minion) above for switching instructions.
 
 The turret rotates via voltage but has physical limits it must not exceed. Safety is enforced inside `_set_voltage()` so every caller gets it automatically:
 

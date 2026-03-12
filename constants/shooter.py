@@ -19,6 +19,34 @@ CON_TURRET = {
 }
 
 # =============================================================================
+# TURRET MINION CONFIGURATION (alternative to Kraken -- uses TalonFXS)
+# To switch: flip wired flags in ids.py and swap Turret/TurretMinion in
+# robot_container.py.  All voltages and limits need re-tuning on real hardware.
+# =============================================================================
+CON_TURRET_MINION = {
+    "max_voltage": 4.0,         # Start same as Kraken -- tune down if needed
+    "manual_speed_factor": 0.20, # Manual mode runs at 20% of max voltage
+    "min_position": 0,       # Soft limit: leftmost rotation (rotations)
+    "max_position": 9.5,        # Soft limit: rightmost rotation (rotations)
+    "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
+    "inverted": False,
+    "brake": True,               # Brake on neutral -- holds turret steady
+    "search_voltage": 0.5,      # Voltage during FindTarget sweep
+    "search_brake_voltage": 3.0, # Brake voltage when sweep hits a soft limit
+    "search_brake_cycles": 5,   # How many cycles to brake before reversing
+
+    # Slot 0 gains for closed-loop position hold (HoldPosition command).
+    # NEEDS TUNING -- start conservative to avoid oscillation.
+    "slot0_kP": 1.0,
+    "slot0_kI": 0.0,
+    "slot0_kD": 0.01,
+    "slot0_kS": 0.1,            # Static friction (volts to start moving)
+    "slot0_kV": 0.0,
+    "slot0_kA": 0.0,
+    "slot0_kG": 0.0,
+}
+
+# =============================================================================
 # LAUNCHER CONFIGURATION
 # =============================================================================
 CON_LAUNCHER = {

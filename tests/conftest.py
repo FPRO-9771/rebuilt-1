@@ -29,6 +29,26 @@ TEST_CON_TURRET = {
     "search_brake_cycles": 3,
 }
 
+TEST_CON_TURRET_MINION = {
+    "max_voltage": 10.0,
+    "manual_speed_factor": 0.5,
+    "min_position": -5.0,
+    "max_position": 5.0,
+    "position_tolerance": 0.1,
+    "inverted": False,
+    "brake": True,
+    "search_voltage": 3.0,
+    "search_brake_voltage": 5.0,
+    "search_brake_cycles": 3,
+    "slot0_kP": 1.0,
+    "slot0_kI": 0.0,
+    "slot0_kD": 0.01,
+    "slot0_kS": 0.1,
+    "slot0_kV": 0.0,
+    "slot0_kA": 0.0,
+    "slot0_kG": 0.0,
+}
+
 TEST_CON_LAUNCHER = {
     "max_voltage": 10.0,
     "velocity_tolerance": 1.0,
@@ -139,6 +159,7 @@ def _patch_constants(monkeypatch):
     """
     # Subsystems
     monkeypatch.setattr("subsystems.turret.CON_TURRET", TEST_CON_TURRET)
+    monkeypatch.setattr("subsystems.turret_minion.CON_TURRET_MINION", TEST_CON_TURRET_MINION)
     monkeypatch.setattr("subsystems.launcher.CON_LAUNCHER", TEST_CON_LAUNCHER)
     monkeypatch.setattr("subsystems.hood.CON_HOOD", TEST_CON_HOOD)
     monkeypatch.setattr("subsystems.conveyor.CON_CONVEYOR", TEST_CON_CONVEYOR)
@@ -160,3 +181,9 @@ def _patch_constants(monkeypatch):
                    "auto_aim_logging": True}
     monkeypatch.setattr("telemetry.auto_aim_telemetry.DEBUG", _test_debug)
     monkeypatch.setattr("telemetry.auto_aim_logging.DEBUG", _test_debug)
+
+    # Swerve and motor telemetry -- enable debug so tests can verify all keys
+    _test_debug_on = {"debug_telemetry": True, "verbose": False,
+                      "auto_aim_logging": True}
+    monkeypatch.setattr("telemetry.swerve_telemetry.DEBUG", _test_debug_on)
+    monkeypatch.setattr("telemetry.motor_telemetry.DEBUG", _test_debug_on)
