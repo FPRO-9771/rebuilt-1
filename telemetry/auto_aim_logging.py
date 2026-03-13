@@ -4,6 +4,8 @@ Structured log output for the three auto-aim states: lost, holding, driving.
 Called by AutoAim command -- all data passed in as arguments.
 """
 
+import time
+
 from constants.debug import DEBUG
 from utils.logger import get_logger
 
@@ -54,6 +56,12 @@ def log_drive(cycle, locked_tag_id, target, filtered_tx,
     sat = "SAT" if abs(raw_voltage) > abs(voltage) else "ok"
     raw_tx = f"{target.tx:.2f}" if target is not None else "--"
     coast = f" coast={lost_count}" if target is None else ""
+    # Data age: how old the vision frame is (seconds)
+    if target is not None and target.timestamp > 0:
+        age_ms = (time.monotonic() - target.timestamp) * 1000
+        age_str = f" age={age_ms:.0f}ms"
+    else:
+        age_str = " age=--"
     _emit(
         f"[AIM] t={locked_tag_id} "
         f"tx={raw_tx} ftx={filtered_tx:.2f} "
@@ -61,5 +69,5 @@ def log_drive(cycle, locked_tag_id, target, filtered_tx,
         f"rv={raw_voltage:.3f} v={voltage:.3f} [{sat}]{coast} "
         f"vel={turret_vel:.3f} pos={position:.3f} "
         f"vx={vx:.2f} vy={vy:.2f} ld={lead_deg:.2f} "
-        f"bs={ball_speed:.1f} px={parallax_deg:.2f}"
+        f"bs={ball_speed:.1f} px={parallax_deg:.2f}{age_str}"
     )

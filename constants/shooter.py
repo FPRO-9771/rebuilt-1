@@ -93,14 +93,14 @@ CON_HOOD = {
 # SHOOTER SYSTEM CONFIGURATION
 # =============================================================================
 CON_SHOOTER = {
-    "turret_p_gain": 0.08,               # Proportional gain (volts per degree) -- drives toward target
+    "turret_p_gain": 0.16,               # Proportional gain (volts per degree) -- drives toward target
     "turret_d_velocity_gain": 0.03,      # Velocity damping -- light braking only (too high causes oscillation)
     "turret_aim_inverted": False,        # Positive tx (target right) -> positive voltage (turret right)
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
 
-    "turret_max_auto_voltage": 0.50,     # Max voltage during auto-aim (sqrt P handles decel now)
-    "turret_max_brake_voltage": 0.50,    # Brake limit -- higher than drive to stop quickly
-    "turret_min_move_voltage": 0.35,    # Deadband comp -- minimum voltage to overcome static friction
+    "turret_max_auto_voltage": .6,     # Max voltage during auto-aim (sqrt P handles decel now)
+    "turret_max_brake_voltage": 0.6,    # Brake limit -- higher than drive to stop quickly
+    "turret_min_move_voltage": 0.20,    # Deadband comp -- minimum voltage to overcome static friction
     "turret_velocity_ff_gain": 0.15,     # Feedforward: volts per (m/s) of lateral robot velocity
     "turret_tx_filter_alpha": 0.85,      # EMA smoothing for tx (0=max smooth, 1=no filter)
     "velocity_lead_enabled": False,      # Enable velocity lead compensation (aim ahead while moving)

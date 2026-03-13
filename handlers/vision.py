@@ -17,6 +17,7 @@ class VisionTarget:
     distance: float     # Distance to target (meters)
     yaw: float          # Target rotation
     is_valid: bool = True
+    timestamp: float = 0.0  # time.monotonic() when this data was received
 
 
 class VisionProvider(ABC):

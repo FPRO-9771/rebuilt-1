@@ -34,6 +34,12 @@ class LimelightVisionProvider(VisionProvider):
         self._host = host
         self._cached_targets: List[VisionTarget] = []
         self._lock = threading.Lock()
+        # Freshness tracking: detect when the Limelight returns a new frame
+        # vs the same frame repeated. _last_signature stores (tag_id, tx)
+        # tuples from the previous poll; _last_fresh_time is the monotonic
+        # time when data actually changed.
+        self._last_signature: tuple = ()
+        self._last_fresh_time: float = 0.0
 
         _log.info(f"Initializing Limelight at {host} (background)...")
 
@@ -64,6 +70,20 @@ class LimelightVisionProvider(VisionProvider):
                 continue
 
             targets = self._parse_targets(parsed)
+            now = time.monotonic()
+
+            # Build a signature from tag IDs and tx values to detect
+            # whether this is actually a new frame or the same one
+            # repeated by get_latest_results().
+            sig = tuple((t.tag_id, round(t.tx, 4)) for t in targets)
+            if sig != self._last_signature:
+                self._last_signature = sig
+                self._last_fresh_time = now
+            # Stamp targets with the time data ACTUALLY changed,
+            # not the poll time. This makes age= meaningful.
+            for t in targets:
+                t.timestamp = self._last_fresh_time
+
             with self._lock:
                 self._cached_targets = targets
 

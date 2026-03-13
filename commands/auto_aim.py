@@ -92,8 +92,10 @@ class AutoAim(Command):
         if target is not None:
             self._update_filtered_tx(target)
 
-        # 5. Already on target -- hold still, don't chase noise
-        if self._is_on_target():
+        # 5. Already on target AND we have a fresh measurement -- hold still.
+        #    Without a fresh target, fall through to drive so the PD loop
+        #    stays active instead of holding on a stale filtered_tx.
+        if target is not None and self._is_on_target():
             self._hold_still()
             return
 
@@ -129,10 +131,13 @@ class AutoAim(Command):
             if target is not None:
                 self._lost_count = 0
                 return target
-            # Locked tag not visible -- count consecutive misses
-            self._lost_count += 1
-            if self._lost_count < TARGET_LOCK_LOST_CYCLES:
-                return None  # brief dropout -- hold lock, coast on last tx
+            # --- COASTING DISABLED FOR DEBUGGING ---
+            # Normally we coast on stale filtered_tx for up to
+            # TARGET_LOCK_LOST_CYCLES when the tag briefly drops out.
+            # Commented out to see raw behavior without caching.
+            # self._lost_count += 1
+            # if self._lost_count < TARGET_LOCK_LOST_CYCLES:
+            #     return None  # brief dropout -- hold lock, coast on last tx
             _log.debug(f"Lost lock on tag {self._locked_tag_id}")
             self._locked_tag_id = None
             self._lost_count = 0
