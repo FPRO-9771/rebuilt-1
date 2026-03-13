@@ -40,6 +40,7 @@ class LimelightVisionProvider(VisionProvider):
         # time when data actually changed.
         self._last_signature: tuple = ()
         self._last_fresh_time: float = 0.0
+        self._stale_count: int = 0  # consecutive polls with unchanged data
 
         _log.info(f"Initializing Limelight at {host} (background)...")
 
@@ -79,6 +80,11 @@ class LimelightVisionProvider(VisionProvider):
             if sig != self._last_signature:
                 self._last_signature = sig
                 self._last_fresh_time = now
+                self._stale_count = 0
+                fresh = "NEW"
+            else:
+                self._stale_count += 1
+                fresh = f"stale x{self._stale_count}"
             # Stamp targets with the time data ACTUALLY changed,
             # not the poll time. This makes age= meaningful.
             for t in targets:
@@ -86,6 +92,10 @@ class LimelightVisionProvider(VisionProvider):
 
             with self._lock:
                 self._cached_targets = targets
+
+            if targets:
+                tx_vals = " ".join(f"{t.tag_id}:{t.tx:.2f}" for t in targets)
+                _log.debug(f"[LL] {fresh} {tx_vals}")
 
             time.sleep(_POLL_INTERVAL)
 

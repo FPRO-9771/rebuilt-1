@@ -90,6 +90,13 @@ class AutoAim(Command):
 
         # 4. Fresh target available -- update our filtered tx measurement
         if target is not None:
+            age_ms = 0.0
+            if target.timestamp > 0:
+                import time
+                age_ms = (time.monotonic() - target.timestamp) * 1000
+            _log.debug(
+                f"[AIM-IN] t={target.tag_id} tx={target.tx:.2f} "
+                f"age={age_ms:.0f}ms ftx={self._filtered_tx:.2f}")
             self._update_filtered_tx(target)
 
         # 5. Already on target AND we have a fresh measurement -- hold still.
