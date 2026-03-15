@@ -1,6 +1,6 @@
 """
 Turret subsystem.
-Rotating turret powered by a KrakenX60 motor with soft position limits.
+Rotating turret powered by a WCP motor via TalonFXS with soft position limits.
 """
 
 from typing import Callable

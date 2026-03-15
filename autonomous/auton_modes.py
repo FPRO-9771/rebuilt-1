@@ -2,17 +2,21 @@
 Autonomous mode compositions.
 Each method returns a command that performs a complete auto routine.
 
-TODO: Implement auto routines once drivetrain and mechanisms are built.
-
 Example usage:
 ```
-auton = AutonModes(drivetrain, arm, intake, vision)
-simple_auto = auton.simple_score("blue_center")
-simple_auto.schedule()
+auton = AutonModes(drivetrain)
+auto_cmd = auton.follow_path("TEST PATH FPRO")
+auto_cmd.schedule()
 ```
 """
 
-from commands2 import Command, SequentialCommandGroup, WaitCommand
+from commands2 import Command, WaitCommand
+from pathplannerlib.auto import AutoBuilder
+from pathplannerlib.path import PathPlannerPath
+
+from utils.logger import get_logger
+
+_log = get_logger("auton_modes")
 
 
 class AutonModes:
@@ -36,28 +40,16 @@ class AutonModes:
         """Auto that does nothing - safe default."""
         return WaitCommand(15.0)
 
-    def simple_exit(self) -> Command:
+    def follow_path(self, path_name: str) -> Command:
         """
-        Drive forward to exit the starting zone.
-        TODO: Implement when drivetrain is ready.
-        """
-        # return SequentialCommandGroup(
-        #     self.drivetrain.drive_distance(2.0),
-        # )
-        return WaitCommand(15.0)
-
-    def simple_score(self, position: str) -> Command:
-        """
-        Score preloaded piece and exit zone.
-        TODO: Implement with actual mechanisms.
+        Follow a PathPlanner path by name.
 
         Args:
-            position: Starting position key (e.g., "blue_left")
+            path_name: Name of the path file (without .path extension)
         """
-        # return SequentialCommandGroup(
-        #     self.arm.go_to_position(CON_ARM["score_high"]),
-        #     self.intake.outtake(),
-        #     self.arm.go_to_position(CON_ARM["stow"]),
-        #     self.drivetrain.follow_path(DRIVE_PATHS["exit_zone"]),
-        # )
-        return WaitCommand(15.0)
+        try:
+            path = PathPlannerPath.fromPathFile(path_name)
+            return AutoBuilder.followPath(path)
+        except Exception as e:
+            _log.error(f"Failed to load path '{path_name}': {e}")
+            return WaitCommand(15.0)

@@ -21,3 +21,6 @@ robotpy-cscore==2026.2.1.1
 
 # Limelight
 limelightlib-python>=0.9.6
+
+# PathPlanner - autonomous path following
+robotpy-pathplannerlib

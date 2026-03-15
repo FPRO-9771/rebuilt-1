@@ -5,6 +5,7 @@ requires = [
     "phoenix6==26.1.1",
     "robotpy-cscore==2026.2.1.1",
     "limelightlib-python>=0.9.6",
+    "robotpy-pathplannerlib",
 ]
 
 # Directories and files to exclude from deploy to the RoboRIO.

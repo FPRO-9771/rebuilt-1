@@ -5,8 +5,13 @@ Subclasses TimedRobot and delegates to RobotContainer.
 
 import wpilib
 from commands2 import CommandScheduler
+from pathplannerlib.auto import AutoBuilder
+from pathplannerlib.path import PathPlannerPath
 from robot_container import RobotContainer
 from telemetry import update_telemetry
+from utils.logger import get_logger
+
+_log = get_logger("robot")
 
 
 class Robot(wpilib.TimedRobot):
@@ -37,11 +42,20 @@ class Robot(wpilib.TimedRobot):
 
     def autonomousInit(self):
         """Called when autonomous mode starts."""
-        # TODO: Get selected auto from chooser and schedule it
-        # auto_factory = self.container.auto_chooser.getSelected()
-        # self.auto_command = auto_factory()
-        # self.auto_command.schedule()
-        pass
+        pose = self.container.match_setup.get_pose()
+        path_name = pose.get("auto_path", "")
+
+        if not path_name:
+            _log.warning("No auto path configured for selected pose")
+            return
+
+        try:
+            path = PathPlannerPath.fromPathFile(path_name)
+            self.auto_command = AutoBuilder.followPath(path)
+            self.auto_command.schedule()
+            _log.info(f"Auto started: {path_name}")
+        except Exception as e:
+            _log.error(f"Failed to load auto path '{path_name}': {e}")
 
     def autonomousPeriodic(self):
         """Called every 20ms during autonomous."""
