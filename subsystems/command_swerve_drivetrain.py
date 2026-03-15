@@ -292,6 +292,15 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         self._sim_notifier = Notifier(_sim_periodic)
         self._sim_notifier.startPeriodic(self._SIM_LOOP_PERIOD)
 
+    def get_pose(self) -> Pose2d:
+        """Return the current estimated robot pose from odometry."""
+        return self.get_state().pose
+
+    def reset_pose(self, pose: Pose2d) -> None:
+        """Reset the odometry to a given pose."""
+        self.reset_rotation(pose.rotation())
+        self.reset_translation(pose.translation())
+
     def add_vision_measurement(
         self,
         vision_robot_pose: Pose2d,
