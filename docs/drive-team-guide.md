@@ -13,7 +13,7 @@ Quick reference for what every button does on each Xbox controller.
 | Input | Action | Notes |
 |-------|--------|-------|
 | **Left stick X** | Manual turret aim | Interrupts auto-aim; auto-aim resumes on release |
-| **Left stick Y** | *unassigned* | |
+| **Left stick Y** | Manual hood nudge | Tap up = more closed, tap down = more open. Always active. |
 | **Right stick X** | *unassigned* | |
 | **Right stick Y** | Launcher speed | Only active when launcher is toggled on (A). Forward = fast, back = slow |
 
@@ -23,8 +23,8 @@ Quick reference for what every button does on each Xbox controller.
 |-------|--------|-------|
 | **A button** | Toggle launcher on/off | Speed controlled by right stick Y |
 | **B button** | Toggle feeds on/off | Runs H feed + V feed together |
-| **X button** | **TEMP:** Toggle FindTarget sweep | Turret sweeps to find tags. Remove after testing. |
-| **Y button** | Toggle auto-aim on/off | Dashboard shows Shooter/AutoAim status |
+| **X button** | *unassigned* | |
+| **Y button** | Toggle coordinate aim on/off | Turret aims at Hub using odometry -- no vision needed |
 
 ### Bumpers & Triggers
 
@@ -32,7 +32,7 @@ Quick reference for what every button does on each Xbox controller.
 |-------|--------|-------|
 | **Left bumper (hold)** | Auto-shoot | Sets launcher speed + hood from vision distance |
 | **Right bumper** | Toggle intake deploy + spinner | Lowers intake arm and spins rollers together |
-| **Left trigger** | *unassigned* | |
+| **Left trigger (hold)** | Shoot when ready | Spins launcher + sets hood; feeds only when at speed AND on target |
 | **Right trigger** | *unassigned* | |
 
 ### D-pad / Other
@@ -45,24 +45,31 @@ Quick reference for what every button does on each Xbox controller.
 ### How to shoot (manual aim)
 
 1. Press **right bumper** to deploy intake and spin rollers
-2. Use **left stick** to aim the turret at the target
-3. Press **A** to toggle launcher on, use **right stick Y** to set speed
-4. Press **B** to start feeding Fuel
+2. Use **left stick X** to aim the turret at the target
+3. Tap **left stick Y** to nudge the hood angle (up = closed, down = open)
+4. Press **A** to toggle launcher on, use **right stick Y** to set speed
+5. Press **B** to start feeding Fuel
 
-### How to shoot (auto-aim + auto-shoot)
+### How to shoot (coordinate aim + auto-shoot)
 
 1. Press **right bumper** to deploy intake and spin rollers
-2. Press **Y** to enable auto-aim (turret tracks tags, check dashboard)
+2. Press **Y** to enable coordinate aim (turret aims at Hub via odometry)
 3. Hold **left bumper** to auto-shoot (sets speed + hood from distance)
 4. Press **B** to start feeding Fuel
+
+### How to shoot (one button)
+
+1. Press **right bumper** to deploy intake and spin rollers
+2. Press **Y** to enable coordinate aim
+3. Hold **left trigger** -- launcher spins up, hood sets angle, feeds run automatically when on target and at speed
 
 ### Testing workflow
 
 1. Press **right bumper** to deploy intake and spin rollers (pulls Fuel in)
 2. Press **A** to toggle launcher on, sweep **right stick Y** to find good speed
-3. Use **left stick** to aim turret manually
+3. Use **left stick X** to aim turret, tap **left stick Y** to adjust hood angle
 4. Press **B** to run feeds
-5. Try **Y** (auto-aim) and **left bumper** (auto-shoot) when ready
+5. Try **Y** (coordinate aim) and **left bumper** (auto-shoot) when ready
 
 ---
 
@@ -118,8 +125,9 @@ Quick reference for what every button does on each Xbox controller.
 
 ## Important Interactions
 
-- **Auto-aim (Y toggle)** can run alongside manual turret stick -- the stick temporarily overrides, and auto-aim resumes when released.
-- **Auto-shoot (left bumper)** takes over the launcher from manual mode (A toggle). Release the bumper, then press A again to go back to manual.
-- **Auto-aim and auto-shoot are independent** -- you can use one without the other. Manual aim + auto-shoot is a great combo.
+- **Coordinate aim (Y toggle)** can run alongside manual turret stick -- the stick temporarily overrides, and coordinate aim resumes when released.
+- **Auto-shoot (left bumper)** takes over the launcher and hood from manual mode. Release the bumper, then press A again to go back to manual launcher.
+- **Shoot when ready (left trigger)** does everything auto-shoot does, plus runs feeds automatically when aligned and at speed.
+- **Hood nudge (left stick Y)** is always active as a default command. Auto-shoot and shoot-when-ready temporarily override it; it resumes when they end.
 - **Right bumper** deploys the intake arm and spins the rollers together -- one button for the whole intake system.
 - SysId routines require holding **two buttons at once** (Back/Start + X/Y) so they can't be triggered accidentally.

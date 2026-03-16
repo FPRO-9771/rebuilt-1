@@ -16,8 +16,6 @@ CON_TURRET = {
     "search_voltage": 0.5,      # Voltage during FindTarget sweep (tune on robot)
     "search_brake_voltage": 3.0, # Brake voltage when sweep hits a soft limit
     "search_brake_cycles": 5,   # How many cycles to brake at a soft limit before reversing
-    "center_position": 4.5,     # Motor rotations when turret points forward (robot heading)
-    "degrees_per_rotation": 40.0, # Turret degrees per motor rotation (360 deg / 9 rotations)
 }
 
 # =============================================================================
@@ -71,13 +69,13 @@ CON_LAUNCHER = {
 # HOOD CONFIGURATION
 # =============================================================================
 CON_HOOD = {
-    "enabled": False,           # Hood motor not connected -- flip to True when wired
+    "enabled": True,            # Hood motor connected
     "max_voltage": 6.0,         # Maximum voltage to apply
     "min_position": 0.0,        # Minimum hood angle (rotations)
     "max_position": 0.25,       # Maximum hood angle (rotations)
     "position_tolerance": 0.01,  # "Close enough" tolerance (rotations)
     "inverted": False,
-    "brake": False,              # Brake on neutral -- holds position when idle
+    "brake": True,               # Brake on neutral -- holds position when idle
 
     # Slot 0 gains for closed-loop position control
     # NEEDS TUNING -- all gains low to prevent vibration
@@ -106,10 +104,6 @@ CON_SHOOTER = {
     "turret_velocity_ff_gain": 0.15,     # Feedforward: volts per (m/s) of lateral robot velocity
     "turret_tx_filter_alpha": 0.85,      # EMA smoothing for tx (0=max smooth, 1=no filter)
     "velocity_lead_enabled": False,      # Enable velocity lead compensation (aim ahead while moving)
-    "parallax_correction_enabled": False, # Enable parallax correction (aim at Hub center, not tag)
-
-    # Per-tag offsets and priorities moved to constants/match.py.
-    # They are now per-alliance and selected via SmartDashboard.
 
     # Distance lookup table: (distance_m, launcher_rps, hood_position, ball_speed_mps)
     # ball_speed_mps: estimated ball speed at this distance -- used for

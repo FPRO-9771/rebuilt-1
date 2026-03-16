@@ -4,20 +4,24 @@ All operator button/stick mappings live here to keep robot_container short.
 
 Controls:
     Left stick X        -- Manual turret aim
+    Left stick Y        -- Manual hood nudge (tap up = more closed, tap down = more open)
     Right stick Y       -- Launcher speed (when toggled on via A)
     A button (toggle)   -- Launcher on/off (speed from right stick Y)
     B button (toggle)   -- Feed system on/off (H feed + V feed)
-    X button (toggle)   -- TEMP: FindTarget sweep (turret sweeps to find tags)
     Y button (toggle)   -- Coordinate aim (turret aims at Hub via odometry)
-    Left bumper (hold)  -- Auto-shoot (vision distance -> launcher/hood)
+    Left bumper (hold)  -- Auto-shoot (pose distance -> launcher/hood)
     Left trigger (hold) -- Shoot when ready (launcher + feed when on target)
     Right bumper (toggle) -- Intake deploy + spinner on/off
 """
 
-from commands2 import InstantCommand, ParallelCommandGroup
+from commands2 import ParallelCommandGroup
 from commands2.button import Trigger
 
 from constants import CON_ROBOT, CON_H_FEED, CON_V_FEED, CON_INTAKE_SPINNER
+from constants.pose import CON_POSE
+from calculations.shooter_position import get_shooter_field_position
+from calculations.target_state import compute_range_state, ShootContext
+from calculations.distance_compensation import compute_corrected_distance
 from utils.logger import get_logger
 
 _log = get_logger("operator")
@@ -28,13 +32,56 @@ from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
 from subsystems.intake import Intake
 from subsystems.intake_spinner import IntakeSpinner
-from handlers.vision import VisionProvider
-from commands.auto_aim import AutoAim
 from commands.auto_shoot import AutoShoot
 from commands.coordinate_aim import CoordinateAim
-from commands.find_target import FindTarget
+from commands.manual_hood import ManualHood
 from commands.manual_launcher import ManualLauncher
 from commands.shoot_when_ready import ShootWhenReady
+
+
+def _make_shoot_context_supplier(drivetrain, alliance_supplier,
+                                 velocity_supplier=None):
+    """Build a callable that returns a ShootContext with full pose context.
+
+    Computes the distance from the shooter (not robot center) to the
+    alliance Hub, adjusts for closing speed, and packages everything
+    the commands need for both control and logging.
+    """
+    def _get_context():
+        pose = drivetrain.get_pose()
+        shooter_xy = get_shooter_field_position(
+            pose,
+            CON_POSE["shooter_offset_x"],
+            CON_POSE["shooter_offset_y"],
+        )
+
+        alliance = alliance_supplier()
+        target_xy = (alliance["target_x"], alliance["target_y"])
+
+        vx, vy = 0.0, 0.0
+        if velocity_supplier is not None:
+            vx, vy = velocity_supplier()
+
+        raw_distance, closing = compute_range_state(
+            shooter_xy, target_xy, (vx, vy))
+        corrected = compute_corrected_distance(raw_distance, closing)
+
+        return ShootContext(
+            corrected_distance=corrected,
+            raw_distance=raw_distance,
+            closing_speed_mps=closing,
+            pose_x=pose.X(),
+            pose_y=pose.Y(),
+            heading_deg=pose.rotation().degrees(),
+            shooter_x=shooter_xy[0],
+            shooter_y=shooter_xy[1],
+            target_x=target_xy[0],
+            target_y=target_xy[1],
+            vx=vx,
+            vy=vy,
+        )
+
+    return _get_context
 
 
 def configure_operator(operator, conveyor, turret, launcher, hood, vision,
@@ -54,6 +101,12 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
         turret.manual(lambda: operator.getLeftX())
     )
 
+    # --- Manual hood: left stick Y nudge ---
+    # Tap up = more closed, tap down = more open
+    hood.setDefaultCommand(
+        ManualHood(hood, lambda: -operator.getLeftY(), deadband)
+    )
+
     # --- Launcher: A button toggle, right stick Y controls speed ---
     operator.a().toggleOnTrue(
         ManualLauncher(launcher, lambda: -operator.getRightY())
@@ -68,27 +121,6 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             )
         )
 
-    # --- TEMP: FindTarget sweep on X button (toggle) ---
-    # For testing the sweep on the real robot. Remove once integrated with AutoAim.
-    operator.x().toggleOnTrue(
-        FindTarget(
-            turret, vision,
-            tag_priority_supplier=match_setup.get_tag_priority,
-        )
-    )
-
-    # --- Intake: X button toggles between out/in ---
-    # COMMENTED OUT -- intake held down for practice, no toggle needed
-    # if intake is not None:
-    #     def _toggle_intake():
-    #         state["intake_down"] = not state["intake_down"]
-    #         if state["intake_down"]:
-    #             intake.go_down().schedule()
-    #         else:
-    #             intake.go_up().schedule()
-    #
-    #     operator.x().onTrue(InstantCommand(_toggle_intake))
-
     # --- Intake deploy + spinner: right bumper toggle ---
     if intake is not None and intake_spinner is not None:
         operator.rightBumper().toggleOnTrue(
@@ -98,43 +130,40 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             )
         )
 
-    # --- Coordinate aim: Y button toggle ---
-    # Aims turret at Hub using odometry -- no vision needed.
-    coord_aim = CoordinateAim(
-        turret, drivetrain,
-        alliance_supplier=match_setup.get_alliance,
-    )
-    operator.y().toggleOnTrue(coord_aim)
-
-    # --- Auto-aim (not bound to a button -- used by shoot-when-ready) ---
+    # --- Robot velocity supplier for coordinate aim and distance ---
     vel_supplier = None
     if drivetrain is not None:
         def _get_robot_velocity():
-            state = drivetrain.get_state()
-            return (state.speeds.vx, state.speeds.vy)
+            dt_state = drivetrain.get_state()
+            return (dt_state.speeds.vx, dt_state.speeds.vy)
         vel_supplier = _get_robot_velocity
 
-    auto_aim = AutoAim(
-        turret, vision,
-        tag_priority_supplier=match_setup.get_tag_priority,
-        tag_offsets_supplier=match_setup.get_tag_offsets,
-        robot_velocity_supplier=vel_supplier,
-    )
+    # --- Shoot context supplier (shared by all shooter commands) ---
+    context_supplier = None
+    if drivetrain is not None:
+        context_supplier = _make_shoot_context_supplier(
+            drivetrain, match_setup.get_alliance, vel_supplier)
+
+    # --- Coordinate aim: Y button toggle ---
+    # Aims turret at Hub using odometry -- no vision needed.
+    coord_aim = CoordinateAim(turret, context_supplier=context_supplier)
+    operator.y().toggleOnTrue(coord_aim)
 
     # --- Auto-shoot: left bumper hold ---
-    operator.leftBumper().whileTrue(
-        AutoShoot(launcher, hood, vision,
-                  tag_priority_supplier=match_setup.get_tag_priority)
-    )
+    if context_supplier is not None:
+        operator.leftBumper().whileTrue(
+            AutoShoot(launcher, hood,
+                      context_supplier=context_supplier)
+        )
 
     # --- Shoot when ready: left trigger hold ---
     # Spins launcher immediately; feeds only when at speed AND on target.
-    if h_feed is not None and v_feed is not None:
+    if h_feed is not None and v_feed is not None and context_supplier is not None:
         operator.leftTrigger().whileTrue(
             ShootWhenReady(
-                launcher, hood, h_feed, v_feed, vision,
-                tag_priority_supplier=match_setup.get_tag_priority,
-                on_target_supplier=auto_aim.is_on_target,
+                launcher, hood, h_feed, v_feed,
+                context_supplier=context_supplier,
+                on_target_supplier=coord_aim.is_on_target,
             )
         )
 

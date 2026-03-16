@@ -2,15 +2,33 @@
 Coordinate-based turret aiming.
 Rotates turret toward the alliance Hub using drivetrain odometry.
 No vision required -- uses field position to calculate the angle.
+
+Pipeline each cycle:
+  1. Read ShootContext (pose, shooter position, target, velocity)
+  2. Compute target state (error, distance, closing speed)
+  3. Compute movement corrections (tracking + lead)
+  4. Route through turret limits
+  5. EMA filter
+  6. PD control -> voltage
 """
 
-import math
+from typing import Callable
 
 from commands2 import Command
+from wpilib import SmartDashboard
 
 from subsystems.turret import Turret
-from constants import CON_TURRET
-from constants.target_tracking import CON_TARGET_TRACKING as CON_TT
+from calculations.target_state import compute_target_state
+from calculations.movement_compensation import compute_movement_correction
+from calculations.turret_routing import choose_rotation_direction
+from calculations.turret_pd import compute_turret_voltage
+from constants.shooter import CON_SHOOTER, CON_TURRET
+from constants.pose import CON_POSE
+from telemetry.auto_aim_telemetry import (
+    init_auto_aim_keys, publish_auto_aim, publish_velocity_debug,
+    init_aim_dashboard_keys, publish_aim_dashboard,
+)
+from telemetry.auto_aim_logging import log_hold, log_drive
 from utils.logger import get_logger
 
 _log = get_logger("coordinate_aim")
@@ -19,89 +37,152 @@ _log = get_logger("coordinate_aim")
 class CoordinateAim(Command):
     """Aim turret at the Hub using odometry-based angle calculation."""
 
-    def __init__(self, turret, drivetrain, alliance_supplier):
+    def __init__(
+        self,
+        turret: Turret,
+        context_supplier: Callable,
+    ):
         super().__init__()
         self.turret = turret
-        self._drivetrain = drivetrain
-        self._alliance_supplier = alliance_supplier
+        self._context_supplier = context_supplier
+        self._aim_sign = -1.0 if CON_SHOOTER["turret_aim_inverted"] else 1.0
+
+        self._filtered_error = 0.0
+        self._cycle_count = 0
+        self._active = False
+
         self.addRequirements(turret)
+        init_auto_aim_keys()
+        init_aim_dashboard_keys()
 
-    # --- Target calculation ---
+    # --- Public API ---
 
-    def _get_target_xy(self):
-        """Return (x, y) of the alliance Hub."""
-        alliance = self._alliance_supplier()
-        if alliance["name"] == "Red":
-            return (CON_TT["red_target_x"], CON_TT["red_target_y"])
-        return (CON_TT["blue_target_x"], CON_TT["blue_target_y"])
+    def is_on_target(self) -> bool:
+        """True if auto-aim is active and turret is aligned.
 
-    def _get_desired_turret_angle(self):
-        """Angle from robot forward to the target, in degrees."""
-        pose = self._drivetrain.get_pose()
-        target_x, target_y = self._get_target_xy()
+        Safe to call from other commands (e.g. ShootWhenReady).
+        Returns False when not running so callers never see stale state.
+        """
+        return self._active and self._is_on_target()
 
-        dx = target_x - pose.X()
-        dy = target_y - pose.Y()
+    def get_target_state(self):
+        """Return the most recent TargetState, or None if not active.
 
-        target_angle_deg = math.degrees(math.atan2(dy, dx))
-        heading_deg = pose.rotation().degrees()
-
-        error = target_angle_deg - heading_deg
-        while error > 180:
-            error -= 360
-        while error < -180:
-            error += 360
-        return error
-
-    def _get_current_turret_angle(self):
-        """Current turret angle relative to robot forward, in degrees."""
-        pos = self.turret.get_position()
-        center = CON_TURRET["center_position"]
-        deg_per_rot = CON_TURRET["degrees_per_rotation"]
-        return (pos - center) * deg_per_rot
+        Allows other commands (e.g. AutoShoot) to read distance and
+        closing speed without duplicating the pose calculation.
+        """
+        if not self._active:
+            return None
+        return self._last_state
 
     # --- Command lifecycle ---
 
     def initialize(self):
-        self._cycle = 0
+        self._filtered_error = 0.0
+        self._cycle_count = 0
+        self._active = True
+        self._last_state = None
+        SmartDashboard.putBoolean("Shooter/AutoAim", True)
         _log.info("CoordinateAim ENABLED")
 
     def execute(self):
-        pose = self._drivetrain.get_pose()
-        target_x, target_y = self._get_target_xy()
-        desired = self._get_desired_turret_angle()
-        current = self._get_current_turret_angle()
-        error = desired - current
+        # 1. Read shared context (pose, shooter, target, velocity)
+        ctx = self._context_supplier()
 
-        # Wrap error to [-180, 180] so turret takes the shortest path
-        while error > 180:
-            error -= 360
-        while error < -180:
-            error += 360
+        # 2. Compute target state (error, distance, closing speed)
+        state = compute_target_state(
+            ctx.heading_deg,
+            (ctx.shooter_x, ctx.shooter_y),
+            (ctx.target_x, ctx.target_y),
+            (ctx.vx, ctx.vy),
+            self.turret.get_position(),
+            CON_POSE["center_position"],
+            CON_POSE["degrees_per_rotation"],
+        )
+        self._last_state = state
 
-        # P control with dedicated coordinate-aim constants
-        max_v = CON_TT["turret_max_voltage"]
-        kP = CON_TT["turret_kP"]
-        voltage = -error * kP
-        voltage = max(-max_v, min(voltage, max_v))
+        # 3. Compute movement corrections
+        tracking_deg, lead_deg = compute_movement_correction(
+            ctx.vx, ctx.vy, state.distance_m, CON_SHOOTER,
+        )
 
-        self.turret._set_voltage(voltage)
+        # 4. Combine raw aim
+        raw_aim = state.error_deg + tracking_deg + lead_deg
 
-        # Debug log every 10 cycles (~200ms at 50Hz)
-        self._cycle += 1
-        if self._cycle % 10 == 0:
-            dist = math.hypot(target_x - pose.X(), target_y - pose.Y())
-            _log.debug(
-                f"CoordAim: pose=({pose.X():.2f},{pose.Y():.2f}) "
-                f"hdg={pose.rotation().degrees():.1f} "
-                f"tgt=({target_x:.1f},{target_y:.1f}) dist={dist:.2f}m "
-                f"desired={desired:.1f} current={current:.1f} "
-                f"err={error:.1f} volt={voltage:.3f}"
+        # 5. Route through turret limits
+        routed_aim = choose_rotation_direction(
+            self.turret.get_position(), raw_aim,
+            CON_TURRET["min_position"], CON_TURRET["max_position"],
+            CON_POSE["degrees_per_rotation"],
+        )
+
+        # 6. EMA filter
+        alpha = CON_SHOOTER["turret_tx_filter_alpha"]
+        self._filtered_error = (
+            alpha * routed_aim + (1 - alpha) * self._filtered_error
+        )
+
+        # 7. Publish telemetry
+        publish_auto_aim(
+            self._cycle_count,
+            on_target=self._is_on_target(),
+            error_deg=state.error_deg,
+            distance_m=state.distance_m,
+        )
+        publish_velocity_debug(self._cycle_count, ctx.vx, ctx.vy, lead_deg)
+        publish_aim_dashboard(
+            self._cycle_count, state.distance_m, state.bearing_deg,
+        )
+
+        # 8. Control turret
+        turret_pos = self.turret.get_position()
+        if self._is_on_target():
+            self.turret._set_voltage(0.0)
+            log_hold(
+                self._cycle_count,
+                ctx.pose_x, ctx.pose_y, ctx.heading_deg,
+                ctx.shooter_x, ctx.shooter_y,
+                ctx.target_x, ctx.target_y,
+                turret_pos, state.error_deg, state.distance_m,
+                state.closing_speed_mps,
+            )
+        else:
+            turret_vel = self.turret.get_velocity()
+            voltage, p_term, d_term, ff_term, raw_voltage = (
+                compute_turret_voltage(
+                    self._filtered_error, turret_vel, ctx.vy,
+                    self._aim_sign, CON_SHOOTER,
+                )
+            )
+            self.turret._set_voltage(voltage)
+            log_drive(
+                self._cycle_count,
+                ctx.pose_x, ctx.pose_y, ctx.heading_deg,
+                ctx.shooter_x, ctx.shooter_y,
+                ctx.target_x, ctx.target_y,
+                turret_pos, state.error_deg, state.distance_m,
+                state.closing_speed_mps,
+                tracking_deg, lead_deg, routed_aim,
+                self._filtered_error,
+                p_term, d_term, ff_term, raw_voltage, voltage,
+                turret_vel, ctx.vx, ctx.vy,
             )
 
-    def isFinished(self):
+        self._cycle_count += 1
+
+    def isFinished(self) -> bool:
         return False
 
-    def end(self, interrupted):
+    def end(self, interrupted: bool):
+        self._active = False
         self.turret._stop()
+        SmartDashboard.putBoolean("Shooter/AutoAim", False)
+        SmartDashboard.putBoolean("AutoAim/OnTarget", False)
         _log.info(f"CoordinateAim ended (interrupted={interrupted})")
+
+    # --- Internal ---
+
+    def _is_on_target(self) -> bool:
+        """True if filtered error is within alignment tolerance."""
+        tolerance = CON_SHOOTER["turret_alignment_tolerance"]
+        return abs(self._filtered_error) <= tolerance
