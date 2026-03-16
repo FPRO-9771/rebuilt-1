@@ -8,7 +8,7 @@ in robot_container.py and flip the wired flags in constants/ids.py.
 """
 
 from typing import Callable
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS
@@ -18,7 +18,7 @@ from utils.logger import get_logger
 _log = get_logger("turret_minion")
 
 
-class TurretMinion(SubsystemBase):
+class TurretMinion(Subsystem):
     """
     Rotating turret for aiming the shooter (Minion / TalonFXS variant).
     Uses voltage control with software position limits.

@@ -3,13 +3,13 @@ Launcher subsystem.
 Flywheel launcher powered by a KrakenX60 motor with closed-loop velocity control.
 """
 
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_LAUNCHER
 
 
-class Launcher(SubsystemBase):
+class Launcher(Subsystem):
     """
     Flywheel launcher for shooting game pieces.
     Uses closed-loop velocity control to maintain consistent shot speed.

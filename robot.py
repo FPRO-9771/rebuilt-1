@@ -7,6 +7,7 @@ import wpilib
 from commands2 import CommandScheduler
 from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.path import PathPlannerPath
+from wpimath.geometry import Pose2d, Rotation2d
 from robot_container import RobotContainer
 from telemetry import update_telemetry
 from utils.logger import get_logger
@@ -31,6 +32,19 @@ class Robot(wpilib.TimedRobot):
             wpilib.DriverStation.silenceJoystickConnectionWarning(True)
         self.container = RobotContainer()
         self.auto_command = None
+        self._apply_selected_pose()
+
+    def _apply_selected_pose(self):
+        """Reset drivetrain odometry to the pose selected in Elastic."""
+        pose = self.container.match_setup.get_pose()
+        x = pose.get("start_x", 0.0)
+        y = pose.get("start_y", 0.0)
+        heading = pose.get("start_heading", 0.0)
+        if x == 0.0 and y == 0.0:
+            return
+        field_pose = Pose2d(x, y, Rotation2d.fromDegrees(heading))
+        self.container.drivetrain.reset_pose(field_pose)
+        _log.info(f"Pose reset to ({x:.1f}, {y:.1f}, {heading:.0f} deg)")
 
     def robotPeriodic(self):
         """Called every 20ms regardless of mode."""

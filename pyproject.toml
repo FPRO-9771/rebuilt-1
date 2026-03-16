@@ -1,9 +1,9 @@
 [tool.robotpy]
-robotpy_version = "2026.2.1.1"
+robotpy_version = "2026.2.2"
 requires = [
-    "robotpy-commands-v2==2026.2.1.1",
+    "robotpy-commands-v2==2026.2.2",
     "phoenix6==26.1.1",
-    "robotpy-cscore==2026.2.1.1",
+    "robotpy-cscore==2026.2.2",
     "limelightlib-python>=0.9.6",
     "robotpy-pathplannerlib",
 ]
@@ -17,6 +17,7 @@ robotpy_excludes = [
     "calibration",
     "ctre_sim",
     "testing",
+    "logs",
     "hardware/mock_motor_controller.py",
     "constants/simulation.py",
 ]

@@ -3,13 +3,13 @@ Intake spinner subsystem.
 Powered by a KrakenX60 motor that spins to pull Fuel into the robot.
 """
 
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_INTAKE_SPINNER
 
 
-class IntakeSpinner(SubsystemBase):
+class IntakeSpinner(Subsystem):
     """Intake spinner for pulling Fuel into the robot. Uses voltage control."""
 
     def __init__(self):

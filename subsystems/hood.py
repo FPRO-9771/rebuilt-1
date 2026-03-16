@@ -3,7 +3,7 @@ Hood subsystem.
 Adjustable hood powered by a WCP motor via TalonFXS for angle control.
 """
 
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_HOOD
@@ -12,7 +12,7 @@ from utils.logger import get_logger
 _log = get_logger("hood")
 
 
-class Hood(SubsystemBase):
+class Hood(Subsystem):
     """
     Adjustable hood for controlling shot angle.
     Uses closed-loop position control with position limits.

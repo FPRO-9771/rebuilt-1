@@ -6,7 +6,7 @@ using odometry (no vision/AprilTags required).
 
 import math
 
-from commands2 import SubsystemBase
+from commands2 import Subsystem
 from wpimath.geometry import Translation2d
 
 from constants.target_tracking import CON_TARGET_TRACKING
@@ -15,7 +15,7 @@ from utils.logger import get_logger
 _log = get_logger("target_tracking")
 
 
-class TargetTracking(SubsystemBase):
+class TargetTracking(Subsystem):
     """
     Computes angle and distance from the robot's current pose to
     the selected alliance Hub target using drivetrain odometry.

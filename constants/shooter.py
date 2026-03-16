@@ -16,6 +16,8 @@ CON_TURRET = {
     "search_voltage": 0.5,      # Voltage during FindTarget sweep (tune on robot)
     "search_brake_voltage": 3.0, # Brake voltage when sweep hits a soft limit
     "search_brake_cycles": 5,   # How many cycles to brake at a soft limit before reversing
+    "center_position": 4.5,     # Motor rotations when turret points forward (robot heading)
+    "degrees_per_rotation": 40.0, # Turret degrees per motor rotation (360 deg / 9 rotations)
 }
 
 # =============================================================================

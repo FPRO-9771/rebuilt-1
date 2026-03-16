@@ -4,13 +4,13 @@ Powered by a KrakenX60 motor for moving game pieces.
 """
 
 from typing import Callable
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_CONVEYOR
 
 
-class Conveyor(SubsystemBase):
+class Conveyor(Subsystem):
     """
     Conveyor belt for transporting game pieces.
     Uses voltage control for simple forward/reverse operation.

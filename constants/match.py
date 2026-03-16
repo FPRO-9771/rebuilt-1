@@ -46,8 +46,8 @@ ALLIANCES = [
             {
                 "name": "Center",
                 "default": True,
-                "start_x": 0.0,
-                "start_y": 0.0,
+                "start_x": 13.0,
+                "start_y": 4.0,
                 "start_heading": 0.0,
                 "auto_path": "TEST PATH FPRO",
             },

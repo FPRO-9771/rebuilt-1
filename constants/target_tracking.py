@@ -33,4 +33,9 @@ CON_TARGET_TRACKING = {
 
     # Max rotation output (fraction of max angular velocity, 0 to 1)
     "max_rotation_output": 0.5,
+
+    # --- Turret control for CoordinateAim ---
+    "turret_max_voltage": 1,          # Max voltage sent to turret during coordinate aim
+    "turret_kP": 0.04,                 # Proportional gain (volts per degree of error)
+    "turret_full_speed_error_deg": 45,  # Error angle (deg) at which turret hits max voltage
 }

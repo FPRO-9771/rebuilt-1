@@ -8,7 +8,7 @@ Controls:
     A button (toggle)   -- Launcher on/off (speed from right stick Y)
     B button (toggle)   -- Feed system on/off (H feed + V feed)
     X button (toggle)   -- TEMP: FindTarget sweep (turret sweeps to find tags)
-    Y button (toggle)   -- Auto-aim on/off (turret tracks tags via PD)
+    Y button (toggle)   -- Coordinate aim (turret aims at Hub via odometry)
     Left bumper (hold)  -- Auto-shoot (vision distance -> launcher/hood)
     Left trigger (hold) -- Shoot when ready (launcher + feed when on target)
     Right bumper (toggle) -- Intake deploy + spinner on/off
@@ -31,6 +31,7 @@ from subsystems.intake_spinner import IntakeSpinner
 from handlers.vision import VisionProvider
 from commands.auto_aim import AutoAim
 from commands.auto_shoot import AutoShoot
+from commands.coordinate_aim import CoordinateAim
 from commands.find_target import FindTarget
 from commands.manual_launcher import ManualLauncher
 from commands.shoot_when_ready import ShootWhenReady
@@ -97,9 +98,15 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             )
         )
 
-    # --- Auto-aim: Y button toggle ---
-    # Build velocity supplier from drivetrain if available.
-    # Returns (vx, vy) in m/s from the swerve chassis speeds.
+    # --- Coordinate aim: Y button toggle ---
+    # Aims turret at Hub using odometry -- no vision needed.
+    coord_aim = CoordinateAim(
+        turret, drivetrain,
+        alliance_supplier=match_setup.get_alliance,
+    )
+    operator.y().toggleOnTrue(coord_aim)
+
+    # --- Auto-aim (not bound to a button -- used by shoot-when-ready) ---
     vel_supplier = None
     if drivetrain is not None:
         def _get_robot_velocity():
@@ -113,7 +120,6 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
         tag_offsets_supplier=match_setup.get_tag_offsets,
         robot_velocity_supplier=vel_supplier,
     )
-    operator.y().toggleOnTrue(auto_aim)
 
     # --- Auto-shoot: left bumper hold ---
     operator.leftBumper().whileTrue(
