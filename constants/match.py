@@ -49,7 +49,7 @@ ALLIANCES = [
                 "start_x": 0.0,
                 "start_y": 0.0,
                 "start_heading": 0.0,
-                "auto_path": "",
+                "auto_path": "TEST PATH FPRO",
             },
             {
                 "name": "Left",
