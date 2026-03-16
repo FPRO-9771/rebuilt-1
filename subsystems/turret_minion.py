@@ -13,6 +13,9 @@ from commands2 import SubsystemBase, Command
 from hardware import create_motor
 from constants import MOTOR_IDS
 from constants.shooter import CON_TURRET_MINION
+from utils.logger import get_logger
+
+_log = get_logger("turret_minion")
 
 
 class TurretMinion(SubsystemBase):
@@ -72,6 +75,8 @@ class TurretMinion(SubsystemBase):
         elif pos <= CON_TURRET_MINION["min_position"] and clamped < 0:
             clamped = 0
 
+        # TEMPORARY: log position for soft limit tuning
+        _log.info(f"pos={pos:.4f} volts={clamped:.3f}")
         self.motor.set_voltage(clamped)
 
     def _stop(self) -> None:

@@ -25,8 +25,8 @@ MOTOR_IDS = {
     "intake_spinner": {"can_id": 42, "type": "talon_fx", "bus": "op_sys", "wired": False},
 
     # Shooter
-    "turret":   {"can_id": 32, "type": "talon_fxs", "bus": "op_sys", "wired": True, "sim_rps_per_volt": 2.0},
-    "turret_minion": {"can_id": 30, "type": "talon_fxs", "bus": "op_sys", "wired": False, "sim_rps_per_volt": 2.5},
+    "turret":   {"can_id": 30, "type": "talon_fx",  "bus": "op_sys", "wired": False, "sim_rps_per_volt": 2.0},
+    "turret_minion": {"can_id": 32, "type": "talon_fxs", "bus": "op_sys", "wired": True, "sim_rps_per_volt": 2.5},
     "launcher": {"can_id": 31, "type": "talon_fx",  "bus": "op_sys", "wired": True, "sim_rps_per_volt": 8.0},
     "hood":     {"can_id": 33, "type": "talon_fxs", "bus": "op_sys", "wired": False, "sim_rps_per_volt": 1.0},
 }
