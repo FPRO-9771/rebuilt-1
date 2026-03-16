@@ -24,15 +24,15 @@ CON_TURRET = {
 # robot_container.py.  All voltages and limits need re-tuning on real hardware.
 # =============================================================================
 CON_TURRET_MINION = {
-    "max_voltage": 4.0,         # Start same as Kraken -- tune down if needed
-    "manual_speed_factor": 0.20, # Manual mode runs at 20% of max voltage
+    "max_voltage": 3.0,         # Safety cap -- tune down once moving
+    "manual_speed_factor": 0.50, # Manual mode: 1.0 * 0.50 = 0.50V
     "min_position": 0,       # Soft limit: leftmost rotation (rotations)
-    "max_position": 9.5,        # Soft limit: rightmost rotation (rotations)
+    "max_position": 9,        # Soft limit: rightmost rotation (rotations)
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
-    "inverted": False,
+    "inverted": False,           # Positive = left (unconfirmed -- flip if reversed)
     "brake": True,               # Brake on neutral -- holds turret steady
-    "search_voltage": 0.5,      # Voltage during FindTarget sweep
-    "search_brake_voltage": 3.0, # Brake voltage when sweep hits a soft limit
+    "search_voltage": 0.10,     # Voltage during FindTarget sweep
+    "search_brake_voltage": 0.30, # Brake voltage when sweep hits a soft limit
     "search_brake_cycles": 5,   # How many cycles to brake before reversing
 
     # Slot 0 gains for closed-loop position hold (HoldPosition command).
