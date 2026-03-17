@@ -12,7 +12,8 @@ Controls:
     Left bumper (hold)  -- Auto-shoot (pose distance -> launcher/hood)
     Left trigger (hold) -- Shoot when ready (launcher + feed when on target)
     Right trigger (hold) -- Reverse H feed (un-jam)
-    Right bumper (toggle) -- Intake deploy + spinner on/off
+    X button (toggle)     -- Intake up/down
+    Right bumper (toggle) -- Intake spinner on/off
 """
 
 from commands2 import ParallelCommandGroup
@@ -140,14 +141,16 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             )
         )
 
-    # --- Intake deploy + spinner: right bumper toggle ---
-    if intake is not None and intake_spinner is not None:
+    # --- Intake spinner: right bumper toggle ---
+    if intake_spinner is not None:
         operator.rightBumper().toggleOnTrue(
-            ParallelCommandGroup(
-                intake.hold_down(),
-                intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
-            )
+            intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
         )
+
+    # --- Intake up/down: X button toggle ---
+    if intake is not None:
+        operator.x().toggleOnTrue(intake.go_down())
+        operator.x().toggleOnFalse(intake.go_up())
 
     # --- Reverse H feed (un-jam): right trigger hold ---
     if h_feed is not None:
