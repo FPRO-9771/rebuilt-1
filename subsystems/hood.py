@@ -3,7 +3,7 @@ Hood subsystem.
 Adjustable hood powered by a WCP motor via TalonFXS for angle control.
 """
 
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_HOOD
@@ -12,7 +12,7 @@ from utils.logger import get_logger
 _log = get_logger("hood")
 
 
-class Hood(SubsystemBase):
+class Hood(Subsystem):
     """
     Adjustable hood for controlling shot angle.
     Uses closed-loop position control with position limits.
@@ -23,7 +23,15 @@ class Hood(SubsystemBase):
         super().__init__()
         self._enabled = CON_HOOD.get("enabled", True)
         self._last_target = None
+        self._periodic_count = 0
         if self._enabled:
+            _log.info(
+                f"Hood init: enabled={self._enabled} "
+                f"inverted={CON_HOOD['inverted']} brake={CON_HOOD['brake']} "
+                f"range=[{CON_HOOD['min_position']}, {CON_HOOD['max_position']}] "
+                f"kP={CON_HOOD['slot0_kP']} kD={CON_HOOD['slot0_kD']} "
+                f"kS={CON_HOOD['slot0_kS']}"
+            )
             self.motor = create_motor(
                 MOTOR_IDS["hood"],
                 inverted=CON_HOOD["inverted"],
@@ -61,14 +69,15 @@ class Hood(SubsystemBase):
     def _set_position(self, position: float) -> None:
         """Move hood to position, clamped to min/max limits."""
         if not self._enabled:
+            _log.warning("_set_position called but hood DISABLED")
             return
         clamped = max(CON_HOOD["min_position"], min(position, CON_HOOD["max_position"]))
-        if clamped != self._last_target:
-            _log.debug(
-                f"target={clamped:.4f} current={self.get_position():.4f} "
-                f"error={clamped - self.get_position():.4f}"
-            )
-            self._last_target = clamped
+        # if clamped != self._last_target:
+        #     _log.info(
+        #         f"_set_position: target={clamped:.4f} current={self.get_position():.4f} "
+        #         f"error={clamped - self.get_position():.4f}"
+        #     )
+        self._last_target = clamped
         self.motor.set_position(clamped)
 
     def _set_voltage(self, volts: float) -> None:

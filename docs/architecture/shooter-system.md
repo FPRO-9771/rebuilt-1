@@ -20,34 +20,42 @@ This doc covers the shooter system: a turret, flywheel launcher, and adjustable 
 
 ## 1. System Overview
 
-The shooter has three mechanisms and a camera. Three independent command modules control them:
+The shooter has three mechanisms. Three independent command modules control them. CoordinateAim, AutoShoot, and ShootWhenReady all consume a shared `ShootContext` from a single supplier (built in `controls/operator_controls.py`):
 
 ```
-                   +-----------------------+
-                   |   AutoAim             |
-                   |   (Y button toggle)   |
-                   |                       |
-                   |   vision --> tx        |
-                   |   PD aim --> turret    |
-                   |   publishes AutoAim   |
-                   |   requires: turret    |
-                   +-----------------------+
+              _make_shoot_context_supplier()
+              (controls/operator_controls.py)
+                 pose -> shooter position -> target -> velocity
+                 -> raw distance -> corrected distance
+                            |
+              +-------------+-------------+
+              |             |             |
+              v             v             v
++-----------------+ +-----------------+ +-----------------+
+| CoordinateAim   | | AutoShoot       | | ShootWhenReady  |
+| (Y toggle)      | | (LB hold)      | | (LT hold)       |
+|                 | |                 | |                 |
+| ctx -> angle    | | ctx -> dist     | | ctx -> dist     |
+| PD -> turret    | | table -> RPS,  | | table -> RPS,  |
+| publishes       | |   hood          | |   hood + feeds  |
+|   AutoAim       | | req: launcher, | |   when ready    |
+| req: turret     | |      hood       | | req: launcher, |
++-----------------+ +-----------------+ |   hood, feeds   |
+                                        +-----------------+
 
-+-----------------------+       +-----------------------+
-|   ManualLauncher      |       |   AutoShoot           |
-|   (A button toggle)   |       |   (left bumper hold)  |
-|                       |       |                       |
-|   stick --> RPS       |       |   vision --> distance  |
-|   requires: launcher  |       |   table --> RPS, hood  |
-|                       |       |   requires: launcher,  |
-+-----------------------+       |             hood       |
-                                +-----------------------+
++-----------------+
+| ManualLauncher  |
+| (A toggle)      |
+|                 |
+| stick -> RPS    |
+| req: launcher   |
++-----------------+
 ```
 
 | Component | Motor | Controller | Control Mode |
 |-----------|-------|------------|--------------|
-| Turret (default) | Kraken X60 | TalonFX | Voltage (P-control from vision) |
-| Turret (alternate) | Minion | TalonFXS | Voltage (same P-control) |
+| Turret (default) | Kraken X60 | TalonFX | Voltage (PD-control from odometry) |
+| Turret (alternate) | Minion | TalonFXS | Voltage (same PD-control) |
 | Launcher | Kraken X60 | TalonFX | Closed-loop velocity |
 | Hood | WCP | TalonFXS | Closed-loop position |
 
@@ -55,7 +63,7 @@ All three are "dumb" subsystems -- they don't know about each other or about vis
 
 ### Turret Motor Swap: Kraken vs Minion
 
-We have two turret subsystem files with identical public interfaces so all commands (AutoAim, FindTarget, manual control) work with either motor:
+We have two turret subsystem files with identical public interfaces so all commands (CoordinateAim, manual control) work with either motor:
 
 | | Kraken X60 (default) | Minion (alternate) |
 |---|---|---|
@@ -165,26 +173,28 @@ The hood uses `create_motor_fxs()` instead of `create_motor()` because the WCP m
 
 ## 3. Distance Lookup Table
 
-Instead of a formula, we use a table of measured (distance, launcher_rps, hood_position) tuples. This is easier to tune at competition -- just edit numbers in `constants/shooter.py`.
+Instead of a formula, we use a table of measured (distance, launcher_rps, hood_position, ball_speed) tuples. This is easier to tune at competition -- just edit numbers in `constants/shooter.py`.
 
 ```python
 # constants/shooter.py
 CON_SHOOTER = {
     "distance_table": [
-        # (distance_m, launcher_rps, hood_position)
-        (1, 70.0, 0.05),
-        (2.0, 85.0, 0.10),
-        (3.0, 100.0, 0.15),
+        # (distance_m, launcher_rps, hood_position, ball_speed_mps)
+        (1, 65.0, 0.05, 5.0),
+        (2.0, 80.0, 0.10, 7.0),
+        (3.0, 95.0, 0.15, 9.0),
     ],
 }
 ```
 
+The `ball_speed_mps` column is used for velocity compensation -- estimating ball flight time so we can adjust for robot movement. `get_shooter_settings()` returns only `(rps, hood)`.
+
 The lookup function in `subsystems/shooter_lookup.py` linearly interpolates between entries:
 
 ```python
-# At 1.5m --> halfway between (1, 70, 0.05) and (2.0, 85, 0.10)
+# At 1.5m --> halfway between (1, 65, 0.05) and (2.0, 80, 0.10)
 rps, hood = get_shooter_settings(1.5)
-# rps = 77.5, hood = 0.075
+# rps = 72.5, hood = 0.075
 ```
 
 Distances outside the table range clamp to the nearest entry. This prevents extrapolation errors -- if you're closer than 1m or farther than 3m, you get the closest known-good settings.
@@ -204,22 +214,41 @@ Distances outside the table range clamp to the nearest entry. This prevents extr
 
 The shooter is split into three independent, small command files:
 
-### AutoAim (`commands/auto_aim.py`)
+### CoordinateAim (`commands/coordinate_aim.py`)
 
-PD turret tracking at AprilTags. Toggled on/off with **Y button**. Vision tx flows through parallax correction, velocity lead, EMA filtering, and a PD controller with deadband compensation before reaching the turret motor. Manual turret override (left stick X) interrupts AutoAim via WPILib requirements; it resumes on release.
+Odometry-based turret angle calculation. Toggled on/off with **Y button**. The robot's pose is used to compute the angle to the Hub, then movement compensation, turret routing, EMA filtering, and a PD controller with deadband compensation drive the turret motor. Manual turret override (left stick X) interrupts CoordinateAim via WPILib requirements; it resumes on release.
 
-> **Full deep dive:** [Auto-Aim System](auto-aim.md) -- data flow, PD controller math, correction pipeline, constants reference, and debugging guide.
+> **Full deep dive:** [Auto-Aim System](auto-aim.md) -- data flow, pose-based aiming, PD controller math, movement compensation, and debugging guide.
+
+### ShootWhenReady (`commands/shoot_when_ready.py`)
+
+The fully integrated shooter command. Bound to **left trigger whileTrue** -- hold to engage. Spins up the launcher immediately, then feeds Fuel once the launcher is at speed AND the turret is on target.
+
+Each `execute()` cycle:
+1. Call `context_supplier()` to get corrected distance
+2. Look up RPS + hood position and command launcher/hood
+3. One-time speed gate: once the launcher first reaches target RPS, feeding is unlocked
+4. Check `on_target_supplier()` (from CoordinateAim) to decide whether to feed
+
+**Feed debounce:** To prevent feeder stutter when the turret oscillates near the on-target threshold, feeding uses a debounce: it starts instantly when on-target, but requires `feed_off_target_debounce` consecutive off-target cycles before stopping. This is tuned in `CON_SHOOTER` (default 20 cycles = ~400ms at 50Hz). If feeding feels too aggressive or too cautious, adjust that constant.
+
+**Un-jam:** While feeding, if the horizontal feed motor velocity drops near zero (stall detected), the feed reverses briefly to clear a jam, then resumes.
+
+Requires: launcher, hood, h_feed, v_feed.
 
 ### AutoShoot (`commands/auto_shoot.py`)
 
-Reads distance from vision, looks up launcher RPS and hood position from the distance table. Bound to **left bumper whileTrue** -- hold to engage.
+Receives a `context_supplier` that provides a `ShootContext` -- a struct with the velocity-corrected distance from the shooter to the Hub (plus raw distance, closing speed, and pose data for telemetry). Looks up launcher RPS and hood position from the distance table. Bound to **left bumper whileTrue** -- hold to engage.
 
 Each `execute()` cycle:
-1. Find distance from highest-priority visible tag
-2. Look up RPS + hood position via `get_shooter_settings()`
+1. Call `context_supplier()` to get a `ShootContext` with corrected distance
+2. Look up RPS + hood position via `get_shooter_settings(ctx.corrected_distance)`
 3. Set launcher velocity and hood position
 
-Holds last known distance when target is temporarily lost.
+The context supplier is built in `controls/operator_controls.py` using shared calculation modules:
+- `get_shooter_field_position()` -- converts the robot-relative shooter offset to field coordinates (the shooter is not at robot center)
+- `compute_range_state()` -- distance and closing speed from shooter to Hub
+- `compute_corrected_distance()` -- adjusts distance for closing speed (if approaching, the ball needs less energy)
 
 ### ManualLauncher (`commands/manual_launcher.py`)
 
@@ -237,25 +266,27 @@ Each command requires different subsystems, so they can run simultaneously witho
 
 ```
 commands/
-+-- auto_aim.py          # Requires: turret
++-- coordinate_aim.py    # Requires: turret
++-- shoot_when_ready.py  # Requires: launcher, hood, h_feed, v_feed
 +-- auto_shoot.py        # Requires: launcher, hood
 +-- manual_launcher.py   # Requires: launcher
 ```
 
 | Scenario | What Happens |
 |----------|-------------|
-| AutoAim on + manual turret stick | Stick interrupts AutoAim; resumes on release |
+| CoordinateAim on + manual turret stick | Stick interrupts CoordinateAim; resumes on release |
 | ManualLauncher on + hold left bumper (AutoShoot) | AutoShoot takes launcher -> interrupts ManualLauncher. Release bumper, press A to restart manual. |
-| AutoAim on + AutoShoot held | Both run simultaneously (different subsystem requirements) |
-| ManualLauncher on + AutoAim on | Both run simultaneously (different subsystem requirements) |
+| CoordinateAim on + AutoShoot held | Both run simultaneously (different subsystem requirements) |
+| ManualLauncher on + CoordinateAim on | Both run simultaneously (different subsystem requirements) |
+| CoordinateAim on + ShootWhenReady held (left trigger) | Both run simultaneously -- CoordinateAim aims turret while ShootWhenReady controls launcher, hood, and feeds. ShootWhenReady reads CoordinateAim's on-target state to gate feeding. |
+| ShootWhenReady held + manual turret stick | Stick interrupts CoordinateAim (turret), ShootWhenReady keeps running but feeders stop (on-target returns false while CoordinateAim is interrupted). |
 
-Vision is not a subsystem (no `addRequirements`), so multiple commands can read from it simultaneously.
+Odometry is read from the drivetrain but is not gated by `addRequirements`, so multiple commands can read pose data simultaneously.
 
 ---
 
 **See also:**
-- [Auto-Aim System](auto-aim.md) - Full auto-aim deep dive: data flow, PD controller, corrections, debugging
+- [Auto-Aim System](auto-aim.md) - Full auto-aim deep dive: pose-based aiming, PD controller, movement compensation, debugging
 - [Hardware & Subsystems](hardware-and-subsystems.md) - Subsystem template and TalonFXS support
-- [Vision](vision.md) - How the Limelight provides `tx` and `distance`
 - [Controls](controls.md) - Full operator control map and override patterns
 - [Commands & Controls](commands-and-controls.md) - Command lifecycle and composition

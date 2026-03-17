@@ -2,7 +2,7 @@
 
 # RobotPy - WPILib Python bindings
 # https://pypi.org/project/robotpy/
-robotpy==2026.2.1.1
+robotpy==2026.2.2
 
 # Phoenix 6 - CTRE motor controllers (TalonFX, KrakenX60)
 # https://pypi.org/project/phoenix6/
@@ -10,14 +10,17 @@ phoenix6==26.1.1
 
 # Commands v2 framework
 # https://pypi.org/project/robotpy-commands-v2/
-robotpy-commands-v2==2026.2.1.1
+robotpy-commands-v2==2026.2.2
 
 # Testing
 pytest>=8.0.0
 pytest-cov>=4.1.0
 
 # CameraServer / cscore - video stream forwarding to dashboard
-robotpy-cscore==2026.2.1.1
+robotpy-cscore==2026.2.2
 
 # Limelight
 limelightlib-python>=0.9.6
+
+# PathPlanner - autonomous path following
+robotpy-pathplannerlib

@@ -4,7 +4,7 @@ Automatically enables mock hardware/vision and injects test constants.
 
 IMPORTANT: Tests must never depend on real constant values from constants/.
 All CON_* dicts here use simple round numbers chosen for easy mental math.
-If you need a constant in a test, import it from here — not from constants/.
+If you need a constant in a test, import it from here -- not from constants/.
 """
 
 import pytest
@@ -14,7 +14,7 @@ from handlers import set_mock_vision_mode
 
 
 # ============================================================================
-# TEST CONSTANTS — intentionally different from production values
+# TEST CONSTANTS -- intentionally different from production values
 # ============================================================================
 
 TEST_CON_TURRET = {
@@ -40,6 +40,8 @@ TEST_CON_TURRET_MINION = {
     "search_voltage": 3.0,
     "search_brake_voltage": 5.0,
     "search_brake_cycles": 3,
+    "soft_limit_ramp": 2.0,
+    "manual_exponent": 2.0,
     "slot0_kP": 1.0,
     "slot0_kI": 0.0,
     "slot0_kD": 0.01,
@@ -96,10 +98,6 @@ TEST_CON_SHOOTER = {
     "turret_velocity_ff_gain": 0.15,
     "turret_tx_filter_alpha": 1.0,
     "velocity_lead_enabled": True,
-    "parallax_correction_enabled": False,
-    "target_tags": {
-        4: {"tag_y_offset_m": 0.0, "tag_x_offset_m": 0.0},
-    },
     "distance_table": [
         (1.0, 20.0, 0.10, 4.0),
         (2.0, 40.0, 0.20, 6.0),
@@ -115,20 +113,15 @@ TEST_CON_MANUAL = {
     "hood_position_step": 0.1,
 }
 
-# Tag priority: ordered list for priority-based targeting tests.
-# Tag 4 is the only scoring tag in TEST_CON_SHOOTER, so it goes first.
-TEST_TAG_PRIORITY = [4, 5, 6]
-
-# Per-tag offsets for testing -- matches the tags in TEST_TAG_PRIORITY.
-# Tag 4: centered on Hub (no offset). Tags 5/6: offset for parallax tests.
-TEST_TAG_OFFSETS = {
-    4: {"tag_y_offset_m": 0.0, "tag_x_offset_m": 0.0},
-    5: {"tag_y_offset_m": -1.0, "tag_x_offset_m": 0.5},
-    6: {"tag_y_offset_m": -1.0, "tag_x_offset_m": -0.5},
+TEST_CON_POSE = {
+    "center_position": 0.0,
+    "degrees_per_rotation": 40.0,
+    "shooter_offset_x": 0.0,    # zero offset for simple test math
+    "shooter_offset_y": 0.0,
 }
 
-# How many cycles before the tracker gives up on a lost locked tag.
-TEST_TARGET_LOCK_LOST_CYCLES = 5
+# Tag priority: ordered list for vision-based distance lookup tests.
+TEST_TAG_PRIORITY = [4, 5, 6]
 
 
 # ============================================================================
@@ -167,23 +160,26 @@ def _patch_constants(monkeypatch):
     # Shooter lookup
     monkeypatch.setattr("subsystems.shooter_lookup.CON_SHOOTER", TEST_CON_SHOOTER)
 
-    # Command modules
-    monkeypatch.setattr("commands.auto_aim.CON_SHOOTER", TEST_CON_SHOOTER)
-    monkeypatch.setattr(
-        "commands.auto_aim.TARGET_LOCK_LOST_CYCLES",
-        TEST_TARGET_LOCK_LOST_CYCLES,
-    )
-    monkeypatch.setattr("commands.find_target.CON_TURRET", TEST_CON_TURRET)
+    # Coordinate aim command
+    monkeypatch.setattr("commands.coordinate_aim.CON_SHOOTER", TEST_CON_SHOOTER)
+    monkeypatch.setattr("commands.coordinate_aim.CON_POSE", TEST_CON_POSE)
+
+    # Operator controls (distance supplier uses CON_POSE)
+    monkeypatch.setattr("controls.operator_controls.CON_POSE", TEST_CON_POSE)
+
+    # Other commands
     monkeypatch.setattr("commands.manual_launcher.CON_MANUAL", TEST_CON_MANUAL)
+    monkeypatch.setattr("commands.manual_hood.CON_MANUAL", TEST_CON_MANUAL)
+    monkeypatch.setattr("commands.manual_hood.CON_HOOD", TEST_CON_HOOD)
 
     # Auto-aim telemetry and logging modules
     _test_debug = {"debug_telemetry": False, "verbose": False,
-                   "auto_aim_logging": True}
+                   "auto_aim_logging": True, "auto_aim_dashboard": False}
     monkeypatch.setattr("telemetry.auto_aim_telemetry.DEBUG", _test_debug)
     monkeypatch.setattr("telemetry.auto_aim_logging.DEBUG", _test_debug)
 
     # Swerve and motor telemetry -- enable debug so tests can verify all keys
     _test_debug_on = {"debug_telemetry": True, "verbose": False,
-                      "auto_aim_logging": True}
+                      "auto_aim_logging": True, "auto_aim_dashboard": False}
     monkeypatch.setattr("telemetry.swerve_telemetry.DEBUG", _test_debug_on)
     monkeypatch.setattr("telemetry.motor_telemetry.DEBUG", _test_debug_on)

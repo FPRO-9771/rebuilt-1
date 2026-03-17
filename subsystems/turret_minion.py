@@ -8,7 +8,7 @@ in robot_container.py and flip the wired flags in constants/ids.py.
 """
 
 from typing import Callable
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS
@@ -18,7 +18,7 @@ from utils.logger import get_logger
 _log = get_logger("turret_minion")
 
 
-class TurretMinion(SubsystemBase):
+class TurretMinion(Subsystem):
     """
     Rotating turret for aiming the shooter (Minion / TalonFXS variant).
     Uses voltage control with software position limits.
@@ -64,19 +64,32 @@ class TurretMinion(SubsystemBase):
     # --- Motor control (internal) ---
 
     def _set_voltage(self, volts: float) -> None:
-        """Apply voltage with safety clamping and soft limit enforcement."""
+        """Apply voltage with safety clamping, soft limit ramp-down, and hard stop."""
         max_v = CON_TURRET_MINION["max_voltage"]
         clamped = max(-max_v, min(volts, max_v))
 
-        # Enforce soft limits -- block voltage that would push past limits
         pos = self.get_position()
-        if pos >= CON_TURRET_MINION["max_position"] and clamped > 0:
+        min_pos = CON_TURRET_MINION["min_position"]
+        max_pos = CON_TURRET_MINION["max_position"]
+        ramp = CON_TURRET_MINION["soft_limit_ramp"]
+
+        # Hard stop -- block voltage that would push past limits
+        if pos >= max_pos and clamped > 0:
             clamped = 0
-        elif pos <= CON_TURRET_MINION["min_position"] and clamped < 0:
+        elif pos <= min_pos and clamped < 0:
             clamped = 0
 
-        # TEMPORARY: log position for soft limit tuning
-        _log.info(f"pos={pos:.4f} volts={clamped:.3f}")
+        # Ramp down voltage when approaching a limit from inside
+        if ramp > 0 and clamped != 0:
+            if clamped > 0 and pos > max_pos - ramp:
+                scale = max(0.5, (max_pos - pos) / ramp)
+                clamped *= scale
+            elif clamped < 0 and pos < min_pos + ramp:
+                scale = max(0.5, (pos - min_pos) / ramp)
+                clamped *= scale
+
+        # # TEMPORARY: log position for soft limit tuning
+        # _log.info(f"pos={pos:.4f} volts={clamped:.3f}")
         self.motor.set_voltage(clamped)
 
     def _stop(self) -> None:
@@ -114,7 +127,10 @@ class TurretMinion(SubsystemBase):
             self.addRequirements(turret)
 
         def execute(self):
-            speed = self.speed_supplier()
+            raw = self.speed_supplier()
+            # Exponential curve: preserves sign, small inputs give fine control
+            exp = CON_TURRET_MINION["manual_exponent"]
+            speed = abs(raw) ** exp * (1.0 if raw >= 0 else -1.0)
             voltage = speed * CON_TURRET_MINION["max_voltage"] * CON_TURRET_MINION["manual_speed_factor"]
             self.turret._set_voltage(voltage)
 

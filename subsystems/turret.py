@@ -1,16 +1,16 @@
 """
 Turret subsystem.
-Rotating turret powered by a KrakenX60 motor with soft position limits.
+Rotating turret powered by a WCP motor via TalonFXS with soft position limits.
 """
 
 from typing import Callable
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_TURRET
 
 
-class Turret(SubsystemBase):
+class Turret(Subsystem):
     """
     Rotating turret for aiming the shooter.
     Uses voltage control with software position limits.

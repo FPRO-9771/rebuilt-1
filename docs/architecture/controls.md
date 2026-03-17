@@ -95,20 +95,24 @@ When you add a new control:
 | Input | Binding | Action |
 |-------|---------|--------|
 | Left stick X | `whileTrue` | Manual turret aim |
+| Left stick Y | default command | Manual hood nudge (tap up = closed, tap down = open) |
 | Right stick Y | (via A toggle) | Launcher speed (stick maps to RPS range) |
 | A button | `toggleOnTrue` | Toggle manual launcher on/off |
 | B button | `toggleOnTrue` | Toggle feed system on/off (H feed + V feed) |
 | X button | | *unassigned* |
-| Y button | `toggleOnTrue` | Toggle auto-aim on/off |
-| Left bumper | `whileTrue` | Auto-shoot (vision distance -> launcher/hood from table) |
+| Y button | `toggleOnTrue` | Toggle coordinate aim on/off |
+| Left bumper | `whileTrue` | Auto-shoot (pose-based distance -> launcher/hood from table) |
+| Left trigger | `whileTrue` | Shoot when ready (launcher + hood + feeds when on target) |
 | Right bumper | `toggleOnTrue` | Toggle intake deploy + spinner on/off |
 
 ### Source
 
 - `controls/operator_controls.py` -- all operator bindings
-- `commands/auto_aim.py` -- PD turret tracking
+- `commands/coordinate_aim.py` -- odometry-based turret aiming
 - `commands/auto_shoot.py` -- distance-based launcher/hood
 - `commands/manual_launcher.py` -- stick-to-RPS mapping
+- `commands/manual_hood.py` -- nudge-style hood angle control
+- `commands/shoot_when_ready.py` -- auto-shoot + auto-feed combo
 
 ---
 
@@ -117,31 +121,32 @@ When you add a new control:
 The operator can mix manual and automatic controls freely. Each command is independent:
 
 ### Always Manual
-- **Left stick X** -- turret aim (works regardless of auto-aim state)
+- **Left stick X** -- turret aim (works regardless of coordinate aim state)
+- **Left stick Y** -- hood nudge (always active as default command)
 - **A toggle + right stick Y** -- launcher speed
 - **B toggle** -- feed system
 - **Right bumper toggle** -- intake deploy + spinner
 
 ### Optional Auto
-- **Y toggle** -- auto-aim (turret tracks AprilTags via PD control). Dashboard shows `Shooter/AutoAim` status.
-- **Left bumper hold** -- auto-shoot (vision distance sets launcher RPS and hood position from lookup table)
+- **Y toggle** -- coordinate aim (turret aims at Hub using odometry)
+- **Left bumper hold** -- auto-shoot (pose-based distance sets launcher RPS and hood position from lookup table)
+- **Left trigger hold** -- shoot when ready (auto-shoot + auto-feed when aligned and at speed)
 
 ### Typical Workflows
 
 **Full manual (testing/practice):**
-1. Use left stick to aim turret
+1. Use left stick X to aim turret, tap left stick Y to adjust hood
 2. Press A to toggle launcher on, use right stick Y to set speed
 3. Press B to run feeds
 
 **Manual aim + auto shoot:**
-1. Use left stick to aim turret at target
+1. Use left stick X to aim turret at target
 2. Hold left bumper -- auto-shoot reads distance and sets launcher speed + hood automatically
 3. Press B to run feeds
 
-**Full auto (when auto-aim is working):**
-1. Press Y to enable auto-aim (turret tracks tags automatically)
-2. Hold left bumper for auto-shoot
-3. Press B to run feeds
+**Coordinate aim + shoot when ready:**
+1. Press Y to enable coordinate aim (turret aims at Hub automatically)
+2. Hold left trigger -- launcher spins up, hood sets angle, feeds run when on target
 
 ---
 
@@ -151,10 +156,11 @@ Commands interact through the WPILib requirement system:
 
 | Action | What Happens |
 |--------|-------------|
-| AutoAim on, push left stick (manual turret) | Manual turret requires turret -> interrupts AutoAim; AutoAim resumes when stick released (still toggled on) |
-| ManualLauncher on, hold left bumper (AutoShoot) | AutoShoot requires launcher -> interrupts ManualLauncher. Release bumper, press A to restart manual. |
-| AutoAim on + AutoShoot held | Both run -- different subsystem requirements (turret vs launcher+hood) |
-| ManualLauncher on + AutoAim on | Both run -- different subsystem requirements (launcher vs turret) |
+| CoordinateAim on, push left stick (manual turret) | Manual turret requires turret -> interrupts CoordinateAim; resumes when stick released (still toggled on) |
+| ManualLauncher on, hold left bumper (AutoShoot) | AutoShoot requires launcher+hood -> interrupts ManualLauncher and ManualHood. Release bumper, press A to restart manual. |
+| CoordinateAim on + AutoShoot held | Both run -- different subsystem requirements (turret vs launcher+hood) |
+| ManualLauncher on + CoordinateAim on | Both run -- different subsystem requirements (launcher vs turret) |
+| ManualHood (default) + AutoShoot held | AutoShoot takes hood; ManualHood resumes when AutoShoot ends |
 | IntakeSpinner on + feeds on | Both run -- different subsystem requirements (intake_spinner vs h_feed/v_feed) |
 
 Key principle: commands that require different subsystems can run simultaneously. Commands that require the same subsystem will interrupt each other, with the most recently scheduled command winning.

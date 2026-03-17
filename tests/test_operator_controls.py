@@ -1,7 +1,7 @@
 """
 Tests for operator controls wiring.
 Individual command behavior is tested in dedicated test files
-(test_auto_aim, test_auto_shoot, test_manual_launcher).
+(test_coordinate_aim, test_auto_shoot, test_manual_launcher).
 This file tests the configure_operator function itself.
 """
 

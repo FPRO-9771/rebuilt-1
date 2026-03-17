@@ -5,7 +5,7 @@ The right motor is inverted so both motors work together.
 Uses closed-loop position control for go-to-position commands.
 """
 
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_INTAKE
@@ -24,7 +24,7 @@ _SLOT0 = {
 }
 
 
-class Intake(SubsystemBase):
+class Intake(Subsystem):
     """Intake lever arm with two motors spinning opposite directions."""
 
     def __init__(self):
