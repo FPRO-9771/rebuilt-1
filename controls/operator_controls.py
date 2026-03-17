@@ -16,6 +16,7 @@ Controls:
     Right bumper (toggle) -- Intake spinner on/off
 """
 
+import commands2
 from commands2 import ParallelCommandGroup
 from commands2.button import Trigger
 
@@ -147,10 +148,20 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
         )
 
-    # --- Intake up/down: X button toggle ---
+    # --- Intake up/down: X button alternates ---
     if intake is not None:
-        operator.x().toggleOnTrue(intake.go_down())
-        operator.x().toggleOnFalse(intake.go_up())
+        intake_state = {"down": False}
+
+        def _toggle_intake():
+            intake_state["down"] = not intake_state["down"]
+            if intake_state["down"]:
+                return intake.go_down()
+            else:
+                return intake.go_up()
+
+        operator.x().onTrue(
+            commands2.DeferredCommand(_toggle_intake, intake)
+        )
 
     # --- Reverse H feed (un-jam): right trigger hold ---
     if h_feed is not None:
