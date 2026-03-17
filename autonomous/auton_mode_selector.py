@@ -4,16 +4,14 @@ Creates a SmartDashboard/Shuffleboard chooser for selecting auto routines.
 
 IMPORTANT: Store factory lambdas in chooser, not command instances.
 Commands carry state and must be created fresh each auto period.
-
-TODO: Implement when AutonModes is ready.
 """
 
 from wpilib import SmartDashboard, SendableChooser
 
-# from .auton_modes import AutonModes
+from .auton_modes import AutonModes
 
 
-def create_auton_chooser(auton_modes) -> SendableChooser:
+def create_auton_chooser(auton_modes: AutonModes) -> SendableChooser:
     """
     Create and publish the autonomous mode chooser.
 
@@ -28,10 +26,12 @@ def create_auton_chooser(auton_modes) -> SendableChooser:
     # IMPORTANT: Store lambdas that CREATE commands, not the commands themselves
     chooser.setDefaultOption("Do Nothing", lambda: auton_modes.do_nothing())
 
-    # TODO: Add more options as auto routines are implemented
-    # chooser.addOption("Simple Exit", lambda: auton_modes.simple_exit())
-    # chooser.addOption("Score Blue Left", lambda: auton_modes.simple_score("blue_left"))
-    # chooser.addOption("Score Blue Center", lambda: auton_modes.simple_score("blue_center"))
+    chooser.addOption("Blue Center", lambda: auton_modes.blue_center())
+    chooser.addOption("Blue Left",   lambda: auton_modes.blue_left())
+    chooser.addOption("Blue Right",  lambda: auton_modes.blue_right())
+    chooser.addOption("Red Center",  lambda: auton_modes.red_center())
+    chooser.addOption("Red Left",    lambda: auton_modes.red_left())
+    chooser.addOption("Red Right",   lambda: auton_modes.red_right())
 
     SmartDashboard.putData("Auto Mode", chooser)
     return chooser
