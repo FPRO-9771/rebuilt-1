@@ -1,8 +1,8 @@
 """
 Intake lever arm subsystem.
-Two motors (left and right) drive the intake up and down.
-The right motor is inverted so both motors work together.
+Left motor is the leader; right motor follows with inverted direction.
 Uses closed-loop position control for go-to-position commands.
+Starts in the up position.
 """
 
 from commands2 import Subsystem, Command
@@ -25,7 +25,7 @@ _SLOT0 = {
 
 
 class Intake(Subsystem):
-    """Intake lever arm with two motors spinning opposite directions."""
+    """Intake lever arm -- left motor leads, right motor follows inverted."""
 
     def __init__(self):
         super().__init__()
@@ -37,10 +37,12 @@ class Intake(Subsystem):
         )
         self.motor_right = create_motor(
             MOTOR_IDS["intake_right"],
-            inverted=not CON_INTAKE["inverted"],
+            inverted=False,
             brake=True,
-            slot0=_SLOT0,
         )
+        # Right follows left with opposed direction
+        leader_id = MOTOR_IDS["intake_left"]["can_id"]
+        self.motor_right.set_follower(leader_id, oppose_direction=False)
 
     # --- Sensor reads (public) ---
 
@@ -55,24 +57,21 @@ class Intake(Subsystem):
     # --- Motor control (internal) ---
 
     def _set_position(self, position: float) -> None:
-        """Move both motors to position, clamped to limits."""
+        """Move leader motor to position, clamped to limits. Follower tracks."""
         lo = min(CON_INTAKE["up_position"], CON_INTAKE["down_position"])
         hi = max(CON_INTAKE["up_position"], CON_INTAKE["down_position"])
         clamped = max(lo, min(position, hi))
         self.motor_left.set_position(clamped)
-        self.motor_right.set_position(clamped)
 
     def _set_voltage(self, volts: float) -> None:
-        """Apply voltage to both motors with safety clamping."""
+        """Apply voltage to leader motor with safety clamping. Follower tracks."""
         max_v = CON_INTAKE["max_voltage"]
         clamped = max(-max_v, min(volts, max_v))
         self.motor_left.set_voltage(clamped)
-        self.motor_right.set_voltage(clamped)
 
     def _stop(self) -> None:
-        """Stop both motors."""
+        """Stop leader motor. Follower tracks."""
         self.motor_left.stop()
-        self.motor_right.stop()
 
     # --- Commands (public) ---
 
