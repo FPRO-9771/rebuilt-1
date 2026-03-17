@@ -20,9 +20,9 @@ MOTOR_IDS = {
     "v_feed":   {"can_id": 23, "type": "talon_fx", "bus": "op_sys", "wired": True},
 
     # Intake
-    "intake_left":  {"can_id": 40, "type": "talon_fx", "bus": "op_sys", "wired": False},
-    "intake_right": {"can_id": 41, "type": "talon_fx", "bus": "op_sys", "wired": False},
-    "intake_spinner": {"can_id": 42, "type": "talon_fx", "bus": "op_sys", "wired": False},
+    "intake_spinner": {"can_id": 40, "type": "talon_fx", "bus": "op_sys", "wired": True},
+    "intake_left":    {"can_id": 41, "type": "talon_fx", "bus": "op_sys", "wired": True},
+    "intake_right":   {"can_id": 42, "type": "talon_fx", "bus": "op_sys", "wired": True},
 
     # Shooter
     "turret":   {"can_id": 30, "type": "talon_fx",  "bus": "op_sys", "wired": False, "sim_rps_per_volt": 2.0},
