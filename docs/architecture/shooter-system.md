@@ -220,6 +220,22 @@ Odometry-based turret angle calculation. Toggled on/off with **Y button**. The r
 
 > **Full deep dive:** [Auto-Aim System](auto-aim.md) -- data flow, pose-based aiming, PD controller math, movement compensation, and debugging guide.
 
+### ShootWhenReady (`commands/shoot_when_ready.py`)
+
+The fully integrated shooter command. Bound to **left trigger whileTrue** -- hold to engage. Spins up the launcher immediately, then feeds Fuel once the launcher is at speed AND the turret is on target.
+
+Each `execute()` cycle:
+1. Call `context_supplier()` to get corrected distance
+2. Look up RPS + hood position and command launcher/hood
+3. One-time speed gate: once the launcher first reaches target RPS, feeding is unlocked
+4. Check `on_target_supplier()` (from CoordinateAim) to decide whether to feed
+
+**Feed debounce:** To prevent feeder stutter when the turret oscillates near the on-target threshold, feeding uses a debounce: it starts instantly when on-target, but requires `feed_off_target_debounce` consecutive off-target cycles before stopping. This is tuned in `CON_SHOOTER` (default 20 cycles = ~400ms at 50Hz). If feeding feels too aggressive or too cautious, adjust that constant.
+
+**Un-jam:** While feeding, if the horizontal feed motor velocity drops near zero (stall detected), the feed reverses briefly to clear a jam, then resumes.
+
+Requires: launcher, hood, h_feed, v_feed.
+
 ### AutoShoot (`commands/auto_shoot.py`)
 
 Receives a `context_supplier` that provides a `ShootContext` -- a struct with the velocity-corrected distance from the shooter to the Hub (plus raw distance, closing speed, and pose data for telemetry). Looks up launcher RPS and hood position from the distance table. Bound to **left bumper whileTrue** -- hold to engage.
@@ -251,6 +267,7 @@ Each command requires different subsystems, so they can run simultaneously witho
 ```
 commands/
 +-- coordinate_aim.py    # Requires: turret
++-- shoot_when_ready.py  # Requires: launcher, hood, h_feed, v_feed
 +-- auto_shoot.py        # Requires: launcher, hood
 +-- manual_launcher.py   # Requires: launcher
 ```
@@ -261,6 +278,8 @@ commands/
 | ManualLauncher on + hold left bumper (AutoShoot) | AutoShoot takes launcher -> interrupts ManualLauncher. Release bumper, press A to restart manual. |
 | CoordinateAim on + AutoShoot held | Both run simultaneously (different subsystem requirements) |
 | ManualLauncher on + CoordinateAim on | Both run simultaneously (different subsystem requirements) |
+| CoordinateAim on + ShootWhenReady held (left trigger) | Both run simultaneously -- CoordinateAim aims turret while ShootWhenReady controls launcher, hood, and feeds. ShootWhenReady reads CoordinateAim's on-target state to gate feeding. |
+| ShootWhenReady held + manual turret stick | Stick interrupts CoordinateAim (turret), ShootWhenReady keeps running but feeders stop (on-target returns false while CoordinateAim is interrupted). |
 
 Odometry is read from the drivetrain but is not gated by `addRequirements`, so multiple commands can read pose data simultaneously.
 

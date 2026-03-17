@@ -24,8 +24,8 @@ ALLIANCES = [
     {
         "name": "Red",
         "default": True,
-        "target_x": 16.54,
-        "target_y": 4.1,
+        "target_x": 12.0,
+        "target_y": 4.0,
         "tag_priority": [8, 10, 11],
         "poses": [
             {
@@ -33,7 +33,7 @@ ALLIANCES = [
                 "default": True,
                 "start_x": 13.0,
                 "start_y": 4.0,
-                "start_heading": 0.0,
+                "start_heading": 180.0,
                 "auto_path": "TEST PATH FPRO",
             },
             {
@@ -54,8 +54,8 @@ ALLIANCES = [
     },
     {
         "name": "Blue",
-        "target_x": 0.0,
-        "target_y": 4.1,
+        "target_x": 4.6,
+        "target_y": 4.0,
         "tag_priority": [25, 26, 24, 27],
         "poses": [
             {

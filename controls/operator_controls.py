@@ -11,6 +11,7 @@ Controls:
     Y button (toggle)   -- Coordinate aim (turret aims at Hub via odometry)
     Left bumper (hold)  -- Auto-shoot (pose distance -> launcher/hood)
     Left trigger (hold) -- Shoot when ready (launcher + feed when on target)
+    Right trigger (hold) -- Reverse H feed (un-jam)
     Right bumper (toggle) -- Intake deploy + spinner on/off
 """
 
@@ -18,6 +19,7 @@ from commands2 import ParallelCommandGroup
 from commands2.button import Trigger
 
 from constants import CON_ROBOT, CON_H_FEED, CON_V_FEED, CON_INTAKE_SPINNER
+from constants.shooter import CON_TURRET_MINION
 from constants.pose import CON_POSE
 from calculations.shooter_position import get_shooter_field_position
 from calculations.target_state import compute_range_state, ShootContext
@@ -107,6 +109,23 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
         ManualHood(hood, lambda: -operator.getLeftY(), deadband)
     )
 
+    # --- DEBUG: D-pad up/down sends raw voltage to hood ---
+    # This bypasses closed-loop control to test if the motor moves at all.
+    # Remove after debugging.
+    _test_volts = 6.0
+    operator.povUp().whileTrue(
+        hood.runEnd(
+            lambda: hood._set_voltage(_test_volts),
+            lambda: hood._stop(),
+        )
+    )
+    operator.povDown().whileTrue(
+        hood.runEnd(
+            lambda: hood._set_voltage(-_test_volts),
+            lambda: hood._stop(),
+        )
+    )
+
     # --- Launcher: A button toggle, right stick Y controls speed ---
     operator.a().toggleOnTrue(
         ManualLauncher(launcher, lambda: -operator.getRightY())
@@ -130,6 +149,12 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             )
         )
 
+    # --- Reverse H feed (un-jam): right trigger hold ---
+    if h_feed is not None:
+        operator.rightTrigger().whileTrue(
+            h_feed.run_at_voltage(CON_H_FEED["reverse_voltage"])
+        )
+
     # --- Robot velocity supplier for coordinate aim and distance ---
     vel_supplier = None
     if drivetrain is not None:
@@ -146,7 +171,8 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
 
     # --- Coordinate aim: Y button toggle ---
     # Aims turret at Hub using odometry -- no vision needed.
-    coord_aim = CoordinateAim(turret, context_supplier=context_supplier)
+    coord_aim = CoordinateAim(turret, context_supplier=context_supplier,
+                              turret_config=CON_TURRET_MINION)
     operator.y().toggleOnTrue(coord_aim)
 
     # --- Auto-shoot: left bumper hold ---

@@ -60,7 +60,9 @@ class RobotContainer:
         setup_telemetry(None, self.turret, self.launcher,
                         self.hood, self.vision,
                         self.h_feed, self.v_feed,
-                        self.intake_spinner)
+                        self.intake_spinner,
+                        drivetrain=self.drivetrain,
+                        alliance_supplier=self.match_setup.get_alliance)
 
     def _configure_bindings(self):
         """Wire controller inputs to commands."""

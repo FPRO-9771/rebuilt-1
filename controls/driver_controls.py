@@ -31,6 +31,9 @@ from constants.controls import CON_ROBOT
 from constants.debug import DEBUG
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
 from telemetry.swerve_telemetry import SwerveTelemetry
+from utils.logger import get_logger
+
+_log = get_logger("driver_controls")
 
 
 def _apply_curve(value, exponent):
@@ -43,8 +46,9 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
     Wire all driver controller bindings.
     Call once from RobotContainer.__init__.
     """
-    max_speed = TunerConstants.speed_at_12_volts
-    max_angular_rate = rotationsToRadians(0.75)  # 3/4 rotation per second
+    slow = CON_ROBOT["slow_mode_factor"]
+    max_speed = TunerConstants.speed_at_12_volts * slow
+    max_angular_rate = rotationsToRadians(0.75) * slow
 
     # --- Swerve requests ---
     drive_fc = (
@@ -52,7 +56,7 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         .with_deadband(max_speed * 0.1)
         .with_rotational_deadband(max_angular_rate * 0.1)
         .with_drive_request_type(
-            swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
+            swerve.SwerveModule.DriveRequestType.VELOCITY
         )
     )
     drive_rc = (
@@ -60,7 +64,7 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         .with_deadband(max_speed * 0.1)
         .with_rotational_deadband(max_angular_rate * 0.1)
         .with_drive_request_type(
-            swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
+            swerve.SwerveModule.DriveRequestType.VELOCITY
         )
     )
     brake = swerve.requests.SwerveDriveBrake()
@@ -77,22 +81,52 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
     drive_exp = CON_ROBOT["drive_exponent"]
     rot_exp = CON_ROBOT["rotation_exponent"]
 
+    _drive_log_counter = {"n": 0}
+
     def get_drive_request():
         req = drive_rc if state["robot_centric"] else drive_fc
         if DEBUG["debug_telemetry"]:
             SmartDashboard.putBoolean(
                 "Drive/Robot Centric", state["robot_centric"]
             )
+
+        raw_ly = driver.getLeftY()
+        raw_lx = driver.getLeftX()
+        raw_rx = driver.getRightX()
+
+        vel_x = -_apply_curve(raw_ly, drive_exp) * max_speed
+        vel_y = -_apply_curve(raw_lx, drive_exp) * max_speed
+        rot = -_apply_curve(raw_rx, rot_exp) * max_angular_rate
+
+        # Log inputs + module states when driving (every 10th cycle ~2 Hz)
+        # is_driving = abs(vel_x) > 0.01 or abs(vel_y) > 0.01 or abs(rot) > 0.01
+        # if DEBUG["verbose"] and is_driving:
+        #     _drive_log_counter["n"] += 1
+        #     if _drive_log_counter["n"] % 10 == 0:
+        #         _log.debug(
+        #             f"INPUTS  joy_ly={raw_ly:+.3f} joy_lx={raw_lx:+.3f}"
+        #             f" joy_rx={raw_rx:+.3f}"
+        #             f" | cmd vx={vel_x:+.2f} vy={vel_y:+.2f} rot={rot:+.3f}"
+        #         )
+        #         dt_state = drivetrain.get_state()
+        #         heading = dt_state.pose.rotation().degrees()
+        #         for i, (ms, mt) in enumerate(
+        #             zip(dt_state.module_states, dt_state.module_targets)
+        #         ):
+        #             _log.debug(
+        #                 f"  MOD[{i}] angle={ms.angle.degrees():+7.1f}deg"
+        #                 f" speed={ms.speed:+.2f}m/s"
+        #                 f" | target angle={mt.angle.degrees():+7.1f}deg"
+        #                 f" speed={mt.speed:+.2f}m/s"
+        #             )
+        #         _log.debug(f"  GYRO heading={heading:+.1f}deg")
+        # elif not is_driving:
+        #     _drive_log_counter["n"] = 0
+
         return (
-            req.with_velocity_x(
-                -_apply_curve(driver.getLeftY(), drive_exp) * max_speed
-            )
-            .with_velocity_y(
-                -_apply_curve(driver.getLeftX(), drive_exp) * max_speed
-            )
-            .with_rotational_rate(
-                -_apply_curve(driver.getRightX(), rot_exp) * max_angular_rate
-            )
+            req.with_velocity_x(vel_x)
+            .with_velocity_y(vel_y)
+            .with_rotational_rate(rot)
         )
 
     drivetrain.setDefaultCommand(
@@ -147,13 +181,13 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
     drive_straight = (
         swerve.requests.RobotCentric()
         .with_drive_request_type(
-            swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
+            swerve.SwerveModule.DriveRequestType.VELOCITY
         )
     )
     driver.y().whileTrue(
         drivetrain.apply_request(
             lambda: drive_straight
-            .with_velocity_x(max_speed * 0.07)
+            .with_velocity_x(max_speed * 0.25)
             .with_velocity_y(0)
             .with_rotational_rate(0)
         )

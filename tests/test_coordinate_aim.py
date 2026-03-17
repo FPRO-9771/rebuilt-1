@@ -43,6 +43,7 @@ def _make_coord_aim(ctx=None):
     cmd = CoordinateAim(
         turret,
         context_supplier=lambda: ctx,
+        turret_config=TEST_CON_TURRET,
     )
     return cmd, turret
 

@@ -40,6 +40,8 @@ TEST_CON_TURRET_MINION = {
     "search_voltage": 3.0,
     "search_brake_voltage": 5.0,
     "search_brake_cycles": 3,
+    "soft_limit_ramp": 2.0,
+    "manual_exponent": 2.0,
     "slot0_kP": 1.0,
     "slot0_kI": 0.0,
     "slot0_kD": 0.01,
@@ -160,7 +162,6 @@ def _patch_constants(monkeypatch):
 
     # Coordinate aim command
     monkeypatch.setattr("commands.coordinate_aim.CON_SHOOTER", TEST_CON_SHOOTER)
-    monkeypatch.setattr("commands.coordinate_aim.CON_TURRET", TEST_CON_TURRET)
     monkeypatch.setattr("commands.coordinate_aim.CON_POSE", TEST_CON_POSE)
 
     # Operator controls (distance supplier uses CON_POSE)

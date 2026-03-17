@@ -78,8 +78,9 @@ def test_turret_minion_manual_command_scales_input():
     cmd.initialize()
     cmd.execute()
 
+    exp = TEST_CON_TURRET_MINION["manual_exponent"]
     expected_voltage = (
-        0.5 * TEST_CON_TURRET_MINION["max_voltage"] * TEST_CON_TURRET_MINION["manual_speed_factor"]
+        abs(0.5) ** exp * TEST_CON_TURRET_MINION["max_voltage"] * TEST_CON_TURRET_MINION["manual_speed_factor"]
     )
     assert turret.motor.get_last_voltage() == expected_voltage
 
@@ -110,3 +111,31 @@ def test_turret_minion_is_within_limits():
 
     turret.motor.simulate_position(TEST_CON_TURRET_MINION["max_position"] + 1.0)
     assert turret.is_within_limits() is False
+
+
+def test_turret_minion_soft_limit_ramps_voltage():
+    """Verify voltage ramps down near soft limits instead of hard-cutting."""
+    turret = TurretMinion()
+    max_v = TEST_CON_TURRET_MINION["max_voltage"]
+    max_pos = TEST_CON_TURRET_MINION["max_position"]
+    min_pos = TEST_CON_TURRET_MINION["min_position"]
+    ramp = TEST_CON_TURRET_MINION["soft_limit_ramp"]
+
+    # Halfway into the ramp zone near max -- voltage should be ~50% of requested
+    pos_in_ramp = max_pos - ramp * 0.5
+    turret.motor.simulate_position(pos_in_ramp)
+    turret._set_voltage(max_v)
+    ramped = turret.motor.get_last_voltage()
+    assert 0 < ramped < max_v
+
+    # Halfway into the ramp zone near min -- negative voltage should ramp
+    pos_in_ramp_min = min_pos + ramp * 0.5
+    turret.motor.simulate_position(pos_in_ramp_min)
+    turret._set_voltage(-max_v)
+    ramped_min = turret.motor.get_last_voltage()
+    assert -max_v < ramped_min < 0
+
+    # At midpoint -- no ramping, full voltage passes through
+    turret.motor.simulate_position(_MID_POS)
+    turret._set_voltage(max_v)
+    assert turret.motor.get_last_voltage() == max_v

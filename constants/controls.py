@@ -22,10 +22,14 @@ CON_ROBOT = {
     "operator_controller_port": 1,
 
     "joystick_deadband": 0.1,
-    "drive_exponent": 2.0,       # Translation response curve (1.0 = linear)
-    "rotation_exponent": 2.0,    # Rotation response curve (1.0 = linear)
+    "drive_exponent": 3.0,       # Translation response curve (1.0 = linear)
+    "rotation_exponent": 3.0,    # Rotation response curve (1.0 = linear)
 
     # Drivetrain (placeholders until tuned)
     "max_speed_mps": 5.0,
     "max_angular_rate": 3.14,
+
+    # Slow mode -- scale down max speed and rotation for testing on slick floors.
+    # 1.0 = full speed, 0.25 = 25% speed.  Set back to 1.0 for competition.
+    "slow_mode_factor": 0.25,
 }

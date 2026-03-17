@@ -26,18 +26,18 @@ def test_negative_error_within_limits():
 
 def test_shortest_path_hits_max_limit_reverses():
     """Shortest path would exceed max limit -> reverses direction."""
-    # At position 4.0, error +80 deg = +2 rotations -> target 6.0 > max 5.0
-    # Reverse: error -280 deg = -7 rotations -> target -3.0, within limits
-    error = choose_rotation_direction(4.0, 80.0, _MIN, _MAX, _DEG_PER_ROT)
-    assert error < 0  # reversed to negative direction
+    # At position 4.0, error -80 deg -> motor needs +2 rot -> target 6.0 > max 5.0
+    # Reverse: error +280 deg -> motor needs -7 rot -> target -3.0, within limits
+    error = choose_rotation_direction(4.0, -80.0, _MIN, _MAX, _DEG_PER_ROT)
+    assert error > 0  # reversed to positive direction
 
 
 def test_shortest_path_hits_min_limit_reverses():
     """Shortest path would exceed min limit -> reverses direction."""
-    # At position -4.0, error -80 deg = -2 rotations -> target -6.0 < min -5.0
-    # Reverse: error +280 deg = +7 rotations -> target 3.0, within limits
-    error = choose_rotation_direction(-4.0, -80.0, _MIN, _MAX, _DEG_PER_ROT)
-    assert error > 0  # reversed to positive direction
+    # At position -4.0, error +80 deg -> motor needs -2 rot -> target -6.0 < min -5.0
+    # Reverse: error -280 deg -> motor needs +7 rot -> target 3.0, within limits
+    error = choose_rotation_direction(-4.0, 80.0, _MIN, _MAX, _DEG_PER_ROT)
+    assert error < 0  # reversed to negative direction
 
 
 def test_zero_error_stays_zero():
@@ -48,13 +48,15 @@ def test_zero_error_stays_zero():
 
 def test_both_paths_blocked_returns_best_effort():
     """Both directions blocked -> returns error toward closest limit."""
-    # At position 4.5, huge error that exceeds both directions
+    # Narrow limits where both directions are blocked
+    # At position 0.5 with limits 0..1, error +170 deg
+    # Shortest: motor -170/40 = -4.25 -> target -3.75 < 0 (blocked)
+    # Reverse: -190 deg -> motor +190/40 = +4.75 -> target 5.25 > 1 (blocked)
     # Should clamp to the nearest reachable limit
-    error = choose_rotation_direction(4.5, 170.0, _MIN, _MAX, _DEG_PER_ROT)
-    # Result should be finite and move toward a limit
+    error = choose_rotation_direction(0.5, 170.0, 0.0, 1.0, _DEG_PER_ROT)
     assert error != 0.0
-    target_rot = 4.5 + error / _DEG_PER_ROT
-    assert _MIN <= target_rot <= _MAX
+    target_rot = 0.5 + (-error / _DEG_PER_ROT)
+    assert 0.0 <= target_rot <= 1.0
 
 
 def test_zero_deg_per_rotation_returns_error():

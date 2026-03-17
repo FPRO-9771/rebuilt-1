@@ -49,9 +49,11 @@ def compute_turret_voltage(filtered_tx, turret_vel, vy, aim_sign, config):
         max_v = config["turret_max_auto_voltage"]
     voltage = max(-max_v, min(raw_voltage, max_v))
 
-    # --- Deadband comp: bump voltage past static friction threshold ---
+    # --- Deadband comp: ensure voltage meets static friction threshold ---
+    # Use higher velocity threshold to avoid kick-stop-kick oscillation.
+    # Once moving above this speed the normal PD output takes over smoothly.
     min_move = config["turret_min_move_voltage"]
-    if (abs(turret_vel) < 0.05
+    if (abs(turret_vel) < 0.4
             and abs(voltage) > 0.01
             and abs(voltage) < min_move):
         voltage = math.copysign(min_move, voltage)

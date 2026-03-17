@@ -50,8 +50,8 @@ def test_turret_already_aimed_reduces_error():
         shooter_xy=(0.0, 0.0),
         target_xy=(0.0, 5.0),  # 90 degrees left
         velocity_xy=(0.0, 0.0),
-        # Turret rotated 2.25 rotations from center -> 90 degrees
-        turret_position=2.25, center_position=0.0, deg_per_rotation=40.0,
+        # Turret rotated -2.25 from center -> 90 degrees left
+        turret_position=-2.25, center_position=0.0, deg_per_rotation=40.0,
     )
     assert abs(state.error_deg) < 0.1
 

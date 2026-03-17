@@ -180,6 +180,44 @@ Straight-line distance from the shooter (not robot center) to the Hub. The Shoot
 
 How fast the robot is approaching or receding from the Hub. Positive = approaching, negative = moving away. Used to adjust the lookup distance -- if closing, the ball needs less energy because the target will be closer by the time the ball arrives.
 
+### Turret starting position and `center_position`
+
+At power-on the turret motor reports position 0, but the turret is not facing forward. Our turret starts **45 degrees CW (right) of robot forward** (`start_angle_deg = 45` in `constants/pose.py`).
+
+The code needs to know the motor position that corresponds to "turret facing forward." That is `center_position`. The error formula in `target_state.py` is:
+
+```
+current_turret_deg = (center_position - turret_position) * degrees_per_rotation
+error_deg = desired_turret_deg - current_turret_deg
+```
+
+**Sign convention:** positive `current_turret_deg` = turret pointing left (CCW). This comes from the motor direction: motor position going more negative moves the turret left (CCW positive).
+
+Because the turret starts 45 degrees **right** of forward, at power-on (`turret_position = 0`) we need `current_turret_deg = -45`. Working backward:
+
+```
+(center_position - 0) * 40 = -45
+center_position = -45 / 40 = -1.125
+```
+
+The formula in `constants/pose.py` is:
+
+```python
+"center_position": -_START_ANGLE_DEG / _DEG_PER_ROT,  # -1.125
+```
+
+The negation is required because `start_angle_deg` uses a CW-positive convention (90 = right) while the turret angle convention is CCW-positive (positive = left).
+
+**How to verify:** deploy the robot and check `AutoAim/ErrorDeg` at power-on:
+
+- ErrorDeg should be roughly the angle from the turret's physical direction to the Hub
+- Rotating the turret **toward** the Hub should make `|ErrorDeg|` decrease
+- Rotating **away** from the Hub should make `|ErrorDeg|` increase
+
+If ErrorDeg goes the wrong direction when you turn the turret, `center_position` sign is wrong.
+
+**Why the soft limits matter here:** the turret soft limits (`min_position = 0`, `max_position = 9`) are set by the energy chain and cannot be changed. At power-on (`tpos = 0`), the turret is at the minimum limit. It can only rotate CW (increasing tpos). If the error is negative (target is in the CCW direction), the router must send the turret the long way around CW, which takes more travel and time.
+
 ---
 
 ## 5. Movement Compensation
@@ -332,7 +370,7 @@ Auto-aim tuning constants live in three files:
 
 | Constant | What It Does |
 |----------|--------------|
-| `center_position` | Motor rotations when turret faces forward (robot heading) |
+| `center_position` | Motor position where turret faces forward (-1.125). Negative because turret starts right of forward and motor-negative = turret-left. See "Turret starting position" in section 4. |
 | `degrees_per_rotation` | Turret degrees per motor rotation (360 / gear ratio) |
 | `shooter_offset_x` | Forward offset of shooter from robot center (meters, +X = forward) |
 | `shooter_offset_y` | Left offset of shooter from robot center (meters, +Y = left) |

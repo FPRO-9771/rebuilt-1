@@ -82,8 +82,8 @@ def log_drive(cycle, pose_x, pose_y, heading_deg,
 
 
 def log_shoot(cycle, ctx, rps, hood_pos,
-              actual_rps=None, at_speed=False, on_target=False,
-              feeding=False):
+              actual_rps=None, at_speed=False, reached_speed=False,
+              on_target=False, feeding=False):
     """Log auto-shoot pipeline: pose -> distance -> lookup -> motor outputs.
 
     Args:
@@ -91,7 +91,8 @@ def log_shoot(cycle, ctx, rps, hood_pos,
         rps: commanded launcher RPS from lookup table
         hood_pos: commanded hood position from lookup table
         actual_rps: current launcher velocity (None if unknown)
-        at_speed: True if launcher is within speed tolerance
+        at_speed: True if launcher is within speed tolerance right now
+        reached_speed: True if launcher has passed the one-time speed gate
         on_target: True if turret is aimed at Hub
         feeding: True if feeders are running
 
@@ -101,6 +102,8 @@ def log_shoot(cycle, ctx, rps, hood_pos,
         return
     speed_str = f"actual={actual_rps:.1f}" if actual_rps is not None else "actual=--"
     flags = []
+    if reached_speed:
+        flags.append("UNLOCKED")
     if at_speed:
         flags.append("AT_SPEED")
     if on_target:

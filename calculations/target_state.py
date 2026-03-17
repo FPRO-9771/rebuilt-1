@@ -94,7 +94,7 @@ def compute_target_state(heading_deg, shooter_xy, target_xy,
     desired_turret_deg = target_field_deg - heading_deg
 
     # Current turret angle relative to robot forward
-    current_turret_deg = (turret_position - center_position) * deg_per_rotation
+    current_turret_deg = (center_position - turret_position) * deg_per_rotation
 
     # Error: how far the turret needs to rotate
     error_deg = desired_turret_deg - current_turret_deg

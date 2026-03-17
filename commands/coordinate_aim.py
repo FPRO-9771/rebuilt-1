@@ -22,7 +22,7 @@ from calculations.target_state import compute_target_state
 from calculations.movement_compensation import compute_movement_correction
 from calculations.turret_routing import choose_rotation_direction
 from calculations.turret_pd import compute_turret_voltage
-from constants.shooter import CON_SHOOTER, CON_TURRET
+from constants.shooter import CON_SHOOTER
 from constants.pose import CON_POSE
 from telemetry.auto_aim_telemetry import (
     init_auto_aim_keys, publish_auto_aim, publish_velocity_debug,
@@ -41,10 +41,12 @@ class CoordinateAim(Command):
         self,
         turret: Turret,
         context_supplier: Callable,
+        turret_config: dict,
     ):
         super().__init__()
         self.turret = turret
         self._context_supplier = context_supplier
+        self._turret_config = turret_config
         self._aim_sign = -1.0 if CON_SHOOTER["turret_aim_inverted"] else 1.0
 
         self._filtered_error = 0.0
@@ -112,7 +114,8 @@ class CoordinateAim(Command):
         # 5. Route through turret limits
         routed_aim = choose_rotation_direction(
             self.turret.get_position(), raw_aim,
-            CON_TURRET["min_position"], CON_TURRET["max_position"],
+            self._turret_config["min_position"],
+            self._turret_config["max_position"],
             CON_POSE["degrees_per_rotation"],
         )
 

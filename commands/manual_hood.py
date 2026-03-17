@@ -37,6 +37,19 @@ class ManualHood(Command):
         stick = self._stick_supplier()
         is_active = abs(stick) > self._deadband
 
+        # Log only when stick is active (past deadband)
+        if is_active:
+            if not hasattr(self, "_exec_count"):
+                self._exec_count = 0
+            self._exec_count += 1
+            if self._exec_count % 25 == 0:
+                _log.debug(
+                    f"stick={stick:.3f} target={self._target:.4f} "
+                    f"pos={self.hood.get_position():.4f}"
+                )
+        else:
+            self._exec_count = 0
+
         # Edge-triggered: nudge once when stick crosses deadband
         if is_active and not self._was_active:
             step = CON_MANUAL["hood_position_step"]
@@ -47,7 +60,10 @@ class ManualHood(Command):
             # Clamp to hood limits
             self._target = max(CON_HOOD["min_position"],
                                min(self._target, CON_HOOD["max_position"]))
-            _log.debug(f"nudge target={self._target:.4f}")
+            _log.info(
+                f"nudge stick={stick:.3f} dir={'up' if stick > 0 else 'down'} "
+                f"target={self._target:.4f} pos={self.hood.get_position():.4f}"
+            )
 
         self._was_active = is_active
         self.hood._set_position(self._target)
