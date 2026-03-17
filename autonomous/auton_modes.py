@@ -23,6 +23,9 @@ _log = get_logger("auton_modes")
 # How long to try shooting after reaching the final position (seconds).
 _SHOOT_TIMEOUT = 12.0
 
+# How long to lower the intake before the path starts (non-center paths).
+_INTAKE_PREDEPLOY_TIME = 1.0
+
 
 class AutonModes:
     """
@@ -59,11 +62,14 @@ class AutonModes:
             _log.error(f"Failed to load path '{path_name}': {e}")
             return WaitCommand(15.0)
 
-    def _path_and_shoot(self, path_name: str) -> Command:
+    def _path_and_shoot(self, path_name: str, intake_before_path: bool = False) -> Command:
         """
         Full auto routine:
           - CoordinateAim runs the entire time, aiming turret at Hub.
-          - While driving: intake deploys and spinner runs to collect Fuel.
+          - intake_before_path=True  (left/right): intake deploys for
+            _INTAKE_PREDEPLOY_TIME seconds, then path starts with intake held down.
+          - intake_before_path=False (center): intake deploys 1 second into
+            the path to avoid interference at the Hub wall.
           - After path ends: ShootWhenReady fires once turret is on target.
         """
         if not all([self.turret, self.launcher, self.hood,
@@ -86,19 +92,35 @@ class AutonModes:
             on_target_supplier=coord_aim.is_on_target,
         )
 
-        # Drive phase: path + intake (intake delayed 1s), with coord_aim already running
-        drive_phase = ParallelRaceGroup(
-            self.follow_path(path_name),   # ends the race when path finishes
-            SequentialCommandGroup(
-                WaitCommand(1.0),
-                ParallelCommandGroup(
+        intake_running = ParallelCommandGroup(
+            self.intake.hold_down(),
+            self.intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
+        )
+
+        if intake_before_path:
+            # Deploy intake first, then follow path with intake held down
+            drive_phase = SequentialCommandGroup(
+                intake_running.withTimeout(_INTAKE_PREDEPLOY_TIME),
+                ParallelRaceGroup(
+                    self.follow_path(path_name),
                     self.intake.hold_down(),
                     self.intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
                 ),
-            ),
-        )
+            )
+        else:
+            # Center paths: start path immediately, deploy intake after 1 second
+            drive_phase = ParallelRaceGroup(
+                self.follow_path(path_name),
+                SequentialCommandGroup(
+                    WaitCommand(1.0),
+                    ParallelCommandGroup(
+                        self.intake.hold_down(),
+                        self.intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
+                    ),
+                ),
+            )
 
-        # Shoot phase: feed once on target, timeout after 12s
+        # Shoot phase: feed once on target, timeout after _SHOOT_TIMEOUT seconds
         shoot_phase = shoot.withTimeout(_SHOOT_TIMEOUT)
 
         # coord_aim wraps everything -- turret aims from start to finish
@@ -110,21 +132,21 @@ class AutonModes:
     # --- Blue routines ---
 
     def blue_center(self) -> Command:
-        return self._path_and_shoot("Auto Blue Center")
+        return self._path_and_shoot("Auto Blue Center", intake_before_path=False)
 
     def blue_left(self) -> Command:
-        return self._path_and_shoot("Auto Blue Left")
+        return self._path_and_shoot("Auto Blue Left", intake_before_path=True)
 
     def blue_right(self) -> Command:
-        return self._path_and_shoot("Auto Blue Right")
+        return self._path_and_shoot("Auto Blue Right", intake_before_path=True)
 
     # --- Red routines ---
 
     def red_center(self) -> Command:
-        return self._path_and_shoot("Auto Red Center")
+        return self._path_and_shoot("Auto Red Center", intake_before_path=False)
 
     def red_left(self) -> Command:
-        return self._path_and_shoot("Auto Red Left")
+        return self._path_and_shoot("Auto Red Left", intake_before_path=True)
 
     def red_right(self) -> Command:
-        return self._path_and_shoot("Auto Red Right")
+        return self._path_and_shoot("Auto Red Right", intake_before_path=True)
