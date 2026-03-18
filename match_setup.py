@@ -104,3 +104,6 @@ class MatchSetup:
             return
         is_red = self.get_alliance()["name"] == "Red"
         SmartDashboard.putBoolean("Match/Is Red Alliance", is_red)
+        alliance_name = self.get_alliance()["name"]
+        pose_name = self.get_pose_name()
+        SmartDashboard.putString("Match/Auto Routine", f"Auto {alliance_name} {pose_name}")
