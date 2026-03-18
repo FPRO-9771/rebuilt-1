@@ -3,7 +3,7 @@ Central hub - creates all subsystems and wires them together.
 This is where controllers are bound to commands.
 """
 
-from constants import CON_ROBOT
+from constants import CON_ROBOT, CON_INTAKE_SPINNER, CON_H_FEED, CON_V_FEED
 from controls.game_controller import GameController
 from controls.operator_controls import _make_shoot_context_supplier
 from generated.tuner_constants import TunerConstants
@@ -21,6 +21,9 @@ from controls import configure_driver, configure_operator
 from handlers import get_vision_providers
 from match_setup import MatchSetup
 from telemetry import setup_telemetry
+from commands2 import ParallelCommandGroup
+from pathplannerlib.auto import NamedCommands
+from commands.auto_shoot import AutoShoot
 from autonomous.auton_modes import AutonModes
 from autonomous.auton_mode_selector import create_auton_chooser
 
@@ -53,9 +56,60 @@ class RobotContainer:
         self.driver = GameController(CON_ROBOT["driver_controller_port"], use_ps4)
         self.operator = GameController(CON_ROBOT["operator_controller_port"], use_ps4)
 
-        # --- Autonomous chooser ---
+        # --- Autonomous context supplier (needed by ShooterStart named command) ---
         _context_supplier = _make_shoot_context_supplier(
             self.drivetrain, self.match_setup.get_alliance
+        )
+
+        # --- Named commands (for PathPlanner event markers) ---
+
+        # Intake arm
+        NamedCommands.registerCommand(
+            "IntakeDown",
+            self.intake.hold_down(),
+        )
+        NamedCommands.registerCommand(
+            "IntakeUp",
+            self.intake.go_up(),
+        )
+
+        # Intake spinner
+        NamedCommands.registerCommand(
+            "IntakeStart",
+            self.intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
+        )
+        NamedCommands.registerCommand(
+            "IntakeStop",
+            self.intake_spinner.runOnce(lambda: self.intake_spinner._stop()),
+        )
+
+        # Shooter (launcher + hood, distance-based speed)
+        NamedCommands.registerCommand(
+            "ShooterStart",
+            AutoShoot(self.launcher, self.hood, context_supplier=_context_supplier),
+        )
+        NamedCommands.registerCommand(
+            "ShooterStop",
+            ParallelCommandGroup(
+                self.launcher.runOnce(lambda: self.launcher._stop()),
+                self.hood.runOnce(lambda: self.hood._stop()),
+            ),
+        )
+
+        # Feeders
+        NamedCommands.registerCommand(
+            "FeedersStart",
+            ParallelCommandGroup(
+                self.h_feed.run_at_voltage(CON_H_FEED["feed_voltage"]),
+                self.v_feed.run_at_voltage(CON_V_FEED["feed_voltage"]),
+            ),
+        )
+        NamedCommands.registerCommand(
+            "FeedersStop",
+            ParallelCommandGroup(
+                self.h_feed.runOnce(lambda: self.h_feed._stop()),
+                self.v_feed.runOnce(lambda: self.v_feed._stop()),
+            ),
         )
         _auton_modes = AutonModes(
             drivetrain=self.drivetrain,
@@ -65,8 +119,6 @@ class RobotContainer:
             h_feed=self.h_feed,
             v_feed=self.v_feed,
             context_supplier=_context_supplier,
-            intake=self.intake,
-            intake_spinner=self.intake_spinner,
         )
         self.auto_chooser = create_auton_chooser(_auton_modes)
 

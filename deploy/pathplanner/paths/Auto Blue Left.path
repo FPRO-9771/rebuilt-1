@@ -52,12 +52,12 @@
         "y": 4.520745597050108
       },
       "prevControl": {
-        "x": 7.854256731760144,
-        "y": 4.272823716573001
+        "x": 7.8649514507558935,
+        "y": 4.274447323925363
       },
       "nextControl": {
-        "x": 7.641402614404902,
-        "y": 5.9133418907038005
+        "x": 7.644009910300927,
+        "y": 5.54404224537037
       },
       "isLocked": false,
       "linkedName": null
@@ -128,7 +128,38 @@
   ],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "IntakeDown",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "IntakeStart",
+      "waypointRelativePos": 1.9,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "IntakeStop",
+      "waypointRelativePos": 3.4,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "ShooterStart",
+      "waypointRelativePos": 5.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "FeedersStart",
+      "waypointRelativePos": 6.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
   "globalConstraints": {
     "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
