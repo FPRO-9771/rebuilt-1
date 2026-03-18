@@ -141,13 +141,14 @@ class RobotContainer:
         """Wire controller inputs to commands."""
 
         # --- Driver Controls ---
-        configure_driver(self.driver, self.drivetrain)
+        configure_driver(self.driver, self.drivetrain,
+                         intake=self.intake,
+                         intake_spinner=self.intake_spinner)
 
         # --- Operator Controls ---
         configure_operator(
             self.operator, None, self.turret,
             self.launcher, self.hood, self.vision["shooter"],
             self.match_setup, self.h_feed, self.v_feed,
-            self.intake, self.intake_spinner,
             drivetrain=self.drivetrain,
         )

@@ -29,7 +29,7 @@ CON_ROBOT = {
     "max_speed_mps": 5.0,
     "max_angular_rate": 3.14,
 
-    # Slow mode -- scale down max speed and rotation for testing on slick floors.
-    # 1.0 = full speed, 0.25 = 25% speed.  Set back to 1.0 for competition.
-    "slow_mode_factor": 0.25,
+    # Slow mode -- driver holds right trigger to reduce speed.
+    # 1.0 = full speed, 0.25 = 25% speed when trigger fully held.
+    "slow_mode_factor": 0.15,
 }

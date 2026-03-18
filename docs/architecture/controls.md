@@ -75,6 +75,8 @@ When you add a new control:
 | B button | `whileTrue` | Point wheels in left stick direction |
 | Left bumper | `onTrue` | Reset field-centric heading |
 | Right bumper | `onTrue` | Toggle field-centric / robot-centric |
+| Left trigger | `whileTrue` | Run intake (spin rollers + hold arm) |
+| Right trigger | axis (default cmd) | Slow mode — hold to reduce drive speed to 25% |
 | Y button | `whileTrue` | Drive straight forward (alignment test, 25% speed) |
 | Back + Y | `whileTrue` | SysId dynamic forward |
 | Back + X | `whileTrue` | SysId dynamic reverse |
@@ -104,6 +106,7 @@ When you add a new control:
 | Left bumper | `whileTrue` | Auto-shoot (pose-based distance -> launcher/hood from table) |
 | Left trigger | `whileTrue` | Shoot when ready (launcher + hood + feeds when on target) |
 | Right bumper | `toggleOnTrue` | Toggle intake deploy + spinner on/off |
+| Right trigger | `whileTrue` | Reverse H feed (unjam) |
 
 ### Source
 

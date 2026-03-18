@@ -33,7 +33,7 @@ Quick reference for what every button does on each Xbox controller.
 | **Left bumper (hold)** | Auto-shoot | Sets launcher speed + hood from vision distance |
 | **Right bumper** | Toggle intake deploy + spinner | Lowers intake arm and spins rollers together |
 | **Left trigger (hold)** | Shoot when ready | Spins launcher + sets hood; feeds only when at speed AND on target |
-| **Right trigger** | *unassigned* | |
+| **Right trigger (hold)** | Reverse H feed (unjam) | Runs H feed backwards to clear a jam |
 
 ### D-pad / Other
 
@@ -99,8 +99,8 @@ Quick reference for what every button does on each Xbox controller.
 |-------|--------|-------|
 | **Left bumper** | Reset field-centric heading | Press once when robot faces away from you |
 | **Right bumper** | Toggle field/robot centric | Dashboard shows current mode |
-| **Left trigger** | *unassigned* | |
-| **Right trigger** | *unassigned* | |
+| **Left trigger** | Run intake | Spins intake rollers + holds arm in place (hold) |
+| **Right trigger** | Slow mode | Hold to reduce drive speed to 25% |
 
 ### D-pad / Other
 

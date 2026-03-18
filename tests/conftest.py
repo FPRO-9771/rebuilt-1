@@ -113,6 +113,37 @@ TEST_CON_MANUAL = {
     "hood_position_step": 0.1,
 }
 
+TEST_CON_INTAKE = {
+    "up_position": 0.0,
+    "gear_ratio": 5.0,
+    "down_position": -2.0,
+    "position_tolerance": 0.05,
+    "hold_kP": 4.0,
+    "hold_max_voltage": 2.0,
+    "spin_hold_max_voltage": 4.0,
+    "hold_deadband": 0.1,
+    "stall_current": 40.0,
+    "inverted": False,
+    "down_transition_fraction": 0.25,
+    "up_transition_fraction": 0.25,
+    "down_push_voltage": -2.0,
+    "down_brake_voltage": 1.0,
+    "up_fight_voltage": 3.0,
+    "up_ease_voltage": -1.0,
+    "slot0_kP": 1.0,
+    "slot0_kI": 0.0,
+    "slot0_kD": 0.0,
+    "slot0_kS": 0.0,
+    "slot0_kV": 0.0,
+    "slot0_kA": 0.0,
+    "slot0_kG": 0.0,
+}
+
+TEST_CON_INTAKE_SPINNER = {
+    "max_voltage": 10.0,
+    "spin_voltage": 5.0,
+}
+
 TEST_CON_POSE = {
     "center_position": 0.0,
     "degrees_per_rotation": 40.0,
@@ -166,6 +197,12 @@ def _patch_constants(monkeypatch):
 
     # Operator controls (distance supplier uses CON_POSE)
     monkeypatch.setattr("controls.operator_controls.CON_POSE", TEST_CON_POSE)
+
+    # Intake
+    monkeypatch.setattr("subsystems.intake.CON_INTAKE", TEST_CON_INTAKE)
+    monkeypatch.setattr("subsystems.intake_spinner.CON_INTAKE_SPINNER", TEST_CON_INTAKE_SPINNER)
+    monkeypatch.setattr("commands.run_intake.CON_INTAKE", TEST_CON_INTAKE)
+    monkeypatch.setattr("commands.run_intake.CON_INTAKE_SPINNER", TEST_CON_INTAKE_SPINNER)
 
     # Other commands
     monkeypatch.setattr("commands.manual_launcher.CON_MANUAL", TEST_CON_MANUAL)
