@@ -31,4 +31,5 @@ robot.log
 networktables.json
 ctre_sim/
 simgui*.json
+.logs/
 logs/
