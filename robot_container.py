@@ -22,7 +22,7 @@ from handlers import get_vision_providers
 from match_setup import MatchSetup
 from telemetry import setup_telemetry
 from commands2 import ParallelCommandGroup
-from pathplannerlib.auto import NamedCommands
+from pathplannerlib.events import EventTrigger
 from commands.auto_shoot import AutoShoot
 from autonomous.auton_modes import AutonModes
 from autonomous.auton_mode_selector import create_test_chooser
@@ -65,55 +65,45 @@ class RobotContainer:
             self.drivetrain, self.match_setup.get_alliance, _get_robot_velocity
         )
 
-        # --- Named commands (for PathPlanner event markers) ---
+        # --- PathPlanner event trigger bindings ---
+        # Event markers in .path files with "command": null fire EventTrigger by name.
+        # Use EventTrigger("name").onTrue(...) to bind commands to them.
 
         # Intake arm
-        NamedCommands.registerCommand(
-            "IntakeDown",
-            self.intake.hold_down(),
-        )
-        NamedCommands.registerCommand(
-            "IntakeUp",
-            self.intake.go_up(),
-        )
+        EventTrigger("IntakeDown").onTrue(self.intake.go_down())
+        EventTrigger("IntakeUp").onTrue(self.intake.go_up())
 
         # Intake spinner
-        NamedCommands.registerCommand(
-            "IntakeStart",
-            self.intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
+        EventTrigger("IntakeStart").onTrue(
+            self.intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"])
         )
-        NamedCommands.registerCommand(
-            "IntakeStop",
-            self.intake_spinner.runOnce(lambda: self.intake_spinner._stop()),
+        EventTrigger("IntakeStop").onTrue(
+            self.intake_spinner.runOnce(lambda: self.intake_spinner._stop())
         )
 
         # Shooter (launcher + hood, distance-based speed)
-        NamedCommands.registerCommand(
-            "ShooterStart",
-            AutoShoot(self.launcher, self.hood, context_supplier=_context_supplier),
+        EventTrigger("ShooterStart").onTrue(
+            AutoShoot(self.launcher, self.hood, context_supplier=_context_supplier)
         )
-        NamedCommands.registerCommand(
-            "ShooterStop",
+        EventTrigger("ShooterStop").onTrue(
             ParallelCommandGroup(
                 self.launcher.runOnce(lambda: self.launcher._stop()),
                 self.hood.runOnce(lambda: self.hood._stop()),
-            ),
+            )
         )
 
         # Feeders
-        NamedCommands.registerCommand(
-            "FeedersStart",
+        EventTrigger("FeedersStart").onTrue(
             ParallelCommandGroup(
                 self.h_feed.run_at_voltage(CON_H_FEED["feed_voltage"]),
                 self.v_feed.run_at_voltage(CON_V_FEED["feed_voltage"]),
-            ),
+            )
         )
-        NamedCommands.registerCommand(
-            "FeedersStop",
+        EventTrigger("FeedersStop").onTrue(
             ParallelCommandGroup(
                 self.h_feed.runOnce(lambda: self.h_feed._stop()),
                 self.v_feed.runOnce(lambda: self.v_feed._stop()),
-            ),
+            )
         )
         self.auton_modes = AutonModes(
             drivetrain=self.drivetrain,
