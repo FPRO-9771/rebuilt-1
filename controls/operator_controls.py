@@ -12,14 +12,12 @@ Controls:
     Left bumper (hold)  -- Auto-shoot (pose distance -> launcher/hood)
     Left trigger (hold) -- Shoot when ready (launcher + feed when on target)
     Right trigger (hold) -- Reverse H feed (un-jam)
-    X button (toggle)     -- Intake up/down
-    Right bumper (toggle) -- Intake spinner on/off
 """
 
 from commands2 import ParallelCommandGroup
 from commands2.button import Trigger
 
-from constants import CON_ROBOT, CON_H_FEED, CON_V_FEED, CON_INTAKE_SPINNER
+from constants import CON_ROBOT, CON_H_FEED, CON_V_FEED
 from constants.shooter import CON_TURRET_MINION
 from constants.pose import CON_POSE
 from calculations.shooter_position import get_shooter_field_position
@@ -33,8 +31,6 @@ from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
-from subsystems.intake import Intake
-from subsystems.intake_spinner import IntakeSpinner
 from commands.auto_shoot import AutoShoot
 from commands.coordinate_aim import CoordinateAim
 from commands.manual_hood import ManualHood
@@ -88,8 +84,8 @@ def _make_shoot_context_supplier(drivetrain, alliance_supplier,
 
 
 def configure_operator(operator, conveyor, turret, launcher, hood, vision,
-                       match_setup, h_feed=None, v_feed=None, intake=None,
-                       intake_spinner=None, drivetrain=None):
+                       match_setup, h_feed=None, v_feed=None,
+                       drivetrain=None):
     """
     Wire all operator controller bindings.
     Call once from RobotContainer.__init__.
@@ -135,39 +131,6 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             ParallelCommandGroup(
                 h_feed.run_at_voltage(CON_H_FEED["feed_voltage"]),
                 v_feed.run_at_voltage(CON_V_FEED["feed_voltage"]),
-            )
-        )
-
-    # --- Intake spinner: right bumper toggle ---
-    if intake_spinner is not None:
-        operator.rightBumper().toggleOnTrue(
-            intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
-        )
-
-    # --- Intake up/down: X button toggle ---
-    # Default command holds intake up (always holds).
-    # go_down only holds position while spinner is running (saving power).
-    if intake is not None:
-        spinner_running = None
-        if intake_spinner is not None:
-            spinner_running = lambda: abs(intake_spinner.get_velocity()) > 0.1
-        intake.setDefaultCommand(intake.go_up())
-        operator.x().toggleOnTrue(intake.go_down(spinner_running))
-
-        # --- DEBUG: D-pad left/right sends raw voltage to intake ---
-        # Bypasses PID to test if both motors physically work.
-        # Remove after debugging.
-        _intake_test_volts = 1.0
-        operator.povRight().whileTrue(
-            intake.runEnd(
-                lambda: intake._set_voltage(_intake_test_volts),
-                lambda: intake._stop(),
-            )
-        )
-        operator.povLeft().whileTrue(
-            intake.runEnd(
-                lambda: intake._set_voltage(-_intake_test_volts),
-                lambda: intake._stop(),
             )
         )
 

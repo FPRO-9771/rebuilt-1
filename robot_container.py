@@ -77,6 +77,5 @@ class RobotContainer:
             self.operator, None, self.turret,
             self.launcher, self.hood, self.vision["shooter"],
             self.match_setup, self.h_feed, self.v_feed,
-            self.intake, self.intake_spinner,
             drivetrain=self.drivetrain,
         )

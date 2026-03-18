@@ -10,7 +10,7 @@ Controls:
     Left bumper     -- Reset field-centric heading
     Right bumper    -- Toggle field-centric / robot-centric
     Y button        -- Toggle intake deploy (down/up)
-    Left trigger    -- Run intake spinner (hold)
+    Left trigger    -- Run intake: spin wheels + hold arm (hold)
     Right trigger   -- Slow mode (hold to reduce speed)
     Back + Y/X      -- SysId dynamic forward/reverse
     Start + Y/X     -- SysId quasistatic forward/reverse
@@ -32,7 +32,7 @@ from wpimath.units import rotationsToRadians
 
 from constants.controls import CON_ROBOT
 from constants.debug import DEBUG
-from constants import CON_INTAKE_SPINNER
+from commands.run_intake import RunIntake
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
 from telemetry.swerve_telemetry import SwerveTelemetry
 from utils.logger import get_logger
@@ -212,11 +212,9 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
 
         driver.y().onTrue(InstantCommand(_toggle_intake))
 
-    # --- Left trigger: run intake spinner (hold) ---
-    if intake_spinner is not None:
-        driver.leftTrigger().whileTrue(
-            intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"])
-        )
+    # --- Left trigger: spin intake + hold arm in place ---
+    if intake is not None and intake_spinner is not None:
+        driver.leftTrigger().whileTrue(RunIntake(intake, intake_spinner))
 
     # --- Register swerve telemetry ---
     drivetrain.register_telemetry(
