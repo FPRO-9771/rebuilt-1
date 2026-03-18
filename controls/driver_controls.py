@@ -11,6 +11,7 @@ Controls:
     Right bumper    -- Toggle field-centric / robot-centric
     Y button        -- Toggle intake deploy (down/up)
     Left trigger    -- Run intake spinner (hold)
+    Right trigger   -- Slow mode (hold to reduce speed)
     Back + Y/X      -- SysId dynamic forward/reverse
     Start + Y/X     -- SysId quasistatic forward/reverse
 
@@ -50,9 +51,9 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
     Wire all driver controller bindings.
     Call once from RobotContainer.__init__.
     """
-    slow = CON_ROBOT["slow_mode_factor"]
-    max_speed = TunerConstants.speed_at_12_volts * slow
-    max_angular_rate = rotationsToRadians(0.75) * slow
+    max_speed = TunerConstants.speed_at_12_volts
+    max_angular_rate = rotationsToRadians(0.75)
+    slow_factor = CON_ROBOT["slow_mode_factor"]
 
     # --- Swerve requests ---
     drive_fc = (
@@ -98,9 +99,13 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
         raw_lx = driver.getLeftX()
         raw_rx = driver.getRightX()
 
-        vel_x = -_apply_curve(raw_ly, drive_exp) * max_speed
-        vel_y = -_apply_curve(raw_lx, drive_exp) * max_speed
-        rot = -_apply_curve(raw_rx, rot_exp) * max_angular_rate
+        # Right trigger: blend from full speed down to slow_factor
+        trigger = driver.getRightTriggerAxis()
+        speed_scale = 1.0 - trigger * (1.0 - slow_factor)
+
+        vel_x = -_apply_curve(raw_ly, drive_exp) * max_speed * speed_scale
+        vel_y = -_apply_curve(raw_lx, drive_exp) * max_speed * speed_scale
+        rot = -_apply_curve(raw_rx, rot_exp) * max_angular_rate * speed_scale
 
         # Log inputs + module states when driving (every 10th cycle ~2 Hz)
         # is_driving = abs(vel_x) > 0.01 or abs(vel_y) > 0.01 or abs(rot) > 0.01
