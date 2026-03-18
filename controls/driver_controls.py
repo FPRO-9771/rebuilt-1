@@ -5,10 +5,12 @@ All driver button/stick mappings live here to keep robot_container short.
 Controls:
     Left stick      -- Drive (X/Y translation)
     Right stick X   -- Rotation
-    A button        -- Brake (hold)
+    A button        -- Drive straight forward (alignment test, 7% speed)
     B button        -- Point wheels in stick direction (hold)
     Left bumper     -- Reset field-centric heading
     Right bumper    -- Toggle field-centric / robot-centric
+    Y button        -- Toggle intake deploy (down/up)
+    Left trigger    -- Run intake spinner (hold)
     Back + Y/X      -- SysId dynamic forward/reverse
     Start + Y/X     -- SysId quasistatic forward/reverse
 
@@ -29,6 +31,7 @@ from wpimath.units import rotationsToRadians
 
 from constants.controls import CON_ROBOT
 from constants.debug import DEBUG
+from constants import CON_INTAKE_SPINNER
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
 from telemetry.swerve_telemetry import SwerveTelemetry
 from utils.logger import get_logger
@@ -41,7 +44,8 @@ def _apply_curve(value, exponent):
     return math.copysign(abs(value) ** exponent, value)
 
 
-def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
+def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
+                     intake=None, intake_spinner=None):
     """
     Wire all driver controller bindings.
     Call once from RobotContainer.__init__.
@@ -139,8 +143,21 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         drivetrain.apply_request(lambda: idle).ignoringDisable(True)
     )
 
-    # --- A button: brake ---
-    driver.a().whileTrue(drivetrain.apply_request(lambda: brake))
+    # --- A button: drive straight forward (alignment test, 25% speed) ---
+    drive_straight = (
+        swerve.requests.RobotCentric()
+        .with_drive_request_type(
+            swerve.SwerveModule.DriveRequestType.VELOCITY
+        )
+    )
+    driver.a().whileTrue(
+        drivetrain.apply_request(
+            lambda: drive_straight
+            .with_velocity_x(max_speed * 0.25)
+            .with_velocity_y(0)
+            .with_rotational_rate(0)
+        )
+    )
 
     # --- B button: point wheels in stick direction ---
     driver.b().whileTrue(
@@ -177,21 +194,24 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         drivetrain.sys_id_quasistatic(SysIdRoutine.Direction.kReverse)
     )
 
-    # --- Y button: drive straight forward (alignment test) ---
-    drive_straight = (
-        swerve.requests.RobotCentric()
-        .with_drive_request_type(
-            swerve.SwerveModule.DriveRequestType.VELOCITY
+    # --- Y button: toggle intake deploy (down/up) ---
+    if intake is not None:
+        state["intake_down"] = False
+
+        def _toggle_intake():
+            state["intake_down"] = not state["intake_down"]
+            if state["intake_down"]:
+                intake.go_down().schedule()
+            else:
+                intake.go_up().schedule()
+
+        driver.y().onTrue(InstantCommand(_toggle_intake))
+
+    # --- Left trigger: run intake spinner (hold) ---
+    if intake_spinner is not None:
+        driver.leftTrigger().whileTrue(
+            intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"])
         )
-    )
-    driver.y().whileTrue(
-        drivetrain.apply_request(
-            lambda: drive_straight
-            .with_velocity_x(max_speed * 0.25)
-            .with_velocity_y(0)
-            .with_rotational_rate(0)
-        )
-    )
 
     # --- Register swerve telemetry ---
     drivetrain.register_telemetry(
