@@ -57,8 +57,12 @@ class RobotContainer:
         self.operator = GameController(CON_ROBOT["operator_controller_port"], use_ps4)
 
         # --- Autonomous context supplier (needed by ShooterStart named command) ---
+        def _get_robot_velocity():
+            dt_state = self.drivetrain.get_state()
+            return (dt_state.speeds.vx, dt_state.speeds.vy)
+
         _context_supplier = _make_shoot_context_supplier(
-            self.drivetrain, self.match_setup.get_alliance
+            self.drivetrain, self.match_setup.get_alliance, _get_robot_velocity
         )
 
         # --- Named commands (for PathPlanner event markers) ---

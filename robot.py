@@ -30,7 +30,6 @@ class Robot(wpilib.TimedRobot):
             wpilib.DriverStation.silenceJoystickConnectionWarning(True)
         self.container = RobotContainer()
         self.auto_command = None
-        self._apply_selected_pose()
 
     def _apply_selected_pose(self):
         """Reset drivetrain odometry to the pose selected in Elastic."""
@@ -38,11 +37,13 @@ class Robot(wpilib.TimedRobot):
         x = pose.get("start_x", 0.0)
         y = pose.get("start_y", 0.0)
         heading = pose.get("start_heading", 0.0)
+        _log.info(f"_apply_selected_pose: x={x:.3f} y={y:.3f} heading={heading:.1f}")
         if x == 0.0 and y == 0.0:
+            _log.warning("_apply_selected_pose: x and y are both 0 -- skipping reset")
             return
         field_pose = Pose2d(x, y, Rotation2d.fromDegrees(heading))
         self.container.drivetrain.reset_pose(field_pose)
-        _log.info(f"Pose reset to ({x:.1f}, {y:.1f}, {heading:.0f} deg)")
+        _log.info(f"_apply_selected_pose: odometry reset to ({x:.3f}, {y:.3f}, {heading:.1f} deg)")
 
     def robotPeriodic(self):
         """Called every 20ms regardless of mode."""
@@ -54,13 +55,17 @@ class Robot(wpilib.TimedRobot):
 
     def autonomousInit(self):
         """Called when autonomous mode starts."""
+        _log.info("autonomousInit: fired")
+        self._apply_selected_pose()
         auto_factory = self.container.auto_chooser.getSelected()
         if auto_factory is None:
-            _log.warning("No auto mode selected")
+            _log.warning("autonomousInit: no auto mode selected -- doing nothing")
             return
+        _log.info("autonomousInit: building auto command from selected factory")
         self.auto_command = auto_factory()
+        _log.info(f"autonomousInit: scheduling {type(self.auto_command).__name__}")
         self.auto_command.schedule()
-        _log.info("Auto started")
+        _log.info("autonomousInit: done")
 
     def autonomousPeriodic(self):
         """Called every 20ms during autonomous."""

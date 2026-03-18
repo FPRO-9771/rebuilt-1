@@ -76,12 +76,18 @@ class MatchSetup:
         """Return the full pose dict for the selected alliance + pose."""
         alliance = self.get_alliance()
         pose_name = self.get_pose_name()
+        _log.info(f"get_pose: alliance='{alliance['name']}' pose='{pose_name}'")
         for pose in alliance["poses"]:
             if pose["name"] == pose_name:
+                _log.info(
+                    f"get_pose: resolved -> x={pose['start_x']} "
+                    f"y={pose['start_y']} heading={pose['start_heading']} "
+                    f"path='{pose.get('auto_path', 'none')}'"
+                )
                 return pose
         _log.warning(
-            f"Pose '{pose_name}' not found in alliance "
-            f"'{alliance['name']}', using first pose"
+            f"get_pose: pose '{pose_name}' not found in alliance "
+            f"'{alliance['name']}' -- using first pose"
         )
         return alliance["poses"][0]
 

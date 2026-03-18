@@ -241,10 +241,10 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                     self._path_apply_robot_speeds
                     .with_speeds(speeds)
                     .with_wheel_force_feedforwards_x(
-                        feedforwards.robot_relative_forces_x_newtons
+                        feedforwards.robotRelativeForcesXNewtons
                     )
                     .with_wheel_force_feedforwards_y(
-                        feedforwards.robot_relative_forces_y_newtons
+                        feedforwards.robotRelativeForcesYNewtons
                     )
                 ),
                 PPHolonomicDriveController(

@@ -59,15 +59,18 @@ class AutonModes:
 
     def do_nothing(self) -> Command:
         """Auto that does nothing - safe default."""
+        _log.info("do_nothing: auto routine selected -- waiting 15s")
         return WaitCommand(15.0)
 
     def follow_path(self, path_name: str) -> Command:
         """Follow a PathPlanner path by name (without .path extension)."""
+        _log.info(f"follow_path: loading '{path_name}'")
         try:
             path = PathPlannerPath.fromPathFile(path_name)
+            _log.info(f"follow_path: loaded '{path_name}' OK")
             return AutoBuilder.followPath(path)
         except Exception as e:
-            _log.error(f"Failed to load path '{path_name}': {e}")
+            _log.error(f"follow_path: FAILED to load '{path_name}': {e}")
             return WaitCommand(15.0)
 
     def _build_routine(self, path_name: str) -> Command:
@@ -78,6 +81,7 @@ class AutonModes:
         After the path ends, auto-aim stays active for _POST_PATH_WAIT seconds
         so that ShooterStart/FeedersStart event markers can finish their work.
         """
+        _log.info(f"_build_routine: building routine for path='{path_name}'")
         if not all([self.turret, self._context_supplier]):
             _log.error(f"_build_routine: missing subsystems -- doing nothing")
             return WaitCommand(15.0)
@@ -94,6 +98,10 @@ class AutonModes:
         # coord_aim wraps everything -- turret aims from start to finish.
         # After the path ends, WaitCommand keeps coord_aim alive while the
         # ShooterStart/FeedersStart event marker commands finish shooting.
+        _log.info(
+            f"_build_routine: built OK -- "
+            f"CoordinateAim + followPath('{path_name}') + {_POST_PATH_WAIT}s wait"
+        )
         return ParallelRaceGroup(
             coord_aim,
             SequentialCommandGroup(
@@ -105,26 +113,33 @@ class AutonModes:
     # --- Blue routines ---
 
     def blue_center(self) -> Command:
+        _log.info("blue_center: routine selected")
         return self._build_routine("Auto Blue Center")
 
     def blue_left(self) -> Command:
+        _log.info("blue_left: routine selected")
         return self._build_routine("Auto Blue Left")
 
     def blue_right(self) -> Command:
+        _log.info("blue_right: routine selected")
         return self._build_routine("Auto Blue Right")
 
     # --- Red routines ---
 
     def red_center(self) -> Command:
+        _log.info("red_center: routine selected")
         return self._build_routine("Auto Red Center")
 
     def red_left(self) -> Command:
+        _log.info("red_left: routine selected")
         return self._build_routine("Auto Red Left")
 
     def red_right(self) -> Command:
+        _log.info("red_right: routine selected")
         return self._build_routine("Auto Red Right")
 
     # --- Test routines ---
 
     def mini_test(self) -> Command:
+        _log.info("mini_test: routine selected")
         return self._build_routine("Mini Test")
