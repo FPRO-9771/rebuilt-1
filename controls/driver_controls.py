@@ -6,7 +6,7 @@ Controls:
     Left stick      -- Drive (X/Y translation)
     Right stick X   -- Rotation
     A button        -- Brake (hold)
-    B button        -- Point wheels in stick direction (hold)
+    B button        -- Toggle Limelight MegaTag2 odometry reset
     Left bumper     -- Reset field-centric heading
     Right bumper    -- Toggle field-centric / robot-centric
     Back + Y/X      -- SysId dynamic forward/reverse
@@ -24,7 +24,6 @@ from commands2.sysid import SysIdRoutine
 from generated.tuner_constants import TunerConstants
 from phoenix6 import swerve
 from wpilib import DriverStation, SmartDashboard
-from wpimath.geometry import Rotation2d
 from wpimath.units import rotationsToRadians
 
 from constants.controls import CON_ROBOT
@@ -64,7 +63,6 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         )
     )
     brake = swerve.requests.SwerveDriveBrake()
-    point = swerve.requests.PointWheelsAt()
 
     # --- Drive mode toggle state ---
     state = {"robot_centric": False}
@@ -108,13 +106,9 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
     # --- A button: brake ---
     driver.a().whileTrue(drivetrain.apply_request(lambda: brake))
 
-    # --- B button: point wheels in stick direction ---
-    driver.b().whileTrue(
-        drivetrain.apply_request(
-            lambda: point.with_module_direction(
-                Rotation2d(-driver.getLeftY(), -driver.getLeftX())
-            )
-        )
+    # --- B button: toggle Limelight MegaTag2 odometry reset ---
+    driver.b().onTrue(
+        InstantCommand(drivetrain.toggle_limelight_reset)
     )
 
     # --- Left bumper: reset field-centric heading ---

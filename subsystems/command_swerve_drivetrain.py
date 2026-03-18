@@ -3,11 +3,18 @@ from commands2.sysid import SysIdRoutine
 import math
 from phoenix6 import SignalLogger, swerve, units, utils
 from typing import Callable, overload
-from wpilib import DriverStation, Notifier, RobotController
+from wpilib import DriverStation, Notifier, RobotController, SmartDashboard
 from wpilib.sysid import SysIdRoutineLog
 from wpimath.geometry import Pose2d, Rotation2d
 
 from generated.tuner_constants import TunerSwerveDrivetrain
+from handlers.limelight_helpers import (
+    get_bot_pose_estimate_wpi_blue_megatag2,
+    set_robot_orientation,
+)
+from utils.logger import get_logger
+
+_log = get_logger("drivetrain")
 
 
 class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
@@ -20,6 +27,7 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
     """
 
     _SIM_LOOP_PERIOD: units.second = 0.004  # 4 ms
+    _LIMELIGHT_NAME = "limelight-shooter"
 
     _BLUE_ALLIANCE_PERSPECTIVE_ROTATION = Rotation2d.fromDegrees(0)
     """Blue alliance sees forward as 0 degrees (toward red alliance wall)"""
@@ -222,6 +230,9 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         self._sys_id_routine_to_apply = self._sys_id_routine_translation
         """The SysId routine to test"""
 
+        # --- Limelight MegaTag2 odometry reset ---
+        self._limelight_reset_enabled = False
+
         if utils.is_simulation():
             self._start_sim_thread()
 
@@ -277,6 +288,78 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                     else self._BLUE_ALLIANCE_PERSPECTIVE_ROTATION
                 )
                 self._has_applied_operator_perspective = True
+
+        # --- MegaTag2: send gyro heading every loop ---
+        yaw_deg = self.pigeon2.get_yaw().value_as_double
+        set_robot_orientation(self._LIMELIGHT_NAME, yaw_deg)
+
+        # --- MegaTag2: read pose estimate and publish debug telemetry ---
+        reset_applied = False
+        estimate = get_bot_pose_estimate_wpi_blue_megatag2(
+            self._LIMELIGHT_NAME
+        )
+
+        tag_count = estimate.tag_count if estimate else 0
+        tag_visible = tag_count > 0
+
+        # Current estimated pose
+        pose = self.get_pose()
+        SmartDashboard.putNumber("Limelight/EstPose X", pose.x)
+        SmartDashboard.putNumber("Limelight/EstPose Y", pose.y)
+        SmartDashboard.putNumber(
+            "Limelight/EstPose Rot",
+            pose.rotation().degrees(),
+        )
+
+        # Raw MegaTag2 pose (even if not used for reset)
+        if estimate:
+            SmartDashboard.putNumber(
+                "Limelight/MT2 Pose X", estimate.pose.x
+            )
+            SmartDashboard.putNumber(
+                "Limelight/MT2 Pose Y", estimate.pose.y
+            )
+            SmartDashboard.putNumber(
+                "Limelight/MT2 Pose Rot",
+                estimate.pose.rotation().degrees(),
+            )
+            SmartDashboard.putNumber(
+                "Limelight/Latency ms", estimate.latency
+            )
+        else:
+            SmartDashboard.putNumber("Limelight/MT2 Pose X", 0.0)
+            SmartDashboard.putNumber("Limelight/MT2 Pose Y", 0.0)
+            SmartDashboard.putNumber("Limelight/MT2 Pose Rot", 0.0)
+            SmartDashboard.putNumber("Limelight/Latency ms", 0.0)
+
+        SmartDashboard.putNumber("Limelight/Tag Count", tag_count)
+        SmartDashboard.putBoolean("Limelight/Tag Visible", tag_visible)
+        SmartDashboard.putBoolean(
+            "Limelight/Reset Enabled", self._limelight_reset_enabled
+        )
+
+        # Apply vision measurement if toggle is on and tags visible
+        if self._limelight_reset_enabled and estimate and tag_visible:
+            self.add_vision_measurement(
+                estimate.pose, estimate.timestamp_seconds
+            )
+            reset_applied = True
+            _log.debug(
+                f"MT2 reset applied: x={estimate.pose.x:.2f} "
+                f"y={estimate.pose.y:.2f} "
+                f"rot={estimate.pose.rotation().degrees():.1f} "
+                f"tags={estimate.tag_count}"
+            )
+
+        SmartDashboard.putBoolean(
+            "Limelight/Reset Applied", reset_applied
+        )
+
+    def toggle_limelight_reset(self) -> None:
+        """Toggle the continuous Limelight MegaTag2 odometry reset."""
+        self._limelight_reset_enabled = not self._limelight_reset_enabled
+        state = "ENABLED" if self._limelight_reset_enabled else "DISABLED"
+        _log.info(f"Limelight odometry reset {state}")
 
     def _start_sim_thread(self):
         def _sim_periodic():
