@@ -138,6 +138,19 @@ class AutonModes:
         _log.info("red_right: routine selected")
         return self._build_routine("Auto Red Right")
 
+    def get_auto_command(self, alliance_name: str, pose_name: str) -> Command:
+        """
+        Derive and return the auto routine from alliance + starting pose.
+        Called at autonomousInit when no test override is selected.
+
+        Args:
+            alliance_name: "Blue" or "Red" (from MatchSetup.get_alliance()["name"])
+            pose_name: "Left", "Center", or "Right" (from MatchSetup.get_pose_name())
+        """
+        path_name = f"Auto {alliance_name} {pose_name}"
+        _log.info(f"get_auto_command: derived path='{path_name}'")
+        return self._build_routine(path_name)
+
     # --- Test routines ---
 
     def mini_test(self) -> Command:

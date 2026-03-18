@@ -57,12 +57,18 @@ class Robot(wpilib.TimedRobot):
         """Called when autonomous mode starts."""
         _log.info("autonomousInit: fired")
         self._apply_selected_pose()
-        auto_factory = self.container.auto_chooser.getSelected()
-        if auto_factory is None:
-            _log.warning("autonomousInit: no auto mode selected -- doing nothing")
-            return
-        _log.info("autonomousInit: building auto command from selected factory")
-        self.auto_command = auto_factory()
+
+        # Test override takes priority over the derived routine.
+        test_factory = self.container.test_chooser.getSelected()
+        if test_factory is not None:
+            _log.info("autonomousInit: test override selected")
+            self.auto_command = test_factory()
+        else:
+            alliance_name = self.container.match_setup.get_alliance()["name"]
+            pose_name = self.container.match_setup.get_pose_name()
+            _log.info(f"autonomousInit: deriving routine from alliance='{alliance_name}' pose='{pose_name}'")
+            self.auto_command = self.container.auton_modes.get_auto_command(alliance_name, pose_name)
+
         _log.info(f"autonomousInit: scheduling {type(self.auto_command).__name__}")
         self.auto_command.schedule()
         _log.info("autonomousInit: done")

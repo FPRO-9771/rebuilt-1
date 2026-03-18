@@ -25,7 +25,7 @@ from commands2 import ParallelCommandGroup
 from pathplannerlib.auto import NamedCommands
 from commands.auto_shoot import AutoShoot
 from autonomous.auton_modes import AutonModes
-from autonomous.auton_mode_selector import create_auton_chooser
+from autonomous.auton_mode_selector import create_test_chooser
 
 
 class RobotContainer:
@@ -115,7 +115,7 @@ class RobotContainer:
                 self.v_feed.runOnce(lambda: self.v_feed._stop()),
             ),
         )
-        _auton_modes = AutonModes(
+        self.auton_modes = AutonModes(
             drivetrain=self.drivetrain,
             turret=self.turret,
             launcher=self.launcher,
@@ -124,7 +124,7 @@ class RobotContainer:
             v_feed=self.v_feed,
             context_supplier=_context_supplier,
         )
-        self.auto_chooser = create_auton_chooser(_auton_modes)
+        self.test_chooser = create_test_chooser(self.auton_modes)
 
         # --- Configure button bindings ---
         self._configure_bindings()
