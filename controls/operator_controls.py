@@ -16,7 +16,6 @@ Controls:
     Right bumper (toggle) -- Intake spinner on/off
 """
 
-import commands2
 from commands2 import ParallelCommandGroup
 from commands2.button import Trigger
 
@@ -97,9 +96,6 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
     """
     deadband = CON_ROBOT["joystick_deadband"]
 
-    # Mutable state for intake toggle
-    state = {"intake_down": False}
-
     # --- Manual turret: left stick X ---
     Trigger(lambda: abs(operator.getLeftX()) > deadband).whileTrue(
         turret.manual(lambda: operator.getLeftX())
@@ -148,19 +144,31 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
         )
 
-    # --- Intake up/down: X button alternates ---
+    # --- Intake up/down: X button toggle ---
+    # Default command holds intake up (always holds).
+    # go_down only holds position while spinner is running (saving power).
     if intake is not None:
-        intake_state = {"down": False}
+        spinner_running = None
+        if intake_spinner is not None:
+            spinner_running = lambda: abs(intake_spinner.get_velocity()) > 0.1
+        intake.setDefaultCommand(intake.go_up())
+        operator.x().toggleOnTrue(intake.go_down(spinner_running))
 
-        def _toggle_intake():
-            intake_state["down"] = not intake_state["down"]
-            if intake_state["down"]:
-                return intake.go_down()
-            else:
-                return intake.go_up()
-
-        operator.x().onTrue(
-            commands2.DeferredCommand(_toggle_intake, intake)
+        # --- DEBUG: D-pad left/right sends raw voltage to intake ---
+        # Bypasses PID to test if both motors physically work.
+        # Remove after debugging.
+        _intake_test_volts = 1.0
+        operator.povRight().whileTrue(
+            intake.runEnd(
+                lambda: intake._set_voltage(_intake_test_volts),
+                lambda: intake._stop(),
+            )
+        )
+        operator.povLeft().whileTrue(
+            intake.runEnd(
+                lambda: intake._set_voltage(-_intake_test_volts),
+                lambda: intake._stop(),
+            )
         )
 
     # --- Reverse H feed (un-jam): right trigger hold ---
@@ -206,5 +214,3 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
                 on_target_supplier=coord_aim.is_on_target,
             )
         )
-
-    return state
