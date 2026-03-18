@@ -283,6 +283,13 @@ class Intake(Subsystem):
           Phase 2 -- ease off as gravity stops fighting near vertical
 
         Finishes when the arm reaches the target position.
+
+        TUNING (all values in constants/intake.py):
+          Arm won't start moving down? -> increase down_push_voltage (more negative)
+          Arm slams at the bottom?     -> increase down_brake_voltage (more positive)
+          Arm won't start moving up?   -> increase up_fight_voltage (more positive)
+          Arm slams at the top?        -> increase up_ease_voltage (more negative)
+          Phase switch too early/late? -> adjust gravity_transition_fraction
         """
 
         def __init__(self, intake: "Intake", target: float,

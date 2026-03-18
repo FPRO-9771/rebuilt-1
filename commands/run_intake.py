@@ -1,6 +1,16 @@
 """
 Run-intake command -- spin the intake wheels and hold the arm in place.
 Used by driver controls and autonomous routines.
+
+Tuning (constants/intake.py):
+  hold_kP         -- how hard the arm fights drift (volts per rotation).
+                     Arm bounces/oscillates? Lower this.
+                     Arm drifts too much? Raise this.
+  hold_max_voltage -- caps correction power. Keep low to protect gears.
+                     Arm can't hold against balls? Raise this.
+  hold_deadband   -- ignore drift smaller than this (rotations).
+                     Arm buzzes/chatters? Raise this.
+                     Arm feels sloppy? Lower this.
 """
 
 from commands2 import Command
