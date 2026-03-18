@@ -31,5 +31,5 @@ CON_ROBOT = {
 
     # Slow mode -- driver holds right trigger to reduce speed.
     # 1.0 = full speed, 0.25 = 25% speed when trigger fully held.
-    "slow_mode_factor": 0.25,
+    "slow_mode_factor": 0.15,
 }

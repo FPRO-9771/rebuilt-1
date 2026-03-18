@@ -103,6 +103,7 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
         trigger = driver.getRightTriggerAxis()
         speed_scale = 1.0 - trigger * (1.0 - slow_factor)
 
+
         vel_x = -_apply_curve(raw_ly, drive_exp) * max_speed * speed_scale
         vel_y = -_apply_curve(raw_lx, drive_exp) * max_speed * speed_scale
         rot = -_apply_curve(raw_rx, rot_exp) * max_angular_rate * speed_scale

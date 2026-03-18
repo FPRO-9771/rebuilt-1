@@ -82,3 +82,9 @@ class GameController:
 
     def getRightY(self):
         return self._ctrl.getRightY()
+
+    def getLeftTriggerAxis(self):
+        return self._ctrl.getL2Axis() if self._use_ps4 else self._ctrl.getLeftTriggerAxis()
+
+    def getRightTriggerAxis(self):
+        return self._ctrl.getR2Axis() if self._use_ps4 else self._ctrl.getRightTriggerAxis()

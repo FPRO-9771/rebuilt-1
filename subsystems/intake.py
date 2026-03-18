@@ -102,7 +102,7 @@ class Intake(Subsystem):
         return self._TwoPhaseMove(
             self,
             target=CON_INTAKE["up_position"],
-            transition=self._transition_position(),
+            transition=self._transition_position(going_down=False),
             phase1_voltage=CON_INTAKE["up_fight_voltage"],
             phase2_voltage=CON_INTAKE["up_ease_voltage"],
             going_down=False,
@@ -113,7 +113,7 @@ class Intake(Subsystem):
         return self._TwoPhaseMove(
             self,
             target=CON_INTAKE["down_position"],
-            transition=self._transition_position(),
+            transition=self._transition_position(going_down=True),
             phase1_voltage=CON_INTAKE["down_push_voltage"],
             phase2_voltage=CON_INTAKE["down_brake_voltage"],
             going_down=True,
@@ -126,17 +126,20 @@ class Intake(Subsystem):
     # --- Helpers (internal) ---
 
     @staticmethod
-    def _transition_position() -> float:
-        """Position where gravity takes over, computed from constants."""
+    def _transition_position(going_down: bool) -> float:
+        """Position where phase 2 begins, computed from constants."""
         up = CON_INTAKE["up_position"]
         down = CON_INTAKE["down_position"]
-        frac = CON_INTAKE["gravity_transition_fraction"]
+        key = "down_transition_fraction" if going_down else "up_transition_fraction"
+        frac = CON_INTAKE[key]
         return up + frac * (down - up)
 
     # --- Inner command classes ---
 
     # Number of consecutive stalled cycles before cutting power (50 = ~1 second)
     _STALL_CYCLES = 50
+    # Phase 2 stall: fewer cycles -- arm settling at target is expected and fast
+    _PHASE2_STALL_CYCLES = 20
     # Position must change by at least this much per cycle to not be "stalled"
     _STALL_THRESHOLD = 0.001
 
@@ -289,7 +292,8 @@ class Intake(Subsystem):
           Arm slams at the bottom?     -> increase down_brake_voltage (more positive)
           Arm won't start moving up?   -> increase up_fight_voltage (more positive)
           Arm slams at the top?        -> increase up_ease_voltage (more negative)
-          Phase switch too early/late? -> adjust gravity_transition_fraction
+          Phase switch too early/late going down? -> adjust down_transition_fraction
+          Phase switch too early/late going up?   -> adjust up_transition_fraction
         """
 
         def __init__(self, intake: "Intake", target: float,
@@ -303,10 +307,18 @@ class Intake(Subsystem):
             self.phase2_voltage = phase2_voltage
             self.going_down = going_down
             self.in_phase2 = False
+            self._phase2_start_pos = 0.0
+            self._phase2_stall_count = 0
+            self._phase2_last_pos = 0.0
+            self._phase2_stalled = False
             self.addRequirements(intake)
 
         def initialize(self):
             self.in_phase2 = False
+            self._phase2_start_pos = 0.0
+            self._phase2_stall_count = 0
+            self._phase2_last_pos = 0.0
+            self._phase2_stalled = False
             self._direction = "DOWN" if self.going_down else "UP"
             _log.info(
                 f"TwoPhaseMove {self._direction}: "
@@ -329,6 +341,7 @@ class Intake(Subsystem):
 
                 if past_transition:
                     self.in_phase2 = True
+                    self._phase2_start_pos = pos
                     _log.info(
                         f"TwoPhaseMove {self._direction}: "
                         f"-> phase 2 at pos={pos:.4f} "
@@ -351,8 +364,49 @@ class Intake(Subsystem):
             )
             self.intake._set_voltage(self.phase2_voltage)
 
+            # Stall detection: arm settled (hit hard stop or equilibrated)
+            if abs(pos - self._phase2_last_pos) < Intake._STALL_THRESHOLD:
+                self._phase2_stall_count += 1
+                if self._phase2_stall_count >= Intake._PHASE2_STALL_CYCLES:
+                    self._phase2_stalled = True
+                    _log.info(
+                        f"TwoPhaseMove {self._direction}: "
+                        f"settled at pos={pos:.4f} target={self.target:.4f}"
+                    )
+            else:
+                self._phase2_stall_count = 0
+            self._phase2_last_pos = pos
+
         def isFinished(self) -> bool:
-            return self.intake.is_at_position(self.target)
+            if self.intake.is_at_position(self.target):
+                return True
+            if self._phase2_stalled:
+                return True
+            if self.in_phase2:
+                pos = self.intake.get_position()
+                # Finish the moment the arm passes through (or reaches) the target.
+                # This fires even if the arm is still moving, which is fine --
+                # motors cut to brake mode and the arm coasts to a stop.
+                if self.going_down and pos <= self.target:
+                    return True
+                if not self.going_down and pos >= self.target:
+                    return True
+                # Safety: if phase 2 has reversed us all the way back past the
+                # phase 2 start position, the brake is fighting the wrong way -- stop.
+                overshoot = CON_INTAKE["position_tolerance"] * 3
+                if self.going_down and pos > self._phase2_start_pos + overshoot:
+                    _log.warning(
+                        f"TwoPhaseMove DOWN: phase2 reversed past start "
+                        f"(pos={pos:.4f} start={self._phase2_start_pos:.4f}) -- stopping"
+                    )
+                    return True
+                if not self.going_down and pos < self._phase2_start_pos - overshoot:
+                    _log.warning(
+                        f"TwoPhaseMove UP: phase2 reversed past start "
+                        f"(pos={pos:.4f} start={self._phase2_start_pos:.4f}) -- stopping"
+                    )
+                    return True
+            return False
 
         def end(self, interrupted: bool):
             self.intake._stop()

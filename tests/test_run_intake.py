@@ -76,7 +76,7 @@ def test_hold_corrects_when_drift_exceeds_deadband():
 
 
 def test_hold_correction_clamped_to_max():
-    """Correction voltage never exceeds hold_max_voltage."""
+    """Correction voltage never exceeds spin_hold_max_voltage."""
     intake = Intake()
     spinner = IntakeSpinner()
     cmd = RunIntake(intake, spinner)
@@ -90,7 +90,7 @@ def test_hold_correction_clamped_to_max():
     intake.motor_right.simulate_position(0.0)
     cmd.execute()
 
-    max_v = TEST_CON_INTAKE["hold_max_voltage"]
+    max_v = TEST_CON_INTAKE["spin_hold_max_voltage"]
     voltage = intake.motor_left.get_last_voltage()
     assert abs(voltage) <= max_v
 
