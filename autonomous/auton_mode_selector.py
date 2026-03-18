@@ -33,5 +33,8 @@ def create_auton_chooser(auton_modes: AutonModes) -> SendableChooser:
     chooser.addOption("Red Left",    lambda: auton_modes.red_left())
     chooser.addOption("Red Right",   lambda: auton_modes.red_right())
 
+    # TODO: Remove before competition
+    chooser.addOption("Mini Test",   lambda: auton_modes.mini_test())
+
     SmartDashboard.putData("Auto Mode", chooser)
     return chooser

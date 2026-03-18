@@ -123,3 +123,8 @@ class AutonModes:
 
     def red_right(self) -> Command:
         return self._build_routine("Auto Red Right")
+
+    # --- Test routines ---
+
+    def mini_test(self) -> Command:
+        return self._build_routine("Mini Test")

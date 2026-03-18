@@ -39,12 +39,6 @@
       "command": null
     },
     {
-      "name": "IntakeDown",
-      "waypointRelativePos": 0.6,
-      "endWaypointRelativePos": null,
-      "command": null
-    },
-    {
       "name": "FeedersStart",
       "waypointRelativePos": 1.0,
       "endWaypointRelativePos": null,
