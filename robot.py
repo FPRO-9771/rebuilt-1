@@ -8,6 +8,7 @@ from commands2 import CommandScheduler
 from wpimath.geometry import Pose2d, Rotation2d
 from robot_container import RobotContainer
 from telemetry import update_telemetry
+from constants.debug import DEBUG
 from utils.logger import get_logger
 
 _log = get_logger("robot")
@@ -23,6 +24,7 @@ class Robot(wpilib.TimedRobot):
 
     def __init__(self):
         super().__init__(self._LOOP_PERIOD)
+        self._auto_periodic_count = 0
 
     def robotInit(self):
         """Called once when the robot starts."""
@@ -72,12 +74,20 @@ class Robot(wpilib.TimedRobot):
 
     def autonomousPeriodic(self):
         """Called every 20ms during autonomous."""
-        pass
+        if DEBUG["auto_sequence_logging"] and self.auto_command:
+            self._auto_periodic_count += 1
+            if self.auto_command.isFinished():
+                _log.info(f"AUTO PERIODIC [{self._auto_periodic_count}]: auto command FINISHED")
+            elif self._auto_periodic_count % 20 == 0:
+                _log.info(f"AUTO PERIODIC [{self._auto_periodic_count}]: auto command running")
 
     def autonomousExit(self):
         """Called when autonomous mode ends."""
+        if DEBUG["auto_sequence_logging"]:
+            _log.info(f"AUTO EXIT: auto ended after {self._auto_periodic_count} cycles")
         if self.auto_command:
             self.auto_command.cancel()
+        self._auto_periodic_count = 0
 
     # --- Teleop ---
 

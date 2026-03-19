@@ -30,6 +30,7 @@ from telemetry.auto_aim_telemetry import (
     init_aim_dashboard_keys, publish_aim_dashboard,
 )
 from telemetry.auto_aim_logging import log_hold, log_drive
+from constants.debug import DEBUG
 from utils.logger import get_logger
 
 _log = get_logger("coordinate_aim")
@@ -87,6 +88,8 @@ class CoordinateAim(Command):
         self._last_state = None
         SmartDashboard.putBoolean("Shooter/AutoAim", True)
         _log.info("CoordinateAim ENABLED")
+        if DEBUG["auto_sequence_logging"]:
+            _log.info("AUTO SEQ: CoordinateAim initialize -- turret aiming started")
 
     def execute(self):
         # 1. Read shared context (pose, shooter, target, velocity)
@@ -186,6 +189,8 @@ class CoordinateAim(Command):
         SmartDashboard.putBoolean("Shooter/AutoAim", False)
         SmartDashboard.putBoolean("AutoAim/OnTarget", False)
         _log.info(f"CoordinateAim ended (interrupted={interrupted})")
+        if DEBUG["auto_sequence_logging"]:
+            _log.info(f"AUTO SEQ: CoordinateAim end -- ran {self._cycle_count} cycles")
 
     # --- Internal ---
 

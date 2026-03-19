@@ -13,6 +13,7 @@ DEBUG = {
     "turret_aim_telemetry": False,  # True = always publish turret error/distance (even without CoordinateAim active)
     "limelight_reset_logging": True,  # True = log full input/output details on Limelight one-shot pose resets
     "drive_input_logging": False,  # True = log drive input pipeline (raw stick, curved, velocity) to console + SmartDashboard
+    "auto_sequence_logging": True,  # True = log every auto event trigger, command start/stop, and path milestone
     # Match-only telemetry (always published):
     #   Motors/Launcher At Speed, Motors/Feeder Running, Motors/Turret Clear,
     #   Motors/Intake Running, AutoAim/HasTarget,

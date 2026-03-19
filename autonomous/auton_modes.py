@@ -29,6 +29,7 @@ from commands2 import Command, SequentialCommandGroup, ParallelRaceGroup, WaitCo
 from pathplannerlib.auto import AutoBuilder
 from pathplannerlib.path import PathPlannerPath
 
+from constants.debug import DEBUG
 from utils.logger import get_logger
 
 _log = get_logger("auton_modes")
@@ -36,6 +37,16 @@ _log = get_logger("auton_modes")
 # How long to keep auto-aim active after the path ends, while event marker
 # commands (ShooterStart, FeedersStart) finish their work.
 _POST_PATH_WAIT = 12.0
+
+
+    # All path names that may be used in auto routines.  Pre-loaded at
+    # construction so the expensive file I/O happens during robotInit,
+    # NOT during autonomousInit (where it eats into the 20-second auto).
+_ALL_PATH_NAMES = [
+    "Auto Blue Left", "Auto Blue Center", "Auto Blue Right",
+    "Auto Red Left", "Auto Red Center", "Auto Red Right",
+    "Mini Test",
+]
 
 
 class AutonModes:
@@ -57,6 +68,15 @@ class AutonModes:
         self.conveyor = conveyor
         self.vision = vision
 
+        # Pre-load all path files at construction (during robotInit).
+        self._cached_paths = {}
+        for name in _ALL_PATH_NAMES:
+            try:
+                self._cached_paths[name] = PathPlannerPath.fromPathFile(name)
+                _log.info(f"pre-loaded path '{name}' OK")
+            except Exception as e:
+                _log.warning(f"could not pre-load path '{name}': {e}")
+
     def do_nothing(self) -> Command:
         """Auto that does nothing - safe default."""
         _log.info("do_nothing: auto routine selected -- waiting 15s")
@@ -64,14 +84,19 @@ class AutonModes:
 
     def follow_path(self, path_name: str) -> Command:
         """Follow a PathPlanner path by name (without .path extension)."""
-        _log.info(f"follow_path: loading '{path_name}'")
-        try:
-            path = PathPlannerPath.fromPathFile(path_name)
-            _log.info(f"follow_path: loaded '{path_name}' OK")
-            return AutoBuilder.followPath(path)
-        except Exception as e:
-            _log.error(f"follow_path: FAILED to load '{path_name}': {e}")
-            return WaitCommand(15.0)
+        path = self._cached_paths.get(path_name)
+        if path is None:
+            _log.info(f"follow_path: '{path_name}' not cached, loading now")
+            try:
+                path = PathPlannerPath.fromPathFile(path_name)
+                self._cached_paths[path_name] = path
+            except Exception as e:
+                _log.error(f"follow_path: FAILED to load '{path_name}': {e}")
+                return WaitCommand(15.0)
+        _log.info(f"follow_path: using path '{path_name}'")
+        if DEBUG["auto_sequence_logging"]:
+            _log.info(f"AUTO SEQ: followPath('{path_name}') command created")
+        return AutoBuilder.followPath(path)
 
     def _build_routine(self, path_name: str) -> Command:
         """

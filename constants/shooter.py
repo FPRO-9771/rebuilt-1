@@ -104,7 +104,7 @@ CON_SHOOTER = {
     "turret_max_auto_voltage": 2.0,     # Max voltage during auto-aim (sqrt P handles decel now)
     "turret_max_brake_voltage": 2.5,    # Brake limit -- higher than drive to stop quickly
     "turret_min_move_voltage": 1.10,    # Deadband comp -- minimum voltage to overcome static friction
-    "turret_velocity_ff_gain": 0.25,     # Feedforward: volts per (m/s) of lateral robot velocity
+    "turret_velocity_ff_gain": -0.4,     # Feedforward: volts per (m/s) of lateral robot velocity
     "turret_tx_filter_alpha": 0.95,      # EMA smoothing for tx (0=max smooth, 1=no filter)
     "velocity_lead_enabled": True,       # Enable velocity lead compensation (aim ahead while moving)
 
@@ -114,9 +114,11 @@ CON_SHOOTER = {
     # Tune per-entry on real robot by shooting while strafing.
     # Sorted by distance -- interpolated at runtime
     "distance_table": [
-        (1.5, 33.0, 0, 5.0),
+        (1.5, 35.0, 0, 5.0),
         (2.0, 37.0, 0, 7.0),
-        (3.0, 47.0, 0, 9.0),
+        (3.0, 45.0, 0, 9.0),
+        (4.0, 54.0, 0, 12.0),
+        (5.0, 70.0, 0, 15.0),
     ],
 
     # Manual shoot stick mapping -- maps joystick Y to virtual distance,

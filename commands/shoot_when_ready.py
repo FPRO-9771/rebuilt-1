@@ -18,6 +18,7 @@ from subsystems.shooter_lookup import get_shooter_settings
 from commands.reverse_feeds import reverse_all_feeds, stop_all_feeds
 from constants import CON_H_FEED, CON_V_FEED
 from constants.shooter import CON_SHOOTER
+from constants.debug import DEBUG
 from telemetry.auto_aim_logging import log_shoot
 from utils.logger import get_logger
 
@@ -64,6 +65,8 @@ class ShootWhenReady(Command):
         self._unjam_counter = 0
         self._cycle_count = 0
         _log.info("ShootWhenReady ENABLED")
+        if DEBUG["auto_sequence_logging"]:
+            _log.info("AUTO SEQ: ShootWhenReady initialize -- spinning up launcher")
 
     def execute(self):
         # Always spin up launcher and set hood
@@ -77,6 +80,8 @@ class ShootWhenReady(Command):
         if at_speed and not self._reached_speed:
             _log.info("Launcher reached speed -- unlocked")
             self._reached_speed = True
+            if DEBUG["auto_sequence_logging"]:
+                _log.info(f"AUTO SEQ: ShootWhenReady launcher at speed after {self._cycle_count} cycles")
 
         # After speed gate passed, feed whenever turret is on target.
         # Debounce: start feeding instantly when on-target, but require
@@ -140,3 +145,5 @@ class ShootWhenReady(Command):
         self.hood._stop()
         stop_all_feeds(self.h_feed, self.v_feed, self.conveyor)
         _log.info(f"ShootWhenReady DISABLED (interrupted={interrupted})")
+        if DEBUG["auto_sequence_logging"]:
+            _log.info(f"AUTO SEQ: ShootWhenReady end -- ran {self._cycle_count} cycles, reached_speed={self._reached_speed}")
