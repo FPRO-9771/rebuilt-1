@@ -105,7 +105,7 @@ CON_SHOOTER = {
     "turret_max_brake_voltage": 2.5,    # Brake limit -- higher than drive to stop quickly
     "turret_min_move_voltage": 1.10,    # Deadband comp -- minimum voltage to overcome static friction
     "turret_velocity_ff_gain": 0.25,     # Feedforward: volts per (m/s) of lateral robot velocity
-    "turret_tx_filter_alpha": 0.85,      # EMA smoothing for tx (0=max smooth, 1=no filter)
+    "turret_tx_filter_alpha": 0.95,      # EMA smoothing for tx (0=max smooth, 1=no filter)
     "velocity_lead_enabled": True,       # Enable velocity lead compensation (aim ahead while moving)
 
     # Distance lookup table: (distance_m, launcher_rps, hood_position, ball_speed_mps)
@@ -118,4 +118,11 @@ CON_SHOOTER = {
         (2.0, 37.0, 0, 7.0),
         (3.0, 47.0, 0, 9.0),
     ],
+
+    # Manual shoot stick mapping -- maps joystick Y to virtual distance,
+    # then looks up RPS and hood from the distance table above.
+    # Stick -1 = min, stick 0 = center, stick +1 = max.
+    "manual_min_distance": 1.5,     # Stick full back
+    "manual_center_distance": 2.0,  # Stick at rest
+    "manual_max_distance": 3.0,     # Stick full forward
 }

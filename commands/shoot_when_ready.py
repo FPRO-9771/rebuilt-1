@@ -15,6 +15,7 @@ from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
 from subsystems.shooter_lookup import get_shooter_settings
+from commands.reverse_feeds import reverse_all_feeds, stop_all_feeds
 from constants import CON_H_FEED, CON_V_FEED
 from constants.shooter import CON_SHOOTER
 from telemetry.auto_aim_logging import log_shoot
@@ -34,12 +35,14 @@ class ShootWhenReady(Command):
         v_feed: VFeed,
         context_supplier: Callable,
         on_target_supplier: Callable[[], bool],
+        conveyor=None,
     ):
         super().__init__()
         self.launcher = launcher
         self.hood = hood
         self.h_feed = h_feed
         self.v_feed = v_feed
+        self.conveyor = conveyor
         self._context_supplier = context_supplier
         self._on_target_supplier = on_target_supplier
         self._reached_speed = False
@@ -48,7 +51,10 @@ class ShootWhenReady(Command):
         self._unjamming = False
         self._unjam_counter = 0
         self._cycle_count = 0
-        self.addRequirements(launcher, hood, h_feed, v_feed)
+        requirements = [launcher, hood, h_feed, v_feed]
+        if conveyor is not None:
+            requirements.append(conveyor)
+        self.addRequirements(*requirements)
 
     def initialize(self):
         self._reached_speed = False
@@ -92,11 +98,11 @@ class ShootWhenReady(Command):
                 self._feeding = False
 
         # --- Un-jam state machine ---
-        # While feeding, if H feed velocity drops near zero, reverse briefly.
+        # While feeding, if H feed velocity drops near zero, reverse all
+        # feeds briefly to clear the jam, then resume.
         if self._unjamming:
             self._unjam_counter -= 1
-            self.h_feed._set_voltage(CON_H_FEED["reverse_voltage"])
-            self.v_feed._stop()
+            reverse_all_feeds(self.h_feed, self.v_feed, self.conveyor)
             if self._unjam_counter <= 0:
                 self._unjamming = False
                 _log.info("Un-jam complete -- resuming feed")
@@ -106,14 +112,12 @@ class ShootWhenReady(Command):
                 self._unjamming = True
                 self._unjam_counter = CON_H_FEED["unjam_duration_cycles"]
                 _log.warning("H feed stalled -- un-jamming")
-                self.h_feed._set_voltage(CON_H_FEED["reverse_voltage"])
-                self.v_feed._stop()
+                reverse_all_feeds(self.h_feed, self.v_feed, self.conveyor)
             else:
                 self.h_feed._set_voltage(CON_H_FEED["feed_voltage"])
                 self.v_feed._set_voltage(CON_V_FEED["feed_voltage"])
         else:
-            self.h_feed._stop()
-            self.v_feed._stop()
+            stop_all_feeds(self.h_feed, self.v_feed, self.conveyor)
 
         log_shoot(
             self._cycle_count,
@@ -134,6 +138,5 @@ class ShootWhenReady(Command):
     def end(self, interrupted: bool):
         self.launcher._stop()
         self.hood._stop()
-        self.h_feed._stop()
-        self.v_feed._stop()
+        stop_all_feeds(self.h_feed, self.v_feed, self.conveyor)
         _log.info(f"ShootWhenReady DISABLED (interrupted={interrupted})")

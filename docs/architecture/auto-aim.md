@@ -2,6 +2,10 @@
 
 **Team 9771 FPRO - 2026**
 
+> **STATUS: ACTIVE.** CoordinateAim (left bumper toggle) and ShootWhenReady
+> (left trigger hold) are wired in `controls/operator_controls.py`. The system
+> uses drivetrain odometry -- no Limelight aiming.
+
 The auto-aim system uses drivetrain odometry to compute the turret angle needed to point at the alliance Hub. Every 20ms cycle, it reads a shared `ShootContext` (pose, shooter field position, target, velocity), calculates the angle from the shooter's actual field position to the Hub, applies movement compensation, routes through soft limits, filters, and feeds a PD controller that drives the turret motor.
 
 > **When to read this:** You are debugging auto-aim behavior, tuning PD gains, or trying to understand why the turret is (or isn't) moving.
@@ -28,7 +32,7 @@ The auto-aim system uses drivetrain odometry to compute the turret angle needed 
 
 ## 1. What CoordinateAim Does
 
-CoordinateAim is a WPILib `Command` toggled on/off with the **Y button**. While active, every 20ms cycle it:
+CoordinateAim is a WPILib `Command` toggled on/off with the **left bumper**. While active, every 20ms cycle it:
 
 1. Reads the shared `ShootContext` (pose, shooter field position, target, velocity)
 2. Computes the angle and distance from the shooter to the alliance Hub
@@ -38,7 +42,7 @@ CoordinateAim is a WPILib `Command` toggled on/off with the **Y button**. While 
 6. Computes a voltage via PD + feedforward control
 7. Sends that voltage to the turret motor
 
-CoordinateAim only controls the **turret**. It does NOT set flywheel speed, hood angle, or lock status -- those are AutoShoot's job. Both commands run simultaneously because they require different subsystems.
+CoordinateAim only controls the **turret**. It does NOT set flywheel speed, hood angle, or lock status -- those are ShootWhenReady's job. Both commands run simultaneously because they require different subsystems.
 
 Because the system uses odometry instead of AprilTags, there is no "Lost" state -- we always have a pose, so we always know where the Hub is. The turret is either actively driving toward the target or holding still because it is already on target.
 
@@ -46,7 +50,7 @@ Because the system uses odometry instead of AprilTags, there is no "Lost" state 
 
 ## 2. ShootContext Shared Supplier
 
-All three shooter commands (CoordinateAim, AutoShoot, ShootWhenReady) consume a shared `ShootContext` namedtuple from a single supplier built in `controls/operator_controls.py`. This eliminates duplicated pose/distance math -- every command sees the same shooter position, target, and velocity data.
+Both shooter commands (CoordinateAim and ShootWhenReady) consume a shared `ShootContext` namedtuple from a single supplier built in `controls/operator_controls.py`. This eliminates duplicated pose/distance math -- every command sees the same shooter position, target, and velocity data.
 
 ### ShootContext fields
 
@@ -170,7 +174,7 @@ The angle between where the turret is currently pointing and where it needs to p
 
 ### `compute_range_state()` -- distance and closing speed only
 
-A lighter function that skips the turret angle calculation. Used by the shared context supplier to compute raw distance and closing speed for the ShootContext. AutoShoot uses the ShootContext's `corrected_distance` (which includes velocity compensation) for lookup table queries.
+A lighter function that skips the turret angle calculation. Used by the shared context supplier to compute raw distance and closing speed for the ShootContext. ShootWhenReady uses the ShootContext's `corrected_distance` (which includes velocity compensation) for lookup table queries.
 
 ### Distance (meters)
 
@@ -216,7 +220,7 @@ The negation is required because `start_angle_deg` uses a CW-positive convention
 
 If ErrorDeg goes the wrong direction when you turn the turret, `center_position` sign is wrong.
 
-**Why the soft limits matter here:** the turret soft limits (`min_position = 0`, `max_position = 9`) are set by the energy chain and cannot be changed. At power-on (`tpos = 0`), the turret is at the minimum limit. It can only rotate CW (increasing tpos). If the error is negative (target is in the CCW direction), the router must send the turret the long way around CW, which takes more travel and time.
+**Why the soft limits matter here:** the turret soft limits (`min_position = 0`, `max_position = 9` for Minion, `9.5` for Kraken) are set by the energy chain and cannot be changed. At power-on (`tpos = 0`), the turret is at the minimum limit. It can only rotate CW (increasing tpos). If the error is negative (target is in the CCW direction), the router must send the turret the long way around CW, which takes more travel and time.
 
 ---
 
@@ -230,17 +234,71 @@ When the robot is rotating, the turret needs to counter-rotate to stay on target
 
 ### Lead correction (velocity lead)
 
-When the robot is strafing, the ball inherits the robot's lateral velocity. If the turret aims directly at the Hub, the ball will miss to the side.
+When the robot is moving, the ball inherits the robot's velocity. If the turret aims directly at the Hub, the ball will miss to the side.
+
+The lead correction decomposes the robot's full velocity vector (vx, vy) into **radial** (toward/away from Hub) and **tangential** (perpendicular to the shooter-to-hub line) components. Only the tangential component causes lateral miss -- the radial component is handled by distance compensation. This means the correction works regardless of which direction the swerve bot is driving relative to the Hub.
 
 The lead correction:
-1. Looks up ball speed at the current distance (from the distance table)
-2. Computes flight time = distance / ball_speed
-3. Computes lead distance = lateral velocity * flight time
-4. Computes lead angle = atan2(lead_distance, distance)
+1. Computes the bearing from the shooter to the Hub (field-frame radians)
+2. Decomposes (vx, vy) into tangential velocity using the cross product
+3. Looks up ball speed at the current distance (from the distance table)
+4. Computes flight time = distance / ball_speed
+5. Computes lead distance = tangential velocity * flight time
+6. Computes lead angle = atan2(lead_distance, distance)
 
 The correction aims the turret **ahead** of the Hub so the ball curves into it.
 
-**Config:** `CON_SHOOTER["velocity_lead_enabled"]` (bool). Feature-flagged and disabled by default until tuned on the real robot.
+### `velocity_lead.py` -- the lead calculation module
+
+The actual lead math lives in `calculations/velocity_lead.py`, separate from
+`movement_compensation.py` so it can be tested and understood in isolation.
+
+**Function:** `compute_velocity_lead(vx, vy, distance, bearing_rad)`
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `vx` | float | Robot forward velocity (m/s, field-relative) |
+| `vy` | float | Robot lateral velocity (m/s, field-relative) |
+| `distance` | float | Shooter-to-Hub distance (meters) |
+| `bearing_rad` | float | Angle from shooter to Hub (radians, field frame) |
+
+**Returns:** `(lead_deg, ball_speed)` tuple -- the correction in degrees to add
+to the turret error, and the ball speed used (m/s, for logging).
+
+**How it works:**
+
+1. Build a unit vector from shooter toward the Hub using `bearing_rad`
+2. Compute the tangential velocity -- the component of (vx, vy) perpendicular
+   to the shooter-to-Hub line, via a 2D cross product. Positive means the
+   robot is moving to the left of the Hub line.
+3. Look up ball speed at the current distance from the shooter distance table
+   (`subsystems/shooter_lookup.py` -- `get_ball_speed()`)
+4. Compute flight time = distance / ball_speed
+5. Compute lateral miss = tangential velocity * flight time
+6. Convert to an angle: `atan2(lateral_miss, distance)`
+
+If distance is <= 0.5 m, the function returns (0, 0) to avoid divide-by-zero
+and because lead is negligible at point-blank range.
+
+**How it plugs in:** `movement_compensation.py` calls `compute_velocity_lead()`
+when `CON_SHOOTER["velocity_lead_enabled"]` is True and distance > 0.5 m. The
+returned `lead_deg` is added to the turret error alongside the tracking
+correction. The second return value (ball_speed) is discarded by the caller but
+is available for telemetry or debugging.
+
+### Constants that control velocity lead
+
+| Constant | Location | Default | Description |
+|----------|----------|---------|-------------|
+| `velocity_lead_enabled` | `constants/shooter.py` (`CON_SHOOTER`) | True | Master on/off switch for the lead correction |
+| `ball_speed_mps` | distance table in `constants/shooter.py` | per-row | Ball speed at each distance; used to compute flight time |
+
+There is no separate "velocity lead gain" constant -- the correction is derived
+directly from physics (tangential velocity * flight time). To tune the lead
+amount, adjust the `ball_speed_mps` values in the distance table: lower ball
+speed means longer flight time, which increases the lead angle.
+
+> **Tuning guide:** See [Movement Compensation Tuning](../debugging/movement-compensation-tuning.md) for step-by-step practice field tuning instructions.
 
 ---
 
@@ -248,7 +306,7 @@ The correction aims the turret **ahead** of the Hub so the ball curves into it.
 
 `calculations/turret_routing.py` contains `choose_rotation_direction()`, which determines which way the turret should rotate to reach the target angle.
 
-The turret has soft limits (e.g., -0.5 to +0.5 rotations). The routing logic:
+The turret has soft limits (e.g., 0 to 9 rotations). The routing logic:
 
 1. Computes the shortest angular path to the target (clockwise vs counter-clockwise)
 2. Checks if that path stays within soft limits
@@ -291,7 +349,7 @@ Why sqrt? A linear P gain would saturate at the voltage clamp for large errors, 
 d_term = -turret_velocity * turret_d_velocity_gain
 ```
 
-This damps the turret's actual velocity (not the error derivative). It acts as a brake -- the faster the turret is spinning, the more it resists. This prevents overshoot. Too high and it causes sluggish response or oscillation; the current value (0.03) is intentionally light.
+This damps the turret's actual velocity (not the error derivative). It acts as a brake -- the faster the turret is spinning, the more it resists. This prevents overshoot. Too high and it causes sluggish response or oscillation; the current value (0.05) is intentionally light.
 
 ### Feedforward (lateral velocity)
 
@@ -307,20 +365,20 @@ Pre-compensates for robot lateral movement. If the robot is strafing right, the 
 raw_voltage = p_term * aim_sign + d_term + ff_term
 ```
 
-`aim_sign` is +1 or -1 depending on `turret_aim_inverted`. It flips the P term direction if the turret's wiring runs opposite to the expected convention.
+`aim_sign` is +1 or -1 depending on `turret_aim_inverted`. It flips the P term direction if the turret's wiring runs opposite to the expected convention. Currently `turret_aim_inverted = True`.
 
 ### Asymmetric clamping
 
 ```
-driving:  |voltage| <= turret_max_auto_voltage  (0.50V)
-braking:  |voltage| <= turret_max_brake_voltage (0.50V)
+driving:  |voltage| <= turret_max_auto_voltage  (2.0V)
+braking:  |voltage| <= turret_max_brake_voltage (2.5V)
 ```
 
 "Braking" = voltage opposes current turret direction. This allows the turret to stop faster than it accelerates, reducing overshoot.
 
 ### Deadband compensation
 
-If the turret is nearly stopped (`|velocity| < 0.05`) and the computed voltage is nonzero but below `turret_min_move_voltage` (0.35V), the voltage is bumped up to that minimum. This overcomes static friction so the turret actually starts moving on small corrections instead of sitting stuck.
+If the turret is nearly stopped (`|velocity| < 0.05`) and the computed voltage is nonzero but below `turret_min_move_voltage` (1.10V), the voltage is bumped up to that minimum. This overcomes static friction so the turret actually starts moving on small corrections instead of sitting stuck.
 
 ---
 
@@ -347,18 +405,18 @@ Auto-aim tuning constants live in three files:
 
 ### `constants/shooter.py` -- PD gains and voltage limits (`CON_SHOOTER`)
 
-| Constant | Default | What It Does |
-|----------|---------|--------------|
-| `turret_p_gain` | 0.08 | P gain (volts per sqrt-degree) -- higher = more aggressive aim |
-| `turret_d_velocity_gain` | 0.03 | Velocity damping -- higher = more braking, risk of oscillation |
-| `turret_aim_inverted` | False | Flip turret direction vs error convention |
+| Constant | Value | What It Does |
+|----------|-------|--------------|
+| `turret_p_gain` | 0.30 | P gain (volts per sqrt-degree) -- higher = more aggressive aim |
+| `turret_d_velocity_gain` | 0.05 | Velocity damping -- higher = more braking, risk of oscillation |
+| `turret_aim_inverted` | True | Flip turret direction vs error convention |
 | `turret_alignment_tolerance` | 1.5 | Degrees of error within which turret holds still |
-| `turret_max_auto_voltage` | 0.50 | Max driving voltage during auto-aim |
-| `turret_max_brake_voltage` | 0.50 | Max braking voltage (opposing turret direction) |
-| `turret_min_move_voltage` | 0.35 | Deadband compensation -- minimum voltage to overcome static friction |
-| `turret_velocity_ff_gain` | 0.15 | Feedforward gain for lateral robot velocity |
+| `turret_max_auto_voltage` | 2.0 | Max driving voltage during auto-aim |
+| `turret_max_brake_voltage` | 2.5 | Max braking voltage (opposing turret direction) |
+| `turret_min_move_voltage` | 1.10 | Deadband compensation -- minimum voltage to overcome static friction |
+| `turret_velocity_ff_gain` | 0.25 | Feedforward gain for lateral robot velocity |
 | `turret_tx_filter_alpha` | 0.85 | EMA smoothing (0 = max smooth, 1 = no filter) |
-| `velocity_lead_enabled` | False | Enable aim-ahead compensation while strafing |
+| `velocity_lead_enabled` | True | Enable aim-ahead compensation while strafing |
 
 ### `constants/match.py` -- Hub positions
 
@@ -386,16 +444,16 @@ calculations/
   shooter_position.py            # get_shooter_field_position() -- robot offset to field coords
   distance_compensation.py       # compute_corrected_distance() -- closing speed adjustment
   movement_compensation.py       # Tracking + lead corrections
+  velocity_lead.py               # Lead angle from tangential velocity + flight time
   turret_routing.py              # Shortest path within soft limits
   turret_pd.py                   # PD + FF + deadband voltage calculation
 
 commands/
   coordinate_aim.py              # Turret aiming command -- reads ShootContext
-  auto_shoot.py                  # Launcher/hood from distance -- reads ShootContext
-  shoot_when_ready.py            # Auto-shoot + auto-feed -- reads ShootContext
+  shoot_when_ready.py            # Launcher/hood/feed -- reads ShootContext
 
 controls/
-  operator_controls.py           # _make_shoot_context_supplier() -- builds the shared supplier
+  operator_controls.py           # _make_shoot_context_supplier() + button bindings
 
 constants/
   shooter.py                     # CON_SHOOTER: PD gains, voltage limits, feature flags
@@ -479,8 +537,8 @@ If the turret aims correctly when the robot is near the Hub but misses at long r
 ## 13. Common Failure Modes
 
 ### Turret does not move at all
-- CoordinateAim not toggled on (Y button)
-- Turret at soft limit and voltage would push further past it (check turret position vs limits in CON_TURRET)
+- CoordinateAim not toggled on (left bumper)
+- Turret at soft limit and voltage would push further past it (check turret position vs limits in CON_TURRET_MINION)
 - `turret_max_auto_voltage` set too low to overcome friction (below `turret_min_move_voltage`)
 
 ### Turret oscillates back and forth
@@ -502,7 +560,7 @@ If the turret aims correctly when the robot is near the Hub but misses at long r
 - `turret_max_brake_voltage` too low -- cannot stop fast enough
 
 ### Turret takes the long way around
-- Turret routing is choosing the wrong direction. Check if the soft limits in CON_TURRET are correct
+- Turret routing is choosing the wrong direction. Check if the soft limits in CON_TURRET_MINION are correct
 - If the turret is near a soft limit, routing may intentionally go the long way to avoid hitting it
 
 ### Odometry drift causes gradual aim error
@@ -514,6 +572,6 @@ If the turret aims correctly when the robot is near the Hub but misses at long r
 
 **See also:**
 - [Shooter System](shooter-system.md) -- Turret/launcher/hood subsystems and how commands compose
-- [Controls](controls.md) -- Y button binding and manual turret override
+- [Controls](controls.md) -- Button bindings and manual turret override
 - [Telemetry](telemetry.md) -- Dashboard setup and published keys
 - [Drivetrain](drivetrain.md) -- Odometry source for pose-based aiming

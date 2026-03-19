@@ -22,15 +22,15 @@ How pre-match alliance and starting pose selection works, and how it feeds into 
 
 ## 1. Overview
 
-Before each match, the drive team selects two things on the dashboard:
+Before each match, the drive team needs two things configured:
 
-- **Alliance** -- Red or Blue
-- **Starting Pose** -- where the robot starts on the field (Left, Center, Right)
+- **Alliance** -- read automatically from the Driver Station (set by FMS during competition, or manually in the DS app during practice)
+- **Starting Pose** -- selected on Elastic via a SendableChooser (Left, Center, Right)
 
 This selection determines:
 
-- Which AprilTags the auto-shooter tracks and in what priority order
-- Per-tag aiming offsets for the turret
+- Which AprilTags the vision system tracks and in what priority order
+- The Hub target position for the alliance (field coordinates)
 - The robot's starting position on the field (for odometry and PathPlanner)
 - Which autonomous path to run (future)
 
@@ -40,62 +40,64 @@ All of this lives in `constants/match.py` so the team can tune it without touchi
 
 ## 2. Configuration (constants/match.py)
 
-The `ALLIANCES` list is the single source of truth. Each alliance is a dict with tag priorities, per-tag offsets, and a list of starting poses:
+The `ALLIANCES` dict is the single source of truth. Each alliance is keyed by name ("Red" or "Blue") and contains the Hub target position, tag priorities, and a list of starting poses:
 
 ```python
-ALLIANCES = [
-    {
+ALLIANCES = {
+    "Red": {
         "name": "Red",
-        "default": True,           # Pre-selected in SmartDashboard
-        "tag_priority": [8, 9, 10, 11],  # Ordered: first visible wins
-        "tag_offsets": {
-            8:  {"tx_offset": 0.0, "distance_offset": 0.0},
-            # ... one entry per tag
-        },
+        "target_x": 12.0,          # Hub center, field coords (meters)
+        "target_y": 4.0,
+        "tag_priority": [8, 10, 11],  # Ordered: first visible wins
         "poses": [
             {
                 "name": "Center",
                 "default": True,
-                "start_x": 0.0,         # Field coordinates (meters)
-                "start_y": 0.0,
-                "start_heading": 0.0,   # Degrees
-                "auto_path": "",        # PathPlanner path name
+                "start_x": 13.0,        # Field coordinates (meters)
+                "start_y": 4.0,
+                "start_heading": 180.0, # Degrees
+                "auto_path": "TEST PATH FPRO",
             },
             # ... Left, Right
         ],
     },
-    # ... Blue alliance
-]
+    "Blue": {
+        "name": "Blue",
+        "target_x": 4.6,
+        "target_y": 4.0,
+        "tag_priority": [25, 26, 24, 27],
+        "poses": [
+            # ... Center (default), Left, Right
+        ],
+    },
+}
 ```
+
+A `DEFAULT_ALLIANCE` string (e.g., `"Red"`) controls which alliance is used when the Driver Station hasn't connected yet.
 
 ### Tag priority
 
-The `tag_priority` list controls which AprilTag the turret locks onto. The auto-tracker walks the list in order and locks onto the **first visible tag**. This means:
+The `tag_priority` list controls which AprilTag the vision system prefers. The list is walked in order -- the **first visible tag** wins. For example, for Red alliance:
 
-- Tag 8 is checked first. If the camera sees it, the turret locks on.
-- If tag 8 is not visible, tag 9 is checked, then 10, then 11.
-- Once locked, the turret stays on that tag even if a higher-priority tag briefly appears (stickiness prevents oscillation).
+- Tag 8 is checked first. If the camera sees it, that tag is used.
+- If tag 8 is not visible, tag 10 is checked, then 11.
 
-### Tag offsets
+### Hub target position
 
-Each tag has a `tx_offset` (degrees) and `distance_offset` (meters) to correct for the fact that the tag is not at the exact center of the Hub. These start at zero and get tuned on the real robot.
-
-### Stickiness
-
-`TARGET_LOCK_LOST_CYCLES` (also in `constants/match.py`) controls how long the tracker holds a lock after losing sight of the tag. At 50 Hz, the default of 10 cycles = 200 ms of grace period before the tracker releases and picks a new tag.
+Each alliance has `target_x` and `target_y` fields specifying the center of that alliance's Hub on the field in meters. The field origin (0, 0) is the bottom-left corner (blue driver station right corner).
 
 ---
 
 ## 3. SmartDashboard Choosers
 
-`match_setup.py` creates two `SendableChooser` widgets and publishes them to SmartDashboard:
+`match_setup.py` creates a `SendableChooser` for starting pose and publishes it to SmartDashboard. Alliance color is read directly from the Driver Station -- there is no alliance chooser.
 
-| Chooser | Key | Options |
-|---------|-----|---------|
-| Alliance | `Alliance` | One per entry in `ALLIANCES` |
-| Starting Pose | `Starting Pose` | Union of all pose names across alliances |
+| Widget | Key | Source |
+|--------|-----|--------|
+| Starting Pose | `Starting Pose` | SendableChooser with union of all pose names across alliances |
+| Is Red Alliance | `Match/Is Red Alliance` | Boolean published by `update()` while disabled |
 
-The choosers are built dynamically from the `ALLIANCES` config. Adding a new pose or alliance to `constants/match.py` automatically adds it to the dashboard -- no code changes needed.
+The pose chooser is built dynamically from the `ALLIANCES` config. Adding a new pose to `constants/match.py` automatically adds it to the dashboard -- no code changes needed.
 
 ### How it's created
 
@@ -107,7 +109,7 @@ from match_setup import MatchSetup
 
 class RobotContainer:
     def __init__(self):
-        self.match_setup = MatchSetup()  # Publishes choosers
+        self.match_setup = MatchSetup()  # Publishes pose chooser
         # ...
 ```
 
@@ -117,42 +119,33 @@ Other code calls these methods on `match_setup`:
 
 | Method | Returns |
 |--------|---------|
-| `get_alliance()` | The full alliance dict |
+| `get_alliance()` | The full alliance dict (reads DS color live) |
 | `get_pose_name()` | The selected pose name string |
 | `get_pose()` | The full pose dict for the selected alliance + pose |
-| `get_tag_priority()` | The ordered tag ID list |
-| `get_tag_offsets()` | The per-tag offsets dict |
+| `get_tag_priority()` | The ordered tag ID list for the current alliance |
+| `update()` | Publishes alliance indicator while disabled (call periodically) |
 
-These are passed as **suppliers** (callables) so the auto-tracker always reads the current selection, even if the kids change it between matches without restarting the robot code.
+These can be passed as **suppliers** (callables) so consumers always read the current selection, even if the alliance changes between matches without restarting the robot code.
 
 ---
 
 ## 4. How It Connects to Targeting
 
-The `AutoTracker` command (turret default command) receives two suppliers:
+The tag priority list from `get_tag_priority()` tells the vision system which AprilTags to prefer. The alliance's `target_x` and `target_y` provide the Hub position for pose-based aiming.
 
 ```python
-tracker = AutoTracker(
-    turret, vision,
-    tag_priority_supplier=match_setup.get_tag_priority,
-    tag_offsets_supplier=match_setup.get_tag_offsets,
-)
+# Example: getting targeting info from match setup
+tag_priority = match_setup.get_tag_priority()  # e.g. [8, 10, 11]
+alliance = match_setup.get_alliance()
+hub_x = alliance["target_x"]  # e.g. 12.0
+hub_y = alliance["target_y"]  # e.g. 4.0
 ```
-
-Every cycle, the tracker:
-
-1. Calls `tag_priority_supplier()` to get the current priority list
-2. If locked on a tag, tries to keep tracking it (stickiness)
-3. If no lock, walks the priority list and locks onto the first visible tag
-4. Applies the tag's offsets from `tag_offsets_supplier()`
-
-This eliminates the oscillation bug where the old code would flip between two equidistant tags every cycle.
 
 ---
 
 ## 5. How It Will Connect to Autonomous
 
-Each pose has `start_x`, `start_y`, `start_heading`, and `auto_path` fields. These are placeholders for PathPlanner integration:
+Each pose has `start_x`, `start_y`, `start_heading`, and `auto_path` fields. These support PathPlanner integration:
 
 - **Starting position** -- set the robot's initial odometry pose from `get_pose()`
 - **Auto path** -- use the `auto_path` name to load a PathPlanner trajectory
@@ -172,33 +165,34 @@ if pose["auto_path"]:
 ### In Elastic Dashboard
 
 1. Connect to the robot (see [Dashboard Setup](../dashboard-setup.md))
-2. Look for **Alliance** and **Starting Pose** in the sidebar under SmartDashboard
-3. Drag both onto your layout -- they appear as dropdown widgets
+2. Look for **Starting Pose** in the sidebar under SmartDashboard
+3. Drag it onto your layout -- it appears as a dropdown widget
 4. Drag **Match/Is Red Alliance** onto your layout for a big color indicator:
    - Right-click the widget, change to **Boolean Box**
    - Set **True color** to red, **False color** to blue
    - Resize it big so you can see it from across the pit
-5. Select the correct alliance and starting pose before each match
+5. Select the correct starting pose before each match
 6. Save your layout so they're always visible
 
 ### In Shuffleboard
 
 1. Connect to the robot
-2. The choosers appear under SmartDashboard in the sources panel
-3. Drag them onto a tab
-4. They display as dropdown menus
+2. The pose chooser appears under SmartDashboard in the sources panel
+3. Drag it onto a tab
+4. It displays as a dropdown menu
 
 ### In Simulation
 
 1. Run `python -m robotpy sim`
-2. Open the sim GUI -- the choosers appear under SmartDashboard
-3. Select values to test different alliance/pose combinations
+2. Open the sim GUI -- the pose chooser appears under SmartDashboard
+3. Select values to test different pose combinations
 
 ### Pre-match checklist
 
-1. Verify alliance matches your actual alliance color
-2. Verify starting pose matches where the robot is placed
-3. Double-check after field reset -- the dashboard remembers the last selection
+1. Verify alliance color in the Driver Station app matches your actual alliance
+2. Check the **Is Red Alliance** indicator on Elastic to confirm
+3. Verify starting pose matches where the robot is placed
+4. Double-check after field reset -- the DS remembers the alliance, and the dashboard remembers the pose
 
 ---
 
@@ -221,13 +215,13 @@ To add a new starting pose (e.g., "Far Left"):
 
 3. That's it -- the SmartDashboard chooser will include it automatically
 
-To add tag offsets for a new tag, add an entry to the alliance's `"tag_offsets"` dict and include the tag ID in `"tag_priority"`.
+To change tag priorities, edit the `"tag_priority"` list in the relevant alliance entry.
 
 ---
 
 **See also:**
 
-- [Controls & Manual Overrides](controls.md) -- how the auto-tracker fits into operator controls
+- [Controls & Manual Overrides](controls.md) -- how operator controls work
 - [Vision System](vision.md) -- AprilTag detection and the vision abstraction layer
 - [Autonomous](autonomous.md) -- autonomous routines (will use match setup for paths)
 - [Dashboard Setup](../dashboard-setup.md) -- how to open and configure the dashboard

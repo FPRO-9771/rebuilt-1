@@ -14,13 +14,14 @@ import math
 from calculations.velocity_lead import compute_velocity_lead
 
 
-def compute_movement_correction(vx, vy, distance_m, config):
+def compute_movement_correction(vx, vy, distance_m, bearing_rad, config):
     """Compute aiming corrections for robot movement.
 
     Args:
         vx: robot forward velocity (m/s, field-relative)
         vy: robot lateral velocity (m/s, field-relative)
         distance_m: distance to target (meters)
+        bearing_rad: angle from shooter to hub (radians, field frame)
         config: CON_SHOOTER dict with velocity_ff_gain and velocity_lead_enabled
 
     Returns:
@@ -31,9 +32,12 @@ def compute_movement_correction(vx, vy, distance_m, config):
     # while the robot moves laterally. Uses vy (lateral component).
     tracking_correction_deg = vy * config["turret_velocity_ff_gain"]
 
-    # Lead correction: aim ahead so ball arrives on target
+    # Lead correction: aim ahead so ball arrives on target.
+    # Uses full velocity decomposed into tangential component.
     lead_correction_deg = 0.0
     if config["velocity_lead_enabled"] and distance_m > 0.5:
-        lead_correction_deg, _ = compute_velocity_lead(vy, distance_m)
+        lead_correction_deg, _ = compute_velocity_lead(
+            vx, vy, distance_m, bearing_rad,
+        )
 
     return tracking_correction_deg, lead_correction_deg

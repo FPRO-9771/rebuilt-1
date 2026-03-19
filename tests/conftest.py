@@ -10,7 +10,7 @@ If you need a constant in a test, import it from here -- not from constants/.
 import pytest
 
 from hardware import set_mock_mode
-from handlers import set_mock_vision_mode
+# from handlers import set_mock_vision_mode  # vision providers disabled
 
 
 # ============================================================================
@@ -104,11 +104,12 @@ TEST_CON_SHOOTER = {
         (3.0, 60.0, 0.30, 8.0),
         (4.0, 80.0, 0.40, 10.0),
     ],
+    "manual_min_distance": 1.0,
+    "manual_center_distance": 2.0,
+    "manual_max_distance": 4.0,
 }
 
 TEST_CON_MANUAL = {
-    "launcher_min_rps": 20.0,
-    "launcher_max_rps": 100.0,
     "hood_default_position": 0.5,
     "hood_position_step": 0.1,
 }
@@ -167,12 +168,7 @@ def mock_hardware():
     set_mock_mode(False)
 
 
-@pytest.fixture(autouse=True)
-def mock_vision():
-    """Automatically use mock vision for all tests."""
-    set_mock_vision_mode(True)
-    yield
-    set_mock_vision_mode(False)
+# mock_vision fixture removed -- vision providers disabled (2026-03-19)
 
 
 @pytest.fixture(autouse=True)
@@ -195,8 +191,7 @@ def _patch_constants(monkeypatch):
     monkeypatch.setattr("commands.coordinate_aim.CON_SHOOTER", TEST_CON_SHOOTER)
     monkeypatch.setattr("commands.coordinate_aim.CON_POSE", TEST_CON_POSE)
 
-    # Operator controls (distance supplier uses CON_POSE)
-    monkeypatch.setattr("controls.operator_controls.CON_POSE", TEST_CON_POSE)
+    # Operator controls -- CON_POSE removed (shoot context supplier commented out)
 
     # Intake
     monkeypatch.setattr("subsystems.intake.CON_INTAKE", TEST_CON_INTAKE)
@@ -204,8 +199,10 @@ def _patch_constants(monkeypatch):
     monkeypatch.setattr("commands.run_intake.CON_INTAKE", TEST_CON_INTAKE)
     monkeypatch.setattr("commands.run_intake.CON_INTAKE_SPINNER", TEST_CON_INTAKE_SPINNER)
 
+    # Manual shoot / launcher -- stick-to-distance mapping uses CON_SHOOTER
+    monkeypatch.setattr("commands.manual_shoot.CON_SHOOTER", TEST_CON_SHOOTER)
+
     # Other commands
-    monkeypatch.setattr("commands.manual_launcher.CON_MANUAL", TEST_CON_MANUAL)
     monkeypatch.setattr("commands.manual_hood.CON_MANUAL", TEST_CON_MANUAL)
     monkeypatch.setattr("commands.manual_hood.CON_HOOD", TEST_CON_HOOD)
 

@@ -79,6 +79,53 @@ def get_bot_pose_estimate_wpi_blue_megatag2(
     )
 
 
+def get_bot_pose_estimate_wpi_blue_megatag1(
+    limelight_name: str = "limelight",
+) -> Optional[PoseEstimate]:
+    """
+    Read MegaTag1 bot-pose from NetworkTables (WPILib Blue origin).
+
+    MT1 uses pure AprilTag geometry without gyro fusion, making it
+    better suited for one-shot pose resets.
+
+    Returns None if no data is available or no tags are visible.
+    """
+    table = _get_table(limelight_name)
+    data = table.getEntry("botpose_wpiblue").getDoubleArray([])
+    if len(data) < 11:
+        return None
+
+    x = data[0]
+    y = data[1]
+    yaw_deg = data[5]
+    latency_ms = data[6]
+    tag_count = int(data[7])
+    tag_span = data[8]
+    avg_tag_dist = data[9]
+    avg_tag_area = data[10]
+
+    if tag_count < 1:
+        return None
+
+    pose = Pose2d(x, y, Rotation2d(degreesToRadians(yaw_deg)))
+    timestamp = (
+        table.getEntry("botpose_wpiblue")
+        .getLastChange() / 1_000_000.0
+        - latency_ms / 1000.0
+    )
+
+    return PoseEstimate(
+        pose=pose,
+        timestamp_seconds=timestamp,
+        latency=latency_ms,
+        tag_count=tag_count,
+        tag_span=tag_span,
+        avg_tag_dist=avg_tag_dist,
+        avg_tag_area=avg_tag_area,
+        raw_data=list(data),
+    )
+
+
 def set_robot_orientation(
     limelight_name: str,
     yaw_degrees: float,

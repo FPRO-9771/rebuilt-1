@@ -16,6 +16,8 @@ from handlers.limelight_helpers import (
     get_bot_pose_estimate_wpi_blue_megatag2,
     set_robot_orientation,
 )
+from constants.debug import DEBUG
+from constants.match import HUB_RESET_POSES
 from utils.logger import get_logger
 
 _log = get_logger("drivetrain")
@@ -325,77 +327,86 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                 )
                 self._has_applied_operator_perspective = True
 
-        # --- MegaTag2: send gyro heading every loop ---
-        yaw_deg = self.pigeon2.get_yaw().value_as_double
+        # --- MegaTag2: always send heading so Limelight can fuse ---
+        # This is cheap (6 doubles to NT) and must run every loop so
+        # MegaTag2 can break the single-tag PnP ambiguity.
+        yaw_deg = self.get_pose().rotation().degrees()
         set_robot_orientation(self._LIMELIGHT_NAME, yaw_deg)
 
-        # --- MegaTag2: read pose estimate and publish debug telemetry ---
-        reset_applied = False
-        estimate = get_bot_pose_estimate_wpi_blue_megatag2(
-            self._LIMELIGHT_NAME
-        )
-
-        tag_count = estimate.tag_count if estimate else 0
-        tag_visible = tag_count > 0
-
-        # Current estimated pose
-        pose = self.get_pose()
-        SmartDashboard.putNumber("Limelight/EstPose X", pose.x)
-        SmartDashboard.putNumber("Limelight/EstPose Y", pose.y)
-        SmartDashboard.putNumber(
-            "Limelight/EstPose Rot",
-            pose.rotation().degrees(),
-        )
-
-        # Raw MegaTag2 pose (even if not used for reset)
-        if estimate:
-            SmartDashboard.putNumber(
-                "Limelight/MT2 Pose X", estimate.pose.x
-            )
-            SmartDashboard.putNumber(
-                "Limelight/MT2 Pose Y", estimate.pose.y
-            )
-            SmartDashboard.putNumber(
-                "Limelight/MT2 Pose Rot",
-                estimate.pose.rotation().degrees(),
-            )
-            SmartDashboard.putNumber(
-                "Limelight/Latency ms", estimate.latency
-            )
-        else:
-            SmartDashboard.putNumber("Limelight/MT2 Pose X", 0.0)
-            SmartDashboard.putNumber("Limelight/MT2 Pose Y", 0.0)
-            SmartDashboard.putNumber("Limelight/MT2 Pose Rot", 0.0)
-            SmartDashboard.putNumber("Limelight/Latency ms", 0.0)
-
-        SmartDashboard.putNumber("Limelight/Tag Count", tag_count)
-        SmartDashboard.putBoolean("Limelight/Tag Visible", tag_visible)
-        SmartDashboard.putBoolean(
-            "Limelight/Reset Enabled", self._limelight_reset_enabled
-        )
-
-        # Apply vision measurement once and auto-disable (one-shot reset)
-        if self._limelight_reset_enabled and estimate and tag_visible:
-            self.add_vision_measurement(
-                estimate.pose, estimate.timestamp_seconds
-            )
-            self._limelight_reset_enabled = False
-            reset_applied = True
-            _log.info(
-                f"MT2 one-shot reset: x={estimate.pose.x:.2f} "
-                f"y={estimate.pose.y:.2f} "
-                f"rot={estimate.pose.rotation().degrees():.1f} "
-                f"tags={estimate.tag_count}"
+        # Only read/apply the pose estimate when a reset is pending.
+        # The NT read + parse is the expensive part we gate.
+        if self._limelight_reset_enabled:
+            odom_pose = self.get_pose()
+            estimate = get_bot_pose_estimate_wpi_blue_megatag2(
+                self._LIMELIGHT_NAME
             )
 
-        SmartDashboard.putBoolean(
-            "Limelight/Reset Applied", reset_applied
-        )
+            if estimate and estimate.tag_count > 0:
+                # Use vision X/Y but keep current gyro heading
+                corrected = Pose2d(
+                    estimate.pose.x,
+                    estimate.pose.y,
+                    odom_pose.rotation(),
+                )
+                self.reset_pose(corrected)
+                self._limelight_reset_enabled = False
+
+                if DEBUG["limelight_reset_logging"]:
+                    _log.info(
+                        f"MT2 RESET | "
+                        f"sent_yaw={yaw_deg:.1f} | "
+                        f"odom_before=({odom_pose.x:.2f}, "
+                        f"{odom_pose.y:.2f}, "
+                        f"{odom_pose.rotation().degrees():.1f}) | "
+                        f"vision_raw=({estimate.pose.x:.2f}, "
+                        f"{estimate.pose.y:.2f}, "
+                        f"{estimate.pose.rotation().degrees():.1f}) | "
+                        f"applied=({corrected.x:.2f}, "
+                        f"{corrected.y:.2f}, "
+                        f"{corrected.rotation().degrees():.1f}) | "
+                        f"tags={estimate.tag_count} "
+                        f"avg_dist={estimate.avg_tag_dist:.2f}m "
+                        f"avg_area={estimate.avg_tag_area:.2f} "
+                        f"latency={estimate.latency:.0f}ms"
+                    )
+                else:
+                    _log.info(
+                        f"MT2 reset: "
+                        f"({odom_pose.x:.1f},{odom_pose.y:.1f})"
+                        f"->({corrected.x:.1f},{corrected.y:.1f}) "
+                        f"tags={estimate.tag_count}"
+                    )
+            elif DEBUG["limelight_reset_logging"]:
+                _log.warning(
+                    f"MT2 RESET FAILED | "
+                    f"sent_yaw={yaw_deg:.1f} | "
+                    f"odom=({odom_pose.x:.2f}, "
+                    f"{odom_pose.y:.2f}, "
+                    f"{odom_pose.rotation().degrees():.1f}) | "
+                    f"estimate={'no tags' if estimate else 'no data'}"
+                )
 
     def request_limelight_reset(self) -> None:
         """Request a one-shot Limelight MegaTag2 odometry reset."""
         self._limelight_reset_enabled = True
         _log.info("Limelight one-shot reset requested")
+
+    def request_hub_reset(self) -> None:
+        """Hard-reset odometry to the front of the alliance Hub."""
+        alliance = DriverStation.getAlliance()
+        if alliance == DriverStation.Alliance.kBlue:
+            key = "Blue"
+        else:
+            key = "Red"
+        pose_cfg = HUB_RESET_POSES[key]
+        pose = Pose2d(pose_cfg["x"], pose_cfg["y"],
+                      Rotation2d.fromDegrees(pose_cfg["heading"]))
+        self.reset_pose(pose)
+        _log.warning(
+            f"HUB RESET ({key}): "
+            f"x={pose_cfg['x']:.2f} y={pose_cfg['y']:.2f} "
+            f"heading={pose_cfg['heading']:.0f}"
+        )
 
     def _start_sim_thread(self):
         def _sim_periodic():

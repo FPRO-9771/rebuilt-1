@@ -137,6 +137,6 @@ class RobotContainer:
 
 **See also:**
 - [Hardware & Subsystems](hardware-and-subsystems.md) - How subsystems expose commands
-- [Shooter System](shooter-system.md) - Composable command modules (AutoAim, AutoShoot, ManualLauncher)
+- [Shooter System](shooter-system.md) - Composable command modules (CoordinateAim, ShootWhenReady, ManualShoot)
 - [Controls & Manual Overrides](controls.md) - Extracting bindings from robot_container, operator control map
 - [Autonomous](autonomous.md) - Composing commands into auto routines

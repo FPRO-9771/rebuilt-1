@@ -12,6 +12,7 @@ Pipeline each cycle:
   6. PD control -> voltage
 """
 
+import math
 from typing import Callable
 
 from commands2 import Command
@@ -70,7 +71,7 @@ class CoordinateAim(Command):
     def get_target_state(self):
         """Return the most recent TargetState, or None if not active.
 
-        Allows other commands (e.g. AutoShoot) to read distance and
+        Allows other commands (e.g. ShootWhenReady) to read distance and
         closing speed without duplicating the pose calculation.
         """
         if not self._active:
@@ -104,8 +105,11 @@ class CoordinateAim(Command):
         self._last_state = state
 
         # 3. Compute movement corrections
+        # bearing_deg is the angle from robot front to hub; convert to
+        # field-frame radians by adding heading, for velocity decomposition.
+        bearing_field_rad = math.radians(state.bearing_deg + ctx.heading_deg)
         tracking_deg, lead_deg = compute_movement_correction(
-            ctx.vx, ctx.vy, state.distance_m, CON_SHOOTER,
+            ctx.vx, ctx.vy, state.distance_m, bearing_field_rad, CON_SHOOTER,
         )
 
         # 4. Combine raw aim

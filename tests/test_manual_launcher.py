@@ -1,10 +1,12 @@
 """
 Tests for manual launcher command.
+Stick maps to virtual distance via the distance table, which provides RPS.
 """
 
 from subsystems.launcher import Launcher
 from commands.manual_launcher import ManualLauncher
-from tests.conftest import TEST_CON_MANUAL
+from subsystems.shooter_lookup import get_shooter_settings
+from tests.conftest import TEST_CON_SHOOTER
 
 
 def _make_manual_launcher(stick_value=0.0):
@@ -13,37 +15,40 @@ def _make_manual_launcher(stick_value=0.0):
     return cmd, launcher
 
 
-def test_stick_center_gives_midpoint_rps():
-    """Stick at center (0) produces midpoint of min/max RPS."""
+def test_stick_center_gives_center_distance_rps():
+    """Stick at center (0) produces RPS for center distance."""
     cmd, launcher = _make_manual_launcher(stick_value=0.0)
 
     cmd.initialize()
     cmd.execute()
 
-    min_rps = TEST_CON_MANUAL["launcher_min_rps"]
-    max_rps = TEST_CON_MANUAL["launcher_max_rps"]
-    expected = (min_rps + max_rps) / 2.0
-    assert launcher.motor._velocity == expected
+    center_d = TEST_CON_SHOOTER["manual_center_distance"]
+    expected_rps, _ = get_shooter_settings(center_d)
+    assert launcher.motor._velocity == expected_rps
 
 
-def test_stick_full_forward_gives_max_rps():
-    """Stick full forward (1.0) produces max RPS."""
+def test_stick_full_forward_gives_max_distance_rps():
+    """Stick full forward (1.0) produces RPS for max distance."""
     cmd, launcher = _make_manual_launcher(stick_value=1.0)
 
     cmd.initialize()
     cmd.execute()
 
-    assert launcher.motor._velocity == TEST_CON_MANUAL["launcher_max_rps"]
+    max_d = TEST_CON_SHOOTER["manual_max_distance"]
+    expected_rps, _ = get_shooter_settings(max_d)
+    assert launcher.motor._velocity == expected_rps
 
 
-def test_stick_full_back_gives_min_rps():
-    """Stick full back (-1.0) produces min RPS."""
+def test_stick_full_back_gives_min_distance_rps():
+    """Stick full back (-1.0) produces RPS for min distance."""
     cmd, launcher = _make_manual_launcher(stick_value=-1.0)
 
     cmd.initialize()
     cmd.execute()
 
-    assert launcher.motor._velocity == TEST_CON_MANUAL["launcher_min_rps"]
+    min_d = TEST_CON_SHOOTER["manual_min_distance"]
+    expected_rps, _ = get_shooter_settings(min_d)
+    assert launcher.motor._velocity == expected_rps
 
 
 def test_stops_on_end():

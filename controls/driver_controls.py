@@ -5,7 +5,7 @@ All driver button/stick mappings live here to keep robot_container short.
 Controls:
     Left stick      -- Drive (X/Y translation)
     Right stick X   -- Rotation
-    A button        -- Drive straight forward (alignment test, 25% speed)
+    A button        -- Manual Hub odometry reset (when all else fails)
     B button        -- One-shot Limelight MegaTag2 odometry reset
     Left bumper     -- Reset field-centric heading
     Right bumper    -- Toggle field-centric / robot-centric
@@ -84,8 +84,6 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
     drive_exp = CON_ROBOT["drive_exponent"]
     rot_exp = CON_ROBOT["rotation_exponent"]
 
-    _drive_log_counter = {"n": 0}
-
     def get_drive_request():
         req = drive_rc if state["robot_centric"] else drive_fc
         if DEBUG["debug_telemetry"]:
@@ -106,31 +104,6 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
         vel_y = -_apply_curve(raw_lx, drive_exp) * max_speed * speed_scale
         rot = -_apply_curve(raw_rx, rot_exp) * max_angular_rate * speed_scale
 
-        # Log inputs + module states when driving (every 10th cycle ~2 Hz)
-        # is_driving = abs(vel_x) > 0.01 or abs(vel_y) > 0.01 or abs(rot) > 0.01
-        # if DEBUG["verbose"] and is_driving:
-        #     _drive_log_counter["n"] += 1
-        #     if _drive_log_counter["n"] % 10 == 0:
-        #         _log.debug(
-        #             f"INPUTS  joy_ly={raw_ly:+.3f} joy_lx={raw_lx:+.3f}"
-        #             f" joy_rx={raw_rx:+.3f}"
-        #             f" | cmd vx={vel_x:+.2f} vy={vel_y:+.2f} rot={rot:+.3f}"
-        #         )
-        #         dt_state = drivetrain.get_state()
-        #         heading = dt_state.pose.rotation().degrees()
-        #         for i, (ms, mt) in enumerate(
-        #             zip(dt_state.module_states, dt_state.module_targets)
-        #         ):
-        #             _log.debug(
-        #                 f"  MOD[{i}] angle={ms.angle.degrees():+7.1f}deg"
-        #                 f" speed={ms.speed:+.2f}m/s"
-        #                 f" | target angle={mt.angle.degrees():+7.1f}deg"
-        #                 f" speed={mt.speed:+.2f}m/s"
-        #             )
-        #         _log.debug(f"  GYRO heading={heading:+.1f}deg")
-        # elif not is_driving:
-        #     _drive_log_counter["n"] = 0
-
         return (
             req.with_velocity_x(vel_x)
             .with_velocity_y(vel_y)
@@ -147,20 +120,9 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
         drivetrain.apply_request(lambda: idle).ignoringDisable(True)
     )
 
-    # --- A button: drive straight forward (alignment test, 25% speed) ---
-    drive_straight = (
-        swerve.requests.RobotCentric()
-        .with_drive_request_type(
-            swerve.SwerveModule.DriveRequestType.VELOCITY
-        )
-    )
-    driver.a().whileTrue(
-        drivetrain.apply_request(
-            lambda: drive_straight
-            .with_velocity_x(max_speed * 0.25)
-            .with_velocity_y(0)
-            .with_rotational_rate(0)
-        )
+    # --- A button: manual Hub odometry reset (when all else fails) ---
+    driver.a().onTrue(
+        InstantCommand(drivetrain.request_hub_reset)
     )
 
     # --- B button: one-shot Limelight MegaTag2 odometry reset ---

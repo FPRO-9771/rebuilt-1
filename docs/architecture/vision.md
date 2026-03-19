@@ -2,20 +2,29 @@
 
 **Team 9771 FPRO - 2026**
 
-This doc covers using Limelight cameras for AprilTag detection and alignment, including the testable vision abstraction layer.
+This doc covers using Limelight cameras for AprilTag detection, the testable vision abstraction layer, and MegaTag2 odometry.
 
-> **When to read this:** You're working with Limelight vision for auto alignment, teleop assist, or any vision use.
+> **When to read this:** You're working with Limelight vision for odometry, teleop assist, or any vision use.
+
+> **Current status (March 2026):** The vision abstraction layer (VisionProvider,
+> LimelightVisionProvider, MockVisionProvider) exists in code but is **not wired
+> up** in `robot_container.py`. The factory functions in `handlers/__init__.py`
+> are commented out. Right now the team is focused on **Limelight MegaTag2
+> odometry** via `handlers/limelight_helpers.py`, which uses NetworkTables
+> directly and does not go through the VisionProvider layer.
 
 ---
 
 ## Table of Contents
 
 1. [What Limelight Provides](#1-what-limelight-provides)
-2. [How We Used It in 2025](#2-how-we-used-it-in-2025)
-3. [Configuration for Vision](#3-configuration-for-vision)
-4. [Making Vision Testable (NEW for 2026)](#4-making-vision-testable-new-for-2026)
-5. [Testing Vision-Based Commands](#5-testing-vision-based-commands)
-6. [Tips for Vision Testing](#6-tips-for-vision-testing)
+2. [Limelight Network Setup](#2-limelight-network-setup)
+3. [MegaTag2 Odometry (Active)](#3-megatag2-odometry-active)
+4. [Vision Abstraction Layer (Inactive)](#4-vision-abstraction-layer-inactive)
+5. [Vision Configuration](#5-vision-configuration)
+6. [Vision Telemetry](#6-vision-telemetry)
+7. [Testing Vision-Based Commands](#7-testing-vision-based-commands)
+8. [Tips for Vision Testing](#8-tips-for-vision-testing)
 
 ---
 
@@ -25,7 +34,7 @@ The Limelight camera detects AprilTags and provides:
 
 | Field | Description |
 |-------|-------------|
-| `tag_id` | Which AprilTag was detected (e.g., 20 = blue reef left) |
+| `tag_id` | Which AprilTag was detected |
 | `tx` | Horizontal offset in degrees (negative = target left of center) |
 | `ty` | Vertical offset in degrees |
 | `distance` | 3D distance to target in meters |
@@ -35,132 +44,7 @@ The Limelight camera detects AprilTags and provides:
 
 ---
 
-## 2. How We Used It in 2025
-
-**LimelightHandler** (`handlers/limelight_handler.py`) wrapped the limelight library:
-
-```python
-# handlers/limelight_handler.py (simplified from phoenix-v1)
-
-import math
-import limelight
-import limelightresults
-
-class LimelightHandler:
-    def __init__(self, debug=True):
-        # Auto-discover Limelight on network
-        discovered = limelight.discover_limelights(debug=debug)
-        if discovered:
-            self.limelight = limelight.Limelight(discovered[0])
-            self.limelight.pipeline_switch(0)  # AprilTag pipeline
-            self.limelight.enable_websocket()
-        else:
-            self.limelight = None
-            print("WARNING: No Limelight found!")
-
-    def get_target_data(self, target_tag_id=None):
-        """Get processed data for a specific AprilTag or closest one."""
-        if not self.limelight:
-            return None
-
-        result = self.limelight.get_latest_results()
-        parsed = limelightresults.parse_results(result)
-
-        if not parsed or not parsed.fiducialResults:
-            return None
-
-        # Find the requested tag, or closest if not specified
-        selected = None
-        if target_tag_id:
-            for tag in parsed.fiducialResults:
-                if tag.fiducial_id == target_tag_id:
-                    selected = tag
-                    break
-
-        if not selected:
-            # Find closest tag
-            closest_dist = float('inf')
-            for tag in parsed.fiducialResults:
-                pos = tag.target_pose_camera_space
-                dist = math.sqrt(pos[0]**2 + pos[1]**2 + pos[2]**2)
-                if dist < closest_dist:
-                    closest_dist = dist
-                    selected = tag
-
-        if not selected:
-            return None
-
-        # Build clean data dict
-        pos = selected.target_pose_camera_space
-        return {
-            'tag_id': selected.fiducial_id,
-            'tx': selected.target_x_degrees,      # Horizontal offset
-            'ty': selected.target_y_degrees,      # Vertical offset
-            'distance': math.sqrt(pos[0]**2 + pos[1]**2 + pos[2]**2),
-            'yaw': pos[4],
-            'pitch': pos[3],
-            'roll': pos[5],
-            'x_pos': pos[0],
-            'y_pos': pos[1],
-            'z_pos': pos[2],
-        }
-```
-
-**AutonDrive** used the handler to align to AprilTags:
-
-```python
-# autonomous/auton_drive.py (simplified from phoenix-v1)
-
-class AutonDrive(SubsystemBase):
-    def __init__(self, drivetrain, limelight_handler):
-        self.drivetrain = drivetrain
-        self.limelight = limelight_handler
-
-    def align_to_tag(self, target_tag_id) -> Command:
-        """Align robot to face an AprilTag."""
-
-        class AlignCommand(Command):
-            def __init__(self, outer, tag_id):
-                super().__init__()
-                self.outer = outer
-                self.tag_id = tag_id
-                self.on_target = False
-
-            def execute(self):
-                data = self.outer.limelight.get_target_data(self.tag_id)
-                if not data:
-                    return  # Lost target
-
-                # Calculate drive corrections from vision data
-                # tx > 0 means target is to the right, so rotate right (negative)
-                rotation = -data['tx'] * 0.1  # P gain for rotation
-
-                # distance > target means move forward
-                speed_x = (data['distance'] - 1.0) * 0.5  # P gain, target 1m
-
-                # Strafe based on tx to center horizontally
-                speed_y = -data['tx'] * 0.05
-
-                self.outer.drive_robot(rotation, speed_x, speed_y)
-
-                # Check if on target
-                self.on_target = (
-                    abs(data['tx']) < 2.0 and      # Within 2 degrees
-                    abs(data['distance'] - 1.0) < 0.1  # Within 10cm of target
-                )
-
-            def isFinished(self):
-                return self.on_target
-
-            def end(self, interrupted):
-                self.outer.drive_robot(0, 0, 0)
-
-        return AlignCommand(self, target_tag_id)
-```
-
----
-
-## 3. Limelight Network Setup
+## 2. Limelight Network Setup
 
 | Setting | Value |
 |---------|-------|
@@ -171,70 +55,92 @@ class AutonDrive(SubsystemBase):
 | Pipeline 0 | AprilTag detection |
 
 - The Limelight connects via **Ethernet to the radio** (not the roboRIO)
-- IP must be **static** — DHCP is unreliable at competition
-- The robot code uses `limelight.discover_limelights()` (mDNS auto-discovery), so it works regardless of IP, but a static IP is still required for field reliability
-- If you can't reach it by IP, try `ping limelight.local` to find it
+- IP must be **static** -- DHCP is unreliable at competition
 - The team number subnet is `10.97.71.x` (from team 9771)
+- If you can't reach it by IP, try `ping limelight.local` to find it
 
 ---
 
-## 4. Configuration for Vision
+## 3. MegaTag2 Odometry (Active)
+
+This is the **currently active** Limelight integration. The module
+`handlers/limelight_helpers.py` talks to the Limelight over NetworkTables
+(not the websocket/polling approach used by `LimelightVisionProvider`).
+
+### What it does
+
+MegaTag2 fuses the robot's gyro heading with AprilTag detections to produce a
+field-relative pose estimate. The drivetrain feeds this into WPILib's pose
+estimator for odometry corrections.
+
+### Key data types
 
 ```python
-# autonomous/auton_constants.py
+# handlers/limelight_helpers.py
 
-# AprilTag IDs by field position (2025 Reefscape)
-APRILTAG_IDS = {
-    "blue_left": {"score": 20, "intake": 13, "score2": 19},
-    "blue_center": {"score": 21},
-    "blue_right": {"score": 22, "intake": 12, "score2": 17},
-    "red_left": {"score": 11, "intake": 1, "score2": 6},
-    "red_center": {"score": 10},
-    "red_right": {"score": 9, "intake": 2, "score2": 8},
-}
+@dataclass
+class PoseEstimate:
+    """Result from MegaTag2 bot-pose estimation."""
+    pose: Pose2d
+    timestamp_seconds: float = 0.0
+    latency: float = 0.0
+    tag_count: int = 0
+    tag_span: float = 0.0
+    avg_tag_dist: float = 0.0
+    avg_tag_area: float = 0.0
+    raw_data: list = field(default_factory=list)
+```
 
-# Multipliers to calibrate vision data to real-world
-# (these may need tuning per-camera mount)
-LL_DATA_SETTINGS = {
-    "yaw": {"multiplier": 0.115},
-    "tx": {"multiplier": 0.222},
-    "distance": {},  # No adjustment needed
-}
+### Key functions
 
-# Driving behavior based on vision
-DRIVING = {
-    "speed_x": {
-        "max": 3.0,
-        "multiplier": 0.5,
-        "target_tolerance": 0.3,  # meters
-    },
-    "speed_y": {
-        "max": 1.5,
-        "multiplier": 0.4,
-        "target_tolerance": 0.5,  # degrees tx
-    },
-    "rotation": {
-        "max": 0.8,
-        "multiplier": 0.2,
-        "target_tolerance": 0.08,  # degrees yaw
-    },
-}
+| Function | Purpose |
+|----------|---------|
+| `get_bot_pose_estimate_wpi_blue_megatag2()` | MegaTag2 pose (gyro-fused). Used for continuous odometry updates. |
+| `get_bot_pose_estimate_wpi_blue_megatag1()` | MegaTag1 pose (pure AprilTag geometry, no gyro). Better for one-shot pose resets. |
+| `set_robot_orientation()` | Send gyro heading to Limelight each loop so MegaTag2 can fuse it. Must be called every cycle. |
+| `get_tv()` | Returns True if the Limelight has a valid target. |
+| `get_tag_count()` | Number of tags visible in the latest MegaTag2 result. |
+
+### Usage
+
+The NetworkTables table name must match the Limelight's configured name.
+For our shooter Limelight the table name is `"limelight-shooter"`:
+
+```python
+from handlers.limelight_helpers import (
+    set_robot_orientation,
+    get_bot_pose_estimate_wpi_blue_megatag2,
+)
+
+# Every loop -- feed gyro heading to the Limelight
+set_robot_orientation("limelight-shooter", yaw_degrees=gyro_yaw)
+
+# Read MegaTag2 pose estimate
+estimate = get_bot_pose_estimate_wpi_blue_megatag2("limelight-shooter")
+if estimate and estimate.tag_count >= 1:
+    drivetrain.add_vision_measurement(estimate.pose, estimate.timestamp_seconds)
 ```
 
 ---
 
-## 5. Making Vision Testable (NEW for 2026)
+## 4. Vision Abstraction Layer (Inactive)
 
-The problem: We couldn't test vision-based commands without a real Limelight and AprilTags.
+> **Note:** This layer exists in code but is **not currently wired up**. The
+> factory functions in `handlers/__init__.py` are commented out, and
+> `robot_container.py` does not create any VisionProvider instances. The code
+> is kept for future use if the team needs vision-based aiming (e.g. aligning
+> to targets using tx/ty offsets).
 
-**Solution: Vision Abstraction Layer**
+### The problem
+
+We couldn't test vision-based commands without a real Limelight and AprilTags.
+
+### Solution: VisionProvider interface
+
+`handlers/vision.py` defines the abstract contract:
 
 ```python
 # handlers/vision.py
-
-from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
-from dataclasses import dataclass
 
 @dataclass
 class VisionTarget:
@@ -245,6 +151,7 @@ class VisionTarget:
     distance: float     # Distance to target (meters)
     yaw: float          # Target rotation
     is_valid: bool = True
+    timestamp: float = 0.0  # time.monotonic() when this data was received
 
 
 class VisionProvider(ABC):
@@ -260,403 +167,125 @@ class VisionProvider(ABC):
         """Check if a target is visible."""
         pass
 
-
-class LimelightVisionProvider(VisionProvider):
-    """Real Limelight implementation."""
-
-    def __init__(self, host: str):
-        import limelight
-        import limelightresults
-        self._ll = limelight
-        self._llr = limelightresults
-
-        try:
-            self._camera = limelight.Limelight(host)
-            self._camera.enable_websocket()
-        except Exception:
-            self._camera = None
-
-    def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
-        if not self._camera:
-            return None
-
-        result = self._camera.get_latest_results()
-        parsed = self._llr.parse_results(result)
-
-        if not parsed or not parsed.fiducialResults:
-            return None
-
-        # Find requested tag or closest
-        import math
-        selected = None
-        closest_dist = float('inf')
-
-        for tag in parsed.fiducialResults:
-            if tag_id and tag.fiducial_id == tag_id:
-                selected = tag
-                break
-            pos = tag.target_pose_camera_space
-            dist = math.sqrt(pos[0]**2 + pos[1]**2 + pos[2]**2)
-            if dist < closest_dist:
-                closest_dist = dist
-                selected = tag
-
-        if not selected:
-            return None
-
-        pos = selected.target_pose_camera_space
-        return VisionTarget(
-            tag_id=selected.fiducial_id,
-            tx=selected.target_x_degrees,
-            ty=selected.target_y_degrees,
-            distance=math.sqrt(pos[0]**2 + pos[1]**2 + pos[2]**2),
-            yaw=pos[4],
-        )
-
-    def has_target(self, tag_id: Optional[int] = None) -> bool:
-        return self.get_target(tag_id) is not None
-
-
-class MockVisionProvider(VisionProvider):
-    """Mock implementation for testing."""
-
-    def __init__(self):
-        self._targets: Dict[int, VisionTarget] = {}
-        self._default_target: Optional[VisionTarget] = None
-        self._query_history: list[Optional[int]] = []
-
-    def get_target(self, tag_id: Optional[int] = None) -> Optional[VisionTarget]:
-        self._query_history.append(tag_id)
-
-        if tag_id and tag_id in self._targets:
-            return self._targets[tag_id]
-        return self._default_target
-
-    def has_target(self, tag_id: Optional[int] = None) -> bool:
-        return self.get_target(tag_id) is not None
-
-    # --- Test helpers ---
-
-    def set_target(self, target: VisionTarget) -> None:
-        """Set a specific target to be returned."""
-        self._targets[target.tag_id] = target
-        if self._default_target is None:
-            self._default_target = target
-
-    def set_default_target(self, target: Optional[VisionTarget]) -> None:
-        """Set the default target (returned when no tag_id specified)."""
-        self._default_target = target
-
-    def simulate_target_left(self, tag_id: int, offset_degrees: float = 10, distance: float = 2.0) -> None:
-        """Simulate a target to the left of center."""
-        self.set_target(VisionTarget(
-            tag_id=tag_id,
-            tx=-abs(offset_degrees),  # Negative = left
-            ty=0,
-            distance=distance,
-            yaw=0,
-        ))
-
-    def simulate_target_right(self, tag_id: int, offset_degrees: float = 10, distance: float = 2.0) -> None:
-        """Simulate a target to the right of center."""
-        self.set_target(VisionTarget(
-            tag_id=tag_id,
-            tx=abs(offset_degrees),  # Positive = right
-            ty=0,
-            distance=distance,
-            yaw=0,
-        ))
-
-    def simulate_target_centered(self, tag_id: int, distance: float = 1.0) -> None:
-        """Simulate a perfectly centered target."""
-        self.set_target(VisionTarget(
-            tag_id=tag_id,
-            tx=0,
-            ty=0,
-            distance=distance,
-            yaw=0,
-        ))
-
-    def simulate_no_target(self) -> None:
-        """Simulate no visible targets."""
-        self._targets.clear()
-        self._default_target = None
-
-    def clear_history(self) -> None:
-        self._query_history.clear()
+    @abstractmethod
+    def get_all_targets(self) -> List[VisionTarget]:
+        """Get all currently visible targets."""
+        pass
 ```
 
-### Factory for Vision Providers
+### Implementations
 
-Camera config lives in `constants/vision.py` — one entry per Limelight:
+**LimelightVisionProvider** (`handlers/limelight_vision.py`) -- the real hardware
+implementation. Connects to a Limelight by IP address and polls for AprilTag
+fiducial data in a background daemon thread so the robot loop is never blocked.
+The public methods (`get_target`, `has_target`, `get_all_targets`) return
+thread-safe cached data. Also tracks data freshness -- stamps targets with the
+`time.monotonic()` when the data actually changed, not the poll time.
+
+**MockVisionProvider** (`handlers/mock_vision.py`) -- the test implementation.
+Lets tests simulate targets at specific positions with helpers like
+`simulate_target_left()`, `simulate_target_right()`, `simulate_target_centered()`,
+and `simulate_no_target()`. Tracks query history for assertions.
+
+### Factory functions (commented out)
+
+The factory functions in `handlers/__init__.py` are commented out. They would
+create one provider per camera defined in `CON_VISION`:
+
+```python
+# handlers/__init__.py (COMMENTED OUT -- not currently active)
+
+# _use_mock_vision = False
+# _mock_providers: dict[str, VisionProvider] | None = None
+#
+# def set_mock_vision_mode(enabled: bool) -> None: ...
+# def get_vision_providers() -> dict[str, VisionProvider]: ...
+# def get_mock_vision(camera: str = "shooter") -> "MockVisionProvider": ...
+```
+
+To re-enable: uncomment these functions and wire them into `robot_container.py`.
+
+---
+
+## 5. Vision Configuration
+
+Camera configuration lives in `constants/vision.py`:
 
 ```python
 # constants/vision.py
 
 CON_VISION = {
     "cameras": {
-        "shooter": {"name": "Limelight Shooter", "host": "limelight-shooter"},
-        "front":   {"name": "Limelight Front",   "host": "limelight-front"},
+        "shooter": {
+            "name": "Limelight Shooter",
+            "host": "10.97.71.11",
+        },
+        # "front": {
+        #     "name": "Limelight Front",
+        #     "host": "limelight-front",  # TODO: set static IP when connected
+        # },
     },
 }
 ```
 
-The factory creates one provider per camera:
-
-```python
-# handlers/__init__.py
-
-from constants import CON_VISION
-from .vision import VisionProvider
-
-_use_mock_vision = False
-_mock_providers: dict[str, VisionProvider] | None = None
-
-def set_mock_vision_mode(enabled: bool) -> None:
-    global _use_mock_vision, _mock_providers
-    _use_mock_vision = enabled
-    if enabled:
-        from .mock_vision import MockVisionProvider
-        _mock_providers = {key: MockVisionProvider() for key in CON_VISION["cameras"]}
-
-def get_vision_providers() -> dict[str, VisionProvider]:
-    if _use_mock_vision and _mock_providers is not None:
-        return _mock_providers
-    from .limelight_vision import LimelightVisionProvider
-    return {key: LimelightVisionProvider(cam["host"])
-            for key, cam in CON_VISION["cameras"].items()}
-
-def get_mock_vision(camera: str = "shooter") -> "MockVisionProvider":
-    """Get a mock provider by camera key for test setup."""
-    if not _mock_providers:
-        raise RuntimeError("Mock vision not enabled. Call set_mock_vision_mode(True) first.")
-    return _mock_providers[camera]
-```
-
-### Updated AutonDrive (uses abstraction)
-
-```python
-# autonomous/auton_drive.py (updated for testability)
-
-class AutonDrive(SubsystemBase):
-    def __init__(self, drivetrain, vision):
-        self.drivetrain = drivetrain
-        self.vision = vision  # A single VisionProvider (e.g., the front camera)
-
-    def align_to_tag(self, target_tag_id: int) -> Command:
-        class AlignCommand(Command):
-            def __init__(self, outer, tag_id):
-                super().__init__()
-                self.outer = outer
-                self.tag_id = tag_id
-
-            def execute(self):
-                target = self.outer.vision.get_target(self.tag_id)
-                if not target:
-                    return
-
-                # tx positive = target right, so rotate right (negative rate)
-                rotation = -target.tx * 0.1
-                speed_x = (target.distance - 1.0) * 0.5
-                speed_y = -target.tx * 0.05
-
-                self.outer.drive_robot(rotation, speed_x, speed_y)
-
-            def isFinished(self):
-                target = self.outer.vision.get_target(self.tag_id)
-                if not target:
-                    return True  # Lost target
-                return abs(target.tx) < 2.0 and abs(target.distance - 1.0) < 0.1
-
-            def end(self, interrupted):
-                self.outer.drive_robot(0, 0, 0)
-
-        return AlignCommand(self, target_tag_id)
-```
+The `"host"` value is the camera's **static IP address** (not an mDNS hostname).
+Only one camera (`shooter`) is currently configured. A second camera (`front`)
+is stubbed out for future use.
 
 ---
 
-## 6. Testing Vision-Based Commands
+## 6. Vision Telemetry
 
-Now the powerful part - testing alignment without hardware:
+`telemetry/vision_telemetry.py` publishes per-camera AprilTag data to
+SmartDashboard. It expects a dict of VisionProvider instances (one per camera)
+and calls `get_all_targets()` on each.
+
+Published keys (per camera):
+- `Vision/{Camera}/Has Target` -- boolean
+- `Vision/{Camera}/Tag Count` -- number of visible tags
+- `Vision/{Camera}/Tag 1` through `Tag 4` -- string with tag ID, tx, ty, distance, yaw
+
+The telemetry rate-limits to every 5 cycles (~3 Hz) to avoid loop overruns.
+
+> **Note:** Because the VisionProvider layer is currently disabled, VisionTelemetry
+> is also not active. It will work again when the providers are re-enabled.
+
+---
+
+## 7. Testing Vision-Based Commands
+
+When the VisionProvider layer is re-enabled, you can test alignment commands
+without hardware using MockVisionProvider:
 
 ```python
-# tests/test_vision_alignment.py
+# Example test pattern
 
-import pytest
-from handlers import set_mock_vision_mode, get_mock_vision
+from handlers.mock_vision import MockVisionProvider
 from handlers.vision import VisionTarget
-from hardware import set_mock_mode
-from autonomous.auton_drive import AutonDrive
 
-@pytest.fixture
-def setup_mocks():
-    """Enable all mocks for testing."""
-    set_mock_mode(True)
-    set_mock_vision_mode(True)
-    yield
-    set_mock_mode(False)
-    set_mock_vision_mode(False)
-
-@pytest.fixture
-def auton_drive(setup_mocks):
-    """Create AutonDrive with mock drivetrain and vision."""
-    from subsystems.drivetrain import Drivetrain
-    drivetrain = Drivetrain()  # Will use mock motors
-    return AutonDrive(drivetrain)
-
-
-def test_target_left_rotates_left(auton_drive):
+def test_target_left_rotates_left():
     """When target is left of center, robot should rotate left."""
-    vision = get_mock_vision()
+    vision = MockVisionProvider()
 
     # Target is 15 degrees to the LEFT
     vision.simulate_target_left(tag_id=20, offset_degrees=15, distance=2.0)
 
-    cmd = auton_drive.align_to_tag(20)
-    cmd.initialize()
-    cmd.execute()
+    target = vision.get_target(20)
+    assert target is not None
+    assert target.tx < 0  # negative = left
 
-    # tx = -15 (left), so rotation should be -(-15) * 0.1 = +1.5 (rotate left/CCW)
-    # Check the drivetrain received positive rotation
-    assert auton_drive.drivetrain.last_rotation > 0, \
-        "Should rotate left (positive) when target is left of center"
-
-
-def test_target_right_rotates_right(auton_drive):
-    """When target is right of center, robot should rotate right."""
-    vision = get_mock_vision()
-
-    # Target is 15 degrees to the RIGHT
-    vision.simulate_target_right(tag_id=20, offset_degrees=15, distance=2.0)
-
-    cmd = auton_drive.align_to_tag(20)
-    cmd.initialize()
-    cmd.execute()
-
-    # tx = +15 (right), so rotation should be -(+15) * 0.1 = -1.5 (rotate right/CW)
-    assert auton_drive.drivetrain.last_rotation < 0, \
-        "Should rotate right (negative) when target is right of center"
-
-
-def test_far_target_drives_forward(auton_drive):
-    """When target is far, robot should drive forward."""
-    vision = get_mock_vision()
-
-    # Target is centered but 3 meters away (target is 1m)
-    vision.simulate_target_centered(tag_id=20, distance=3.0)
-
-    cmd = auton_drive.align_to_tag(20)
-    cmd.initialize()
-    cmd.execute()
-
-    # distance=3.0, target=1.0, so speed_x = (3-1)*0.5 = 1.0 (forward)
-    assert auton_drive.drivetrain.last_speed_x > 0, \
-        "Should drive forward when target is far"
-
-
-def test_close_target_drives_backward(auton_drive):
-    """When target is too close, robot should back up."""
-    vision = get_mock_vision()
-
-    # Target is centered but only 0.5 meters away (target is 1m)
-    vision.simulate_target_centered(tag_id=20, distance=0.5)
-
-    cmd = auton_drive.align_to_tag(20)
-    cmd.initialize()
-    cmd.execute()
-
-    # distance=0.5, target=1.0, so speed_x = (0.5-1)*0.5 = -0.25 (backward)
-    assert auton_drive.drivetrain.last_speed_x < 0, \
-        "Should drive backward when target is too close"
-
-
-def test_on_target_finishes_command(auton_drive):
-    """Command should finish when aligned."""
-    vision = get_mock_vision()
-
-    # Target is perfectly centered at target distance
-    vision.simulate_target_centered(tag_id=20, distance=1.0)
-
-    cmd = auton_drive.align_to_tag(20)
-    cmd.initialize()
-    cmd.execute()
-
-    assert cmd.isFinished(), "Should finish when on target"
-
-
-def test_lost_target_finishes_command(auton_drive):
-    """Command should finish if target is lost."""
-    vision = get_mock_vision()
-
-    # Start with a target
-    vision.simulate_target_centered(tag_id=20, distance=2.0)
-
-    cmd = auton_drive.align_to_tag(20)
-    cmd.initialize()
-    cmd.execute()
-
-    assert not cmd.isFinished(), "Should not be finished yet"
-
-    # Lose the target
+def test_no_target():
+    """No targets visible."""
+    vision = MockVisionProvider()
     vision.simulate_no_target()
 
-    assert cmd.isFinished(), "Should finish when target lost"
-
-
-def test_strafe_correction_for_offset_target(auton_drive):
-    """Robot should strafe to center on target."""
-    vision = get_mock_vision()
-
-    # Target is 10 degrees to the right
-    vision.simulate_target_right(tag_id=20, offset_degrees=10, distance=1.0)
-
-    cmd = auton_drive.align_to_tag(20)
-    cmd.initialize()
-    cmd.execute()
-
-    # tx = +10, so speed_y = -10 * 0.05 = -0.5 (strafe left to center)
-    assert auton_drive.drivetrain.last_speed_y < 0, \
-        "Should strafe left when target is to the right"
-```
-
-### Testing Complex Auto Sequences with Vision
-
-```python
-# tests/test_auto_with_vision.py
-
-def test_two_piece_auto_sequence(setup_mocks):
-    """Test full autonomous with vision alignment."""
-    vision = get_mock_vision()
-    arm = Arm()
-    intake = Intake()
-    drivetrain = Drivetrain()
-    auton_drive = AutonDrive(drivetrain)
-
-    auton_modes = AutonModes(drivetrain, arm, intake, auton_drive)
-
-    # Setup: scoring tag visible and centered
-    vision.simulate_target_centered(tag_id=20, distance=1.0)
-
-    cmd = auton_modes.two_piece("blue_left")
-    cmd.initialize()
-
-    # Run a few cycles
-    for _ in range(10):
-        cmd.execute()
-        if cmd.isFinished():
-            break
-
-    # Verify arm moved to score position
-    assert arm.motor.command_history, "Arm should have received commands"
-
-    # Verify intake ran
-    assert intake.motor.command_history, "Intake should have received commands"
+    assert not vision.has_target()
+    assert vision.get_all_targets() == []
 ```
 
 ---
 
-## 6. Tips for Vision Testing
+## 8. Tips for Vision Testing
 
 1. **Test edge cases:**
    - Target at extreme angles (+/-30 degrees)
@@ -681,7 +310,6 @@ def test_two_piece_auto_sequence(setup_mocks):
 ---
 
 **See also:**
-- [Auto-Aim System](auto-aim.md) - How AutoAim uses vision tx for PD turret tracking
 - [Hardware & Subsystems](hardware-and-subsystems.md) - Hardware abstraction that makes vision testable
-- [Autonomous](autonomous.md) - Using vision alignment in auto routines
 - [Testing & Simulation](testing-and-simulation.md) - Full physics simulation with vision
+- [Telemetry](telemetry.md) - Dashboard telemetry system

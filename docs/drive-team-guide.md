@@ -12,28 +12,28 @@ Quick reference for what every button does on each Xbox controller.
 
 | Input | Action | Notes |
 |-------|--------|-------|
-| **Left stick X** | Manual turret aim | Interrupts auto-aim; auto-aim resumes on release |
-| **Left stick Y** | Manual hood nudge | Tap up = more closed, tap down = more open. Always active. |
+| **Left stick X** | Manual turret aim | Active when stick is outside deadband |
+| **Left stick Y** | *unassigned* | |
 | **Right stick X** | *unassigned* | |
-| **Right stick Y** | Launcher speed | Only active when launcher is toggled on (A). Forward = fast, back = slow |
+| **Right stick Y** | Launcher speed | Only active when launcher is held (right trigger). Forward = fast, back = slow |
 
 ### Face Buttons
 
 | Input | Action | Notes |
 |-------|--------|-------|
-| **A button** | Toggle launcher on/off | Speed controlled by right stick Y |
-| **B button** | Toggle feeds on/off | Runs H feed + V feed together |
+| **A button** | *unassigned* | |
+| **B button** | *unassigned* | |
 | **X button** | *unassigned* | |
-| **Y button** | Toggle coordinate aim on/off | Turret aims at Hub using odometry -- no vision needed |
+| **Y button** | *unassigned* | |
 
 ### Bumpers & Triggers
 
 | Input | Action | Notes |
 |-------|--------|-------|
-| **Left bumper (hold)** | Auto-shoot | Sets launcher speed + hood from vision distance |
-| **Right bumper** | Toggle intake deploy + spinner | Lowers intake arm and spins rollers together |
-| **Left trigger (hold)** | Shoot when ready | Spins launcher + sets hood; feeds only when at speed AND on target |
-| **Right trigger (hold)** | Reverse H feed (unjam) | Runs H feed backwards to clear a jam |
+| **Left bumper (toggle)** | Toggle auto-aim on/off | Turret aims at Hub via odometry |
+| **Left trigger (hold)** | Auto-shoot | Spins launcher; feeds when launcher at speed AND auto-aim on target |
+| **Right bumper (hold)** | Reverse all feeds (unjam) | Reverses H feed, V feed, and conveyor; interrupts right trigger |
+| **Right trigger (hold)** | Manual shoot (hold) | Spins launcher (right stick Y = speed); auto-feeds when at speed |
 
 ### D-pad / Other
 
@@ -44,32 +44,17 @@ Quick reference for what every button does on each Xbox controller.
 
 ### How to shoot (manual aim)
 
-1. Press **right bumper** to deploy intake and spin rollers
+1. Driver presses **Y** to deploy intake, holds **left trigger** to spin rollers
 2. Use **left stick X** to aim the turret at the target
-3. Tap **left stick Y** to nudge the hood angle (up = closed, down = open)
-4. Press **A** to toggle launcher on, use **right stick Y** to set speed
-5. Press **B** to start feeding Fuel
-
-### How to shoot (coordinate aim + auto-shoot)
-
-1. Press **right bumper** to deploy intake and spin rollers
-2. Press **Y** to enable coordinate aim (turret aims at Hub via odometry)
-3. Hold **left bumper** to auto-shoot (sets speed + hood from distance)
-4. Press **B** to start feeding Fuel
-
-### How to shoot (one button)
-
-1. Press **right bumper** to deploy intake and spin rollers
-2. Press **Y** to enable coordinate aim
-3. Hold **left trigger** -- launcher spins up, hood sets angle, feeds run automatically when on target and at speed
+3. Hold **right trigger** to spin launcher, use **right stick Y** to set speed
+4. Feeds run automatically when launcher reaches target speed
 
 ### Testing workflow
 
-1. Press **right bumper** to deploy intake and spin rollers (pulls Fuel in)
-2. Press **A** to toggle launcher on, sweep **right stick Y** to find good speed
-3. Use **left stick X** to aim turret, tap **left stick Y** to adjust hood angle
-4. Press **B** to run feeds
-5. Try **Y** (coordinate aim) and **left bumper** (auto-shoot) when ready
+1. Driver presses **Y** to deploy intake, holds **left trigger** to spin rollers (pulls Fuel in)
+2. Hold **right trigger** to spin launcher, sweep **right stick Y** to find good speed
+3. Use **left stick X** to aim turret
+4. Feeds activate automatically when launcher is at speed
 
 ---
 
@@ -88,10 +73,10 @@ Quick reference for what every button does on each Xbox controller.
 
 | Input | Action | Notes |
 |-------|--------|-------|
-| **A button (hold)** | Brake | Locks wheels in X pattern |
-| **B button (hold)** | Point wheels | Aims wheels in left stick direction |
+| **A button** | Manual Hub odometry reset | Drive to front of Hub, center robot, press A |
+| **B button** | Limelight odometry reset | One-shot MegaTag2 pose reset |
 | **X button** | *unassigned* | SysId combo only (Back/Start + X) |
-| **Y button (hold)** | Drive straight forward | Alignment test -- 25% speed, robot-centric |
+| **Y button** | Toggle intake deploy | Lowers/raises intake arm |
 
 ### Bumpers & Triggers
 
@@ -99,8 +84,8 @@ Quick reference for what every button does on each Xbox controller.
 |-------|--------|-------|
 | **Left bumper** | Reset field-centric heading | Press once when robot faces away from you |
 | **Right bumper** | Toggle field/robot centric | Dashboard shows current mode |
-| **Left trigger** | Run intake | Spins intake rollers + holds arm in place (hold) |
-| **Right trigger** | Slow mode | Hold to reduce drive speed to 25% |
+| **Left trigger (hold)** | Run intake | Spins intake rollers + holds arm in place |
+| **Right trigger** | Slow mode | Hold to reduce drive speed to 10% |
 
 ### D-pad / Other
 
@@ -111,6 +96,31 @@ Quick reference for what every button does on each Xbox controller.
 | **Back + X** | SysId dynamic reverse | Motor characterization only |
 | **Start + Y** | SysId quasistatic forward | Motor characterization only |
 | **Start + X** | SysId quasistatic reverse | Motor characterization only |
+
+### Tuning drive feel
+
+The power curve controls how stick position maps to actual speed. A higher
+exponent gives more fine control at low/mid stick and reserves full power for
+the very end of stick travel. Edit `constants/controls.py` to change these:
+
+| Setting | Current | What it does |
+|---------|---------|--------------|
+| `drive_exponent` | 4.0 | Translation (left stick) response curve |
+| `rotation_exponent` | 5.0 | Rotation (right stick X) response curve |
+| `slow_mode_factor` | 0.1 | Speed when right trigger is fully held (10%) |
+
+**Quick reference -- how much power at each stick position:**
+
+| Stick % | Exp 2 | Exp 3 | Exp 4 | Exp 5 |
+|---------|-------|-------|-------|-------|
+| 25% | 6.3% | 1.6% | 0.4% | 0.1% |
+| 50% | 25% | 12.5% | 6.3% | 3.1% |
+| 75% | 56% | 42% | 32% | 24% |
+| 100% | 100% | 100% | 100% | 100% |
+
+- **Too jumpy?** Increase the exponent (try 5 or 6).
+- **Too sluggish?** Decrease the exponent (try 3 or 2).
+- Translation and rotation can be tuned independently.
 
 ### Driving tips
 
@@ -125,9 +135,6 @@ Quick reference for what every button does on each Xbox controller.
 
 ## Important Interactions
 
-- **Coordinate aim (Y toggle)** can run alongside manual turret stick -- the stick temporarily overrides, and coordinate aim resumes when released.
-- **Auto-shoot (left bumper)** takes over the launcher and hood from manual mode. Release the bumper, then press A again to go back to manual launcher.
-- **Shoot when ready (left trigger)** does everything auto-shoot does, plus runs feeds automatically when aligned and at speed.
-- **Hood nudge (left stick Y)** is always active as a default command. Auto-shoot and shoot-when-ready temporarily override it; it resumes when they end.
-- **Right bumper** deploys the intake arm and spins the rollers together -- one button for the whole intake system.
+- **Reverse all feeds (right bumper)** interrupts the right trigger manual shoot since both require h_feed/v_feed. Release right bumper and hold right trigger again to resume shooting.
+- **Driver Y** toggles the intake arm up/down. **Driver left trigger** spins the intake rollers and holds the arm in place.
 - SysId routines require holding **two buttons at once** (Back/Start + X/Y) so they can't be triggered accidentally.

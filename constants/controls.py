@@ -6,8 +6,6 @@ Controller and robot-wide settings.
 # MANUAL OVERRIDE CONTROLS
 # =============================================================================
 CON_MANUAL = {
-    "launcher_min_rps": 40.0,        # Stick full back (-1) = 40 RPS
-    "launcher_max_rps": 100.0,       # Stick full forward (1) = 100 RPS
     "hood_default_position": 0.0,    # Start at zero (where motor initializes)
     "hood_position_step": 0.0125,    # Per-press nudge (~5% of range)
 }
@@ -22,8 +20,8 @@ CON_ROBOT = {
     "operator_controller_port": 1,
 
     "joystick_deadband": 0.1,
-    "drive_exponent": 3.0,       # Translation response curve (1.0 = linear)
-    "rotation_exponent": 3.0,    # Rotation response curve (1.0 = linear)
+    "drive_exponent": 4.0,       # Translation response curve (1.0 = linear)
+    "rotation_exponent": 5.0,    # Rotation response curve (1.0 = linear)
 
     # Drivetrain (placeholders until tuned)
     "max_speed_mps": 5.0,
@@ -31,5 +29,5 @@ CON_ROBOT = {
 
     # Slow mode -- driver holds right trigger to reduce speed.
     # 1.0 = full speed, 0.25 = 25% speed when trigger fully held.
-    "slow_mode_factor": 0.15,
+    "slow_mode_factor": 0.1,
 }

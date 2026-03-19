@@ -1,7 +1,7 @@
 """
 Shooter system debug logging.
 Structured log output showing the full auto-aim and auto-shoot pipeline.
-Called by CoordinateAim, AutoShoot, and ShootWhenReady commands.
+Called by CoordinateAim and ShootWhenReady commands.
 
 Toggle with DEBUG["auto_aim_logging"] in constants/debug.py.
 This flag is independent of DEBUG["verbose"] -- you can see shooter
