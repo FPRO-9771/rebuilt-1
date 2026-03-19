@@ -23,7 +23,7 @@ from match_setup import MatchSetup
 from telemetry import setup_telemetry
 from commands2 import ParallelCommandGroup
 from pathplannerlib.events import EventTrigger
-from commands.auto_shoot import AutoShoot
+from commands.shoot_when_ready import ShootWhenReady
 from autonomous.auton_modes import AutonModes
 from autonomous.auton_mode_selector import create_test_chooser
 
@@ -81,26 +81,20 @@ class RobotContainer:
             self.intake_spinner.runOnce(lambda: self.intake_spinner._stop())
         )
 
-        # Shooter (launcher + hood, distance-based speed)
+        # Shooter -- ShootWhenReady spins launcher/hood and feeds when at speed.
+        # on_target_supplier=lambda: True since CoordinateAim handles aiming in auto.
+        # ShootWhenReady owns h_feed and v_feed, so FeedersStart/Stop are removed.
         EventTrigger("ShooterStart").onTrue(
-            AutoShoot(self.launcher, self.hood, context_supplier=_context_supplier)
+            ShootWhenReady(
+                self.launcher, self.hood, self.h_feed, self.v_feed,
+                context_supplier=_context_supplier,
+                on_target_supplier=lambda: True,
+            )
         )
         EventTrigger("ShooterStop").onTrue(
             ParallelCommandGroup(
                 self.launcher.runOnce(lambda: self.launcher._stop()),
                 self.hood.runOnce(lambda: self.hood._stop()),
-            )
-        )
-
-        # Feeders
-        EventTrigger("FeedersStart").onTrue(
-            ParallelCommandGroup(
-                self.h_feed.run_at_voltage(CON_H_FEED["feed_voltage"]),
-                self.v_feed.run_at_voltage(CON_V_FEED["feed_voltage"]),
-            )
-        )
-        EventTrigger("FeedersStop").onTrue(
-            ParallelCommandGroup(
                 self.h_feed.runOnce(lambda: self.h_feed._stop()),
                 self.v_feed.runOnce(lambda: self.v_feed._stop()),
             )

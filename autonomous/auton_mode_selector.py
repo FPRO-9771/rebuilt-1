@@ -29,8 +29,10 @@ def create_test_chooser(auton_modes: AutonModes) -> SendableChooser:
 
     chooser.setDefaultOption("None", None)
 
+    chooser.addOption("Do Nothing", lambda: auton_modes.do_nothing())
+
     # TODO: Remove before competition
     chooser.addOption("Mini Test", lambda: auton_modes.mini_test())
 
-    SmartDashboard.putData("Auto Test Override", chooser)
+    SmartDashboard.putData("Auton Override", chooser)
     return chooser
