@@ -7,6 +7,10 @@ from wpilib import DriverStation, Notifier, RobotController, SmartDashboard
 from wpilib.sysid import SysIdRoutineLog
 from wpimath.geometry import Pose2d, Rotation2d
 
+from pathplannerlib.auto import AutoBuilder
+from pathplannerlib.config import RobotConfig, PIDConstants
+from pathplannerlib.controller import PPHolonomicDriveController
+
 from generated.tuner_constants import TunerSwerveDrivetrain
 from handlers.limelight_helpers import (
     get_bot_pose_estimate_wpi_blue_megatag2,
@@ -232,6 +236,38 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
 
         # --- Limelight MegaTag2 odometry reset ---
         self._limelight_reset_enabled = False
+
+        # PathPlanner AutoBuilder configuration
+        self._path_apply_robot_speeds = swerve.requests.ApplyRobotSpeeds()
+        try:
+            config = RobotConfig.fromGUISettings()
+            AutoBuilder.configure(
+                lambda: self.get_state().pose,
+                lambda pose: self.reset_pose(pose),
+                lambda: self.get_state().speeds,
+                lambda speeds, feedforwards: self.set_control(
+                    self._path_apply_robot_speeds
+                    .with_speeds(speeds)
+                    .with_wheel_force_feedforwards_x(
+                        feedforwards.robot_relative_forces_x_newtons
+                    )
+                    .with_wheel_force_feedforwards_y(
+                        feedforwards.robot_relative_forces_y_newtons
+                    )
+                ),
+                PPHolonomicDriveController(
+                    PIDConstants(10.0, 0.0, 0.0),
+                    PIDConstants(7.0, 0.0, 0.0),
+                ),
+                config,
+                lambda: (
+                    DriverStation.getAlliance()
+                    == DriverStation.Alliance.kRed
+                ),
+                self,
+            )
+        except Exception as e:
+            _log.error(f"Failed to load PathPlanner config: {e}")
 
         if utils.is_simulation():
             self._start_sim_thread()

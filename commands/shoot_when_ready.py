@@ -1,28 +1,30 @@
 """
 Shoot-when-ready command -- hold to engage.
-Spins up launcher immediately from vision distance. Runs feeders
-only when launcher is at speed AND turret is on target.
-Release to stop everything.
+Spins up launcher immediately from pose-based distance. Once the
+launcher reaches speed for the first time, feeders run whenever the
+turret is on target. If the H feed stalls (velocity near zero),
+reverses it briefly to un-jam, then resumes. Release to stop everything.
 """
 
 from typing import Callable
 
 from commands2 import Command
 
-from handlers.vision import VisionProvider
 from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
 from subsystems.shooter_lookup import get_shooter_settings
 from constants import CON_H_FEED, CON_V_FEED
+from constants.shooter import CON_SHOOTER
+from telemetry.auto_aim_logging import log_shoot
 from utils.logger import get_logger
 
 _log = get_logger("shoot_when_ready")
 
 
 class ShootWhenReady(Command):
-    """Spins launcher, feeds only when at speed and on target."""
+    """Spins launcher; once at speed, feeds whenever turret is on target."""
 
     def __init__(
         self,
@@ -30,8 +32,7 @@ class ShootWhenReady(Command):
         hood: Hood,
         h_feed: HFeed,
         v_feed: VFeed,
-        vision: VisionProvider,
-        tag_priority_supplier: Callable[[], list[int]],
+        context_supplier: Callable,
         on_target_supplier: Callable[[], bool],
     ):
         super().__init__()
@@ -39,48 +40,93 @@ class ShootWhenReady(Command):
         self.hood = hood
         self.h_feed = h_feed
         self.v_feed = v_feed
-        self.vision = vision
-        self._tag_priority_supplier = tag_priority_supplier
+        self._context_supplier = context_supplier
         self._on_target_supplier = on_target_supplier
-        self._last_distance = 2.0
+        self._reached_speed = False
         self._feeding = False
+        self._off_target_count = 0
+        self._unjamming = False
+        self._unjam_counter = 0
+        self._cycle_count = 0
         self.addRequirements(launcher, hood, h_feed, v_feed)
 
     def initialize(self):
-        self._last_distance = 2.0
+        self._reached_speed = False
         self._feeding = False
+        self._off_target_count = 0
+        self._unjamming = False
+        self._unjam_counter = 0
+        self._cycle_count = 0
         _log.info("ShootWhenReady ENABLED")
 
     def execute(self):
-        # Update distance from best visible tag
-        for tag_id in self._tag_priority_supplier():
-            target = self.vision.get_target(tag_id)
-            if target is not None:
-                self._last_distance = target.distance
-                break
-
         # Always spin up launcher and set hood
-        rps, hood_pos = get_shooter_settings(self._last_distance)
+        ctx = self._context_supplier()
+        rps, hood_pos = get_shooter_settings(ctx.corrected_distance)
         self.launcher._set_velocity(rps)
         self.hood._set_position(hood_pos)
 
-        # Feed only when ready
-        ready = (self._on_target_supplier()
-                 and self.launcher.is_at_speed(rps))
+        # One-time gate: once launcher reaches speed, it stays unlocked
+        at_speed = self.launcher.is_at_speed(rps)
+        if at_speed and not self._reached_speed:
+            _log.info("Launcher reached speed -- unlocked")
+            self._reached_speed = True
 
-        if ready and not self._feeding:
-            _log.debug("Ready -- feeding")
-            self._feeding = True
-        elif not ready and self._feeding:
-            _log.debug("Not ready -- stopping feed")
-            self._feeding = False
+        # After speed gate passed, feed whenever turret is on target.
+        # Debounce: start feeding instantly when on-target, but require
+        # N consecutive off-target cycles before stopping (prevents stutter).
+        on_target = self._on_target_supplier()
+        ready = self._reached_speed and on_target
+        debounce = CON_SHOOTER["feed_off_target_debounce"]
 
-        if self._feeding:
-            self.h_feed._set_voltage(CON_H_FEED["feed_voltage"])
-            self.v_feed._set_voltage(CON_V_FEED["feed_voltage"])
+        if ready:
+            self._off_target_count = 0
+            if not self._feeding:
+                _log.debug("On target -- feeding")
+                self._feeding = True
+        else:
+            self._off_target_count += 1
+            if self._feeding and self._off_target_count >= debounce:
+                _log.debug("Off target %d cycles -- stopping feed",
+                           self._off_target_count)
+                self._feeding = False
+
+        # --- Un-jam state machine ---
+        # While feeding, if H feed velocity drops near zero, reverse briefly.
+        if self._unjamming:
+            self._unjam_counter -= 1
+            self.h_feed._set_voltage(CON_H_FEED["reverse_voltage"])
+            self.v_feed._stop()
+            if self._unjam_counter <= 0:
+                self._unjamming = False
+                _log.info("Un-jam complete -- resuming feed")
+        elif self._feeding:
+            h_vel = self.h_feed.get_velocity()
+            if abs(h_vel) < CON_H_FEED["unjam_velocity_threshold"]:
+                self._unjamming = True
+                self._unjam_counter = CON_H_FEED["unjam_duration_cycles"]
+                _log.warning("H feed stalled -- un-jamming")
+                self.h_feed._set_voltage(CON_H_FEED["reverse_voltage"])
+                self.v_feed._stop()
+            else:
+                self.h_feed._set_voltage(CON_H_FEED["feed_voltage"])
+                self.v_feed._set_voltage(CON_V_FEED["feed_voltage"])
         else:
             self.h_feed._stop()
             self.v_feed._stop()
+
+        log_shoot(
+            self._cycle_count,
+            ctx=ctx,
+            rps=rps,
+            hood_pos=hood_pos,
+            actual_rps=self.launcher.get_velocity(),
+            at_speed=at_speed,
+            reached_speed=self._reached_speed,
+            on_target=on_target,
+            feeding=self._feeding,
+        )
+        self._cycle_count += 1
 
     def isFinished(self) -> bool:
         return False

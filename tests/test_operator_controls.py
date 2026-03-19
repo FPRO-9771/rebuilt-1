@@ -1,7 +1,7 @@
 """
 Tests for operator controls wiring.
 Individual command behavior is tested in dedicated test files
-(test_auto_aim, test_auto_shoot, test_manual_launcher).
+(test_coordinate_aim, test_auto_shoot, test_manual_launcher).
 This file tests the configure_operator function itself.
 """
 
@@ -18,8 +18,8 @@ def _make_mock_operator():
     return operator
 
 
-def test_configure_operator_returns_state():
-    """configure_operator returns mutable state dict."""
+def test_configure_operator_runs_without_error():
+    """configure_operator wires bindings without raising."""
     operator = _make_mock_operator()
     turret = MagicMock()
     launcher = MagicMock()
@@ -27,9 +27,6 @@ def test_configure_operator_returns_state():
     vision = MagicMock()
     match_setup = MagicMock()
 
-    state = configure_operator(
+    configure_operator(
         operator, None, turret, launcher, hood, vision, match_setup
     )
-
-    assert "intake_down" in state
-    assert state["intake_down"] is False

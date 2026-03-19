@@ -68,3 +68,11 @@ class TalonFXController(MotorController):
 
     def stop(self) -> None:
         self.set_voltage(0)
+
+    def set_follower(self, leader_id: int, oppose_direction: bool = False) -> None:
+        from phoenix6.controls import Follower
+        from phoenix6.signals.spn_enums import MotorAlignmentValue
+
+        alignment = (MotorAlignmentValue.OPPOSED if oppose_direction
+                     else MotorAlignmentValue.ALIGNED)
+        self.motor.set_control(Follower(leader_id, alignment))

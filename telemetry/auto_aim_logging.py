@@ -1,10 +1,12 @@
 """
-Auto-aim debug logging.
-Structured log output for the three auto-aim states: lost, holding, driving.
-Called by AutoAim command -- all data passed in as arguments.
-"""
+Shooter system debug logging.
+Structured log output showing the full auto-aim and auto-shoot pipeline.
+Called by CoordinateAim, AutoShoot, and ShootWhenReady commands.
 
-import time
+Toggle with DEBUG["auto_aim_logging"] in constants/debug.py.
+This flag is independent of DEBUG["verbose"] -- you can see shooter
+system logs without turning on all other debug output.
+"""
 
 from constants.debug import DEBUG
 from utils.logger import get_logger
@@ -18,56 +20,105 @@ def _enabled():
 
 
 def _emit(msg):
-    """Log at the right level depending on which flag is on."""
+    """Log at the right level depending on which flag is on.
+
+    When auto_aim_logging is on (but verbose is off), use INFO so
+    the message appears without requiring DEBUG level globally.
+    When verbose is on, use DEBUG to keep it with other debug output.
+    """
     if DEBUG["verbose"]:
         _log.debug(msg)
     else:
         _log.info(msg)
 
 
-def log_lost(cycle, position):
-    """Log when target is fully lost (no lock). Every other cycle."""
+def log_hold(cycle, pose_x, pose_y, heading_deg,
+             shooter_x, shooter_y, target_x, target_y,
+             turret_pos, error_deg, distance_m, closing_mps):
+    """Log when turret is on-target and holding still. Every other cycle.
+
+    Shows inputs (where we think we are) and why we're holding.
+    """
     if not _enabled() or cycle % 2 != 0:
         return
     _emit(
-        f"[AIM] t=-- ftx=0.00 -- no target "
-        f"pos={position:.3f}"
+        f"[AIM HOLD] "
+        f"pose=({pose_x:.2f},{pose_y:.2f}) hdg={heading_deg:.1f} "
+        f"shooter=({shooter_x:.2f},{shooter_y:.2f}) "
+        f"tgt=({target_x:.1f},{target_y:.1f}) "
+        f"tpos={turret_pos:.3f} "
+        f"err={error_deg:.2f} dist={distance_m:.2f} cls={closing_mps:.2f} "
+        f"-- HOLD (within tolerance)"
     )
 
 
-def log_hold(cycle, locked_tag_id, filtered_tx, position):
-    """Log when turret is on-target and holding still. Every other cycle."""
-    if not _enabled() or cycle % 2 != 0:
-        return
-    _emit(
-        f"[AIM] t={locked_tag_id} "
-        f"ftx={filtered_tx:.2f} -- within tolerance "
-        f"pos={position:.3f}"
-    )
-
-
-def log_drive(cycle, locked_tag_id, target, filtered_tx,
+def log_drive(cycle, pose_x, pose_y, heading_deg,
+              shooter_x, shooter_y, target_x, target_y,
+              turret_pos, error_deg, distance_m, closing_mps,
+              tracking_deg, lead_deg, routed_error, filtered_error,
               p_term, d_term, ff_term, raw_voltage, voltage,
-              turret_vel, position, vx, vy, lead_deg,
-              ball_speed, parallax_deg, lost_count):
-    """Log PD control output when actively driving. Every other cycle."""
+              turret_vel, vx, vy):
+    """Log PD control output when actively driving. Every other cycle.
+
+    Shows the full pipeline: inputs -> corrections -> PD terms -> voltage.
+    """
     if not _enabled() or cycle % 2 != 0:
         return
     sat = "SAT" if abs(raw_voltage) > abs(voltage) else "ok"
-    raw_tx = f"{target.tx:.2f}" if target is not None else "--"
-    coast = f" coast={lost_count}" if target is None else ""
-    # Data age: how old the vision frame is (seconds)
-    if target is not None and target.timestamp > 0:
-        age_ms = (time.monotonic() - target.timestamp) * 1000
-        age_str = f" age={age_ms:.0f}ms"
-    else:
-        age_str = " age=--"
     _emit(
-        f"[AIM] t={locked_tag_id} "
-        f"tx={raw_tx} ftx={filtered_tx:.2f} "
-        f"P={p_term:.3f} D={d_term:.3f} FF={ff_term:.3f} "
-        f"rv={raw_voltage:.3f} v={voltage:.3f} [{sat}]{coast} "
-        f"vel={turret_vel:.3f} pos={position:.3f} "
-        f"vx={vx:.2f} vy={vy:.2f} ld={lead_deg:.2f} "
-        f"bs={ball_speed:.1f} px={parallax_deg:.2f}{age_str}"
+        f"[AIM DRIVE] "
+        f"pose=({pose_x:.2f},{pose_y:.2f}) hdg={heading_deg:.1f} "
+        f"shooter=({shooter_x:.2f},{shooter_y:.2f}) "
+        f"tgt=({target_x:.1f},{target_y:.1f}) "
+        f"tpos={turret_pos:.3f} "
+        f"| err={error_deg:.2f} dist={distance_m:.2f} cls={closing_mps:.2f} "
+        f"| trk={tracking_deg:.2f} ld={lead_deg:.2f} "
+        f"rte={routed_error:.2f} flt={filtered_error:.2f} "
+        f"| P={p_term:.3f} D={d_term:.3f} FF={ff_term:.3f} "
+        f"rv={raw_voltage:.3f} v={voltage:.3f} [{sat}] "
+        f"tvel={turret_vel:.3f} "
+        f"| vel=({vx:.2f},{vy:.2f})"
+    )
+
+
+def log_shoot(cycle, ctx, rps, hood_pos,
+              actual_rps=None, at_speed=False, reached_speed=False,
+              on_target=False, feeding=False):
+    """Log auto-shoot pipeline: pose -> distance -> lookup -> motor outputs.
+
+    Args:
+        ctx: ShootContext namedtuple with pose, shooter, target, distance info
+        rps: commanded launcher RPS from lookup table
+        hood_pos: commanded hood position from lookup table
+        actual_rps: current launcher velocity (None if unknown)
+        at_speed: True if launcher is within speed tolerance right now
+        reached_speed: True if launcher has passed the one-time speed gate
+        on_target: True if turret is aimed at Hub
+        feeding: True if feeders are running
+
+    Every other cycle, offset from aim logs so they interleave.
+    """
+    if not _enabled() or cycle % 2 != 1:
+        return
+    speed_str = f"actual={actual_rps:.1f}" if actual_rps is not None else "actual=--"
+    flags = []
+    if reached_speed:
+        flags.append("UNLOCKED")
+    if at_speed:
+        flags.append("AT_SPEED")
+    if on_target:
+        flags.append("ON_TARGET")
+    if feeding:
+        flags.append("FEEDING")
+    flag_str = " ".join(flags) if flags else "WAITING"
+    _emit(
+        f"[SHOOT] "
+        f"pose=({ctx.pose_x:.2f},{ctx.pose_y:.2f}) hdg={ctx.heading_deg:.1f} "
+        f"shooter=({ctx.shooter_x:.2f},{ctx.shooter_y:.2f}) "
+        f"tgt=({ctx.target_x:.1f},{ctx.target_y:.1f}) "
+        f"| rawDist={ctx.raw_distance:.2f} corrDist={ctx.corrected_distance:.2f} "
+        f"cls={ctx.closing_speed_mps:.2f} "
+        f"vel=({ctx.vx:.2f},{ctx.vy:.2f}) "
+        f"| rps={rps:.1f} {speed_str} hood={hood_pos:.3f} "
+        f"| {flag_str}"
     )

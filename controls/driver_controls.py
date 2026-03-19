@@ -5,10 +5,13 @@ All driver button/stick mappings live here to keep robot_container short.
 Controls:
     Left stick      -- Drive (X/Y translation)
     Right stick X   -- Rotation
-    A button        -- Brake (hold)
+    A button        -- Drive straight forward (alignment test, 25% speed)
     B button        -- Toggle Limelight MegaTag2 odometry reset
     Left bumper     -- Reset field-centric heading
     Right bumper    -- Toggle field-centric / robot-centric
+    Y button        -- Toggle intake deploy (down/up)
+    Left trigger    -- Run intake: spin wheels + hold arm (hold)
+    Right trigger   -- Slow mode (hold to reduce speed)
     Back + Y/X      -- SysId dynamic forward/reverse
     Start + Y/X     -- SysId quasistatic forward/reverse
 
@@ -28,8 +31,12 @@ from wpimath.units import rotationsToRadians
 
 from constants.controls import CON_ROBOT
 from constants.debug import DEBUG
+from commands.run_intake import RunIntake
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
 from telemetry.swerve_telemetry import SwerveTelemetry
+from utils.logger import get_logger
+
+_log = get_logger("driver_controls")
 
 
 def _apply_curve(value, exponent):
@@ -37,13 +44,15 @@ def _apply_curve(value, exponent):
     return math.copysign(abs(value) ** exponent, value)
 
 
-def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
+def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
+                     intake=None, intake_spinner=None):
     """
     Wire all driver controller bindings.
     Call once from RobotContainer.__init__.
     """
     max_speed = TunerConstants.speed_at_12_volts
-    max_angular_rate = rotationsToRadians(0.75)  # 3/4 rotation per second
+    max_angular_rate = rotationsToRadians(0.75)
+    slow_factor = CON_ROBOT["slow_mode_factor"]
 
     # --- Swerve requests ---
     drive_fc = (
@@ -51,7 +60,7 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         .with_deadband(max_speed * 0.1)
         .with_rotational_deadband(max_angular_rate * 0.1)
         .with_drive_request_type(
-            swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
+            swerve.SwerveModule.DriveRequestType.VELOCITY
         )
     )
     drive_rc = (
@@ -59,7 +68,7 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         .with_deadband(max_speed * 0.1)
         .with_rotational_deadband(max_angular_rate * 0.1)
         .with_drive_request_type(
-            swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
+            swerve.SwerveModule.DriveRequestType.VELOCITY
         )
     )
     brake = swerve.requests.SwerveDriveBrake()
@@ -75,22 +84,57 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
     drive_exp = CON_ROBOT["drive_exponent"]
     rot_exp = CON_ROBOT["rotation_exponent"]
 
+    _drive_log_counter = {"n": 0}
+
     def get_drive_request():
         req = drive_rc if state["robot_centric"] else drive_fc
         if DEBUG["debug_telemetry"]:
             SmartDashboard.putBoolean(
                 "Drive/Robot Centric", state["robot_centric"]
             )
+
+        raw_ly = driver.getLeftY()
+        raw_lx = driver.getLeftX()
+        raw_rx = driver.getRightX()
+
+        # Right trigger: blend from full speed down to slow_factor
+        trigger = driver.getRightTriggerAxis()
+        speed_scale = 1.0 - trigger * (1.0 - slow_factor)
+
+
+        vel_x = -_apply_curve(raw_ly, drive_exp) * max_speed * speed_scale
+        vel_y = -_apply_curve(raw_lx, drive_exp) * max_speed * speed_scale
+        rot = -_apply_curve(raw_rx, rot_exp) * max_angular_rate * speed_scale
+
+        # Log inputs + module states when driving (every 10th cycle ~2 Hz)
+        # is_driving = abs(vel_x) > 0.01 or abs(vel_y) > 0.01 or abs(rot) > 0.01
+        # if DEBUG["verbose"] and is_driving:
+        #     _drive_log_counter["n"] += 1
+        #     if _drive_log_counter["n"] % 10 == 0:
+        #         _log.debug(
+        #             f"INPUTS  joy_ly={raw_ly:+.3f} joy_lx={raw_lx:+.3f}"
+        #             f" joy_rx={raw_rx:+.3f}"
+        #             f" | cmd vx={vel_x:+.2f} vy={vel_y:+.2f} rot={rot:+.3f}"
+        #         )
+        #         dt_state = drivetrain.get_state()
+        #         heading = dt_state.pose.rotation().degrees()
+        #         for i, (ms, mt) in enumerate(
+        #             zip(dt_state.module_states, dt_state.module_targets)
+        #         ):
+        #             _log.debug(
+        #                 f"  MOD[{i}] angle={ms.angle.degrees():+7.1f}deg"
+        #                 f" speed={ms.speed:+.2f}m/s"
+        #                 f" | target angle={mt.angle.degrees():+7.1f}deg"
+        #                 f" speed={mt.speed:+.2f}m/s"
+        #             )
+        #         _log.debug(f"  GYRO heading={heading:+.1f}deg")
+        # elif not is_driving:
+        #     _drive_log_counter["n"] = 0
+
         return (
-            req.with_velocity_x(
-                -_apply_curve(driver.getLeftY(), drive_exp) * max_speed
-            )
-            .with_velocity_y(
-                -_apply_curve(driver.getLeftX(), drive_exp) * max_speed
-            )
-            .with_rotational_rate(
-                -_apply_curve(driver.getRightX(), rot_exp) * max_angular_rate
-            )
+            req.with_velocity_x(vel_x)
+            .with_velocity_y(vel_y)
+            .with_rotational_rate(rot)
         )
 
     drivetrain.setDefaultCommand(
@@ -103,8 +147,21 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         drivetrain.apply_request(lambda: idle).ignoringDisable(True)
     )
 
-    # --- A button: brake ---
-    driver.a().whileTrue(drivetrain.apply_request(lambda: brake))
+    # --- A button: drive straight forward (alignment test, 25% speed) ---
+    drive_straight = (
+        swerve.requests.RobotCentric()
+        .with_drive_request_type(
+            swerve.SwerveModule.DriveRequestType.VELOCITY
+        )
+    )
+    driver.a().whileTrue(
+        drivetrain.apply_request(
+            lambda: drive_straight
+            .with_velocity_x(max_speed * 0.25)
+            .with_velocity_y(0)
+            .with_rotational_rate(0)
+        )
+    )
 
     # --- B button: toggle Limelight MegaTag2 odometry reset ---
     driver.b().onTrue(
@@ -137,21 +194,22 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain):
         drivetrain.sys_id_quasistatic(SysIdRoutine.Direction.kReverse)
     )
 
-    # --- Y button: drive straight forward (alignment test) ---
-    drive_straight = (
-        swerve.requests.RobotCentric()
-        .with_drive_request_type(
-            swerve.SwerveModule.DriveRequestType.OPEN_LOOP_VOLTAGE
-        )
-    )
-    driver.y().whileTrue(
-        drivetrain.apply_request(
-            lambda: drive_straight
-            .with_velocity_x(max_speed * 0.07)
-            .with_velocity_y(0)
-            .with_rotational_rate(0)
-        )
-    )
+    # --- Y button: toggle intake deploy (down/up) ---
+    if intake is not None:
+        state["intake_down"] = False
+
+        def _toggle_intake():
+            state["intake_down"] = not state["intake_down"]
+            if state["intake_down"]:
+                intake.go_down().schedule()
+            else:
+                intake.go_up().schedule()
+
+        driver.y().onTrue(InstantCommand(_toggle_intake))
+
+    # --- Left trigger: spin intake + hold arm in place ---
+    if intake is not None and intake_spinner is not None:
+        driver.leftTrigger().whileTrue(RunIntake(intake, intake_spinner))
 
     # --- Register swerve telemetry ---
     drivetrain.register_telemetry(

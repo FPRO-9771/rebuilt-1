@@ -8,8 +8,8 @@ from controls.game_controller import GameController
 from generated.tuner_constants import TunerConstants
 # from subsystems.conveyor import Conveyor  # NOT WIRED YET
 # --- Turret motor swap: uncomment ONE of these two lines ---
-from subsystems.turret import Turret          # Kraken X60 (TalonFX)
-# from subsystems.turret_minion import TurretMinion as Turret  # Minion (TalonFXS)
+# from subsystems.turret import Turret          # Kraken X60 (TalonFX)
+from subsystems.turret_minion import TurretMinion as Turret  # Minion (TalonFXS)
 from subsystems.launcher import Launcher
 from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
@@ -60,19 +60,22 @@ class RobotContainer:
         setup_telemetry(None, self.turret, self.launcher,
                         self.hood, self.vision,
                         self.h_feed, self.v_feed,
-                        self.intake_spinner)
+                        self.intake_spinner,
+                        drivetrain=self.drivetrain,
+                        alliance_supplier=self.match_setup.get_alliance)
 
     def _configure_bindings(self):
         """Wire controller inputs to commands."""
 
         # --- Driver Controls ---
-        configure_driver(self.driver, self.drivetrain)
+        configure_driver(self.driver, self.drivetrain,
+                         intake=self.intake,
+                         intake_spinner=self.intake_spinner)
 
         # --- Operator Controls ---
         configure_operator(
             self.operator, None, self.turret,
             self.launcher, self.hood, self.vision["shooter"],
             self.match_setup, self.h_feed, self.v_feed,
-            self.intake, self.intake_spinner,
             drivetrain=self.drivetrain,
         )

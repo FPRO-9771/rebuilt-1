@@ -45,3 +45,7 @@ class MotorController(ABC):
     def stop(self) -> None:
         """Stop the motor."""
         pass
+
+    def set_follower(self, leader_id: int, oppose_direction: bool = False) -> None:
+        """Follow another motor controller. No-op by default."""
+        pass

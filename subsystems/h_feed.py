@@ -4,13 +4,13 @@ Powered by a KrakenX60 motor for moving Fuel horizontally.
 """
 
 from typing import Callable
-from commands2 import SubsystemBase, Command
+from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_H_FEED
 
 
-class HFeed(SubsystemBase):
+class HFeed(Subsystem):
     """Horizontal feed for transporting Fuel. Uses voltage control."""
 
     def __init__(self):

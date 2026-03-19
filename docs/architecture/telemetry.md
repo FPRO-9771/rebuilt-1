@@ -78,7 +78,16 @@ Published every cycle by `MatchSetup.update()`.
 
 ### Shooter / Auto-Aim Targeting
 
-AutoAim publishes its own telemetry keys (`Shooter/AutoAim`, `Shooter/AutoAim/HasTarget`, `Shooter/AutoAim/LockedTag`, plus debug-only velocity/lead keys). See the [Auto-Aim System](auto-aim.md#9-debugging-guide) doc for the full key list, console log format, and debugging walkthrough.
+AutoAim publishes its own telemetry keys (`Shooter/AutoAim`, `Shooter/AutoAim/HasTarget`, `Shooter/AutoAim/LockedTag`, plus debug-only velocity/lead keys). See the [Auto-Aim System](auto-aim.md#12-debugging-guide) doc for the full key list, console log format, and debugging walkthrough.
+
+### Aim Geometry Dashboard (`auto_aim_telemetry.py`)
+
+| SmartDashboard Key | Type | Description |
+|--------------------|------|-------------|
+| `AimDash/ShooterToHubM` | number | Distance from shooter (with offset) to Hub (meters) |
+| `AimDash/BearingToHubDeg` | number | Angle from robot front to Hub (degrees, + = left) |
+
+Toggle with `DEBUG["auto_aim_dashboard"]` in `constants/debug.py`. Updates at ~2 Hz. Useful for verifying pose estimation and aiming geometry during testing.
 
 ### Vision Telemetry (`vision_telemetry.py`)
 

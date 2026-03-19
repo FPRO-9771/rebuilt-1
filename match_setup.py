@@ -89,10 +89,6 @@ class MatchSetup:
         """Return the ordered tag list for the selected alliance."""
         return self.get_alliance()["tag_priority"]
 
-    def get_tag_offsets(self) -> dict:
-        """Return per-tag offsets for the selected alliance."""
-        return self.get_alliance()["tag_offsets"]
-
     def update(self):
         """Publish alliance indicator while disabled (pre-match only)."""
         if DriverStation.isEnabled():
