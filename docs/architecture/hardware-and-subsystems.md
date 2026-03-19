@@ -40,123 +40,81 @@ class Arm(SubsystemBase):
 # hardware/motor_controller.py
 
 from abc import ABC, abstractmethod
-from typing import Optional
-from phoenix6.hardware import TalonFX
-from phoenix6.controls import VoltageOut, VelocityVoltage, PositionVoltage
+
 
 class MotorController(ABC):
     """Abstract interface for motor controllers."""
 
     @abstractmethod
     def set_voltage(self, volts: float) -> None:
+        """Apply voltage to motor (open-loop control)."""
         pass
 
     @abstractmethod
     def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
+        """Run at velocity using closed-loop control (rotations per second)."""
         pass
 
     @abstractmethod
     def set_position(self, position: float, feedforward: float = 0) -> None:
+        """Move to position using closed-loop control."""
         pass
 
     @abstractmethod
     def get_position(self) -> float:
+        """Get current position in rotations."""
         pass
 
     @abstractmethod
     def get_velocity(self) -> float:
+        """Get current velocity in rotations per second."""
+        pass
+
+    @abstractmethod
+    def zero_position(self) -> None:
+        """Set current position as zero."""
         pass
 
     @abstractmethod
     def stop(self) -> None:
+        """Stop the motor."""
         pass
 
-
-class TalonFXController(MotorController):
-    """Real TalonFX implementation."""
-
-    def __init__(self, can_id: int, inverted: bool = False):
-        self.motor = TalonFX(can_id)
-        if inverted:
-            # Configure inversion
-            pass
-        self._last_voltage = 0.0
-
-    def set_voltage(self, volts: float) -> None:
-        self._last_voltage = volts
-        self.motor.set_control(VoltageOut(volts))
-
-    def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
-        self.motor.set_control(VelocityVoltage(velocity).with_feed_forward(feedforward))
-
-    def set_position(self, position: float, feedforward: float = 0) -> None:
-        self.motor.set_control(PositionVoltage(position).with_feed_forward(feedforward))
-
-    def get_position(self) -> float:
-        return self.motor.get_position().value
-
-    def get_velocity(self) -> float:
-        return self.motor.get_velocity().value
-
-    def stop(self) -> None:
-        self.set_voltage(0)
-
-
-class MockMotorController(MotorController):
-    """Mock implementation for testing."""
-
-    def __init__(self, can_id: int, inverted: bool = False):
-        self.can_id = can_id
-        self.inverted = inverted
-        self._position = 0.0
-        self._velocity = 0.0
-        self._voltage = 0.0
-        self.command_history: list[dict] = []  # Track all commands for verification
-
-    def set_voltage(self, volts: float) -> None:
-        self._voltage = volts
-        self.command_history.append({"type": "voltage", "value": volts})
-
-    def set_velocity(self, velocity: float, feedforward: float = 0) -> None:
-        self._velocity = velocity
-        self.command_history.append({"type": "velocity", "value": velocity, "ff": feedforward})
-
-    def set_position(self, position: float, feedforward: float = 0) -> None:
-        self._position = position  # Instant for testing
-        self.command_history.append({"type": "position", "value": position, "ff": feedforward})
-
-    def get_position(self) -> float:
-        return self._position
-
-    def get_velocity(self) -> float:
-        return self._velocity
-
-    def stop(self) -> None:
-        self.set_voltage(0)
-
-    # Test helpers
-    def simulate_position(self, position: float) -> None:
-        """Set position for testing sensor reads."""
-        self._position = position
-
-    def get_last_voltage(self) -> float:
-        """Get last commanded voltage for test assertions."""
-        return self._voltage
-
-    def clear_history(self) -> None:
-        self.command_history.clear()
+    def set_follower(self, leader_id: int, oppose_direction: bool = False) -> None:
+        """Follow another motor controller. No-op by default."""
+        pass
 ```
 
+The interface has two methods beyond the basic six that are worth noting:
+
+- **`zero_position()`** -- resets the encoder to zero. Called automatically by `create_motor()` on every motor at creation time.
+- **`set_follower(leader_id, oppose_direction)`** -- makes this motor mirror another motor's output. The base class provides a no-op default; `TalonFXController` overrides it with real follower logic.
+
+Each real controller (`TalonFXController` in `motor_controller_talon.py`, `TalonFXSController` in `motor_controller_fxs.py`) and `MockMotorController` all implement this same ABC. The implementations live in separate files -- the doc won't reproduce them in full, but the key differences are:
+
+- **TalonFXController** -- wraps a Phoenix 6 `TalonFX`. Accepts optional `slot0` gains dict and `bus` string.
+- **TalonFXSController** -- wraps a Phoenix 6 `TalonFXS`. Also accepts `brake` mode and configures `MotorArrangementValue.MINION_JST`.
+- **MockMotorController** -- tracks commands in `command_history` and provides test helpers like `simulate_position()`, `simulate_velocity()`, `get_last_voltage()`, and `clear_history()`.
+
 ### Factory for Creating Motors
+
+There is one factory function, `create_motor()`. It picks the right hardware class based on the `"type"` field in the config dict (`"talon_fx"` or `"talon_fxs"`). Subsystems never need to know which controller type they are using.
 
 ```python
 # hardware/__init__.py
 
 from .motor_controller import MotorController
 from .motor_controller_talon import TalonFXController
+from .motor_controller_fxs import TalonFXSController
 from .mock_motor_controller import MockMotorController
 
 _use_mock_hardware = False
+
+# Maps config "type" strings to real hardware classes
+_MOTOR_TYPES = {
+    "talon_fx": TalonFXController,
+    "talon_fxs": TalonFXSController,
+}
 
 def set_mock_mode(enabled: bool) -> None:
     """Enable mock hardware for testing."""
@@ -167,24 +125,37 @@ def is_mock_mode() -> bool:
     """Check if mock mode is enabled."""
     return _use_mock_hardware
 
-def create_motor(can_id: int, inverted: bool = False) -> MotorController:
-    """Factory function - returns real or mock TalonFX motor based on mode."""
-    if _use_mock_hardware:
-        return MockMotorController(can_id, inverted)
-    return TalonFXController(can_id, inverted)
+def create_motor(
+    config: dict,
+    inverted: bool = False,
+    brake: bool = False,
+    slot0: dict | None = None,
+) -> MotorController:
+    """
+    Factory function - returns the right motor controller based on config.
 
-def create_motor_fxs(can_id: int, inverted: bool = False) -> MotorController:
-    """Factory function - returns real or mock TalonFXS motor based on mode."""
-    if _use_mock_hardware:
-        return MockMotorController(can_id, inverted)
-    return TalonFXSController(can_id, inverted)
+    Args:
+        config: Entry from MOTOR_IDS, e.g.
+                {"can_id": 30, "type": "talon_fx", "wired": True}
+        inverted: Whether to invert motor direction
+        brake: Whether to use brake mode (TalonFXS/Minion only)
+        slot0: Optional PID/FF gains, e.g. {"kP": 12.0, "kV": 0.12}
+
+    Returns mock in three cases:
+      - mock mode is enabled (testing)
+      - config has "wired": False (motor not physically connected)
+    Otherwise returns the real hardware class.
+
+    Calls zero_position() on every motor before returning it.
+    """
+    ...
 ```
 
 ### TalonFXS Support
 
-Some motors (like WCP) connect through a TalonFXS controller instead of a TalonFX. The `TalonFXSController` class implements the same `MotorController` ABC, so subsystems don't need to know the difference. Use `create_motor_fxs()` instead of `create_motor()` when wiring up those motors.
+Some motors (like WCP) connect through a TalonFXS controller instead of a TalonFX. The `TalonFXSController` class implements the same `MotorController` ABC, so subsystems don't need to know the difference. The `"type"` field in the motor config dict controls which class gets created -- `"talon_fx"` or `"talon_fxs"`.
 
-Both factory functions return a `MockMotorController` in test mode — the mock doesn't care which real controller it's standing in for.
+In mock/test mode, `create_motor()` always returns a `MockMotorController` regardless of type -- the mock doesn't care which real controller it's standing in for.
 
 ### Updated Subsystem (uses abstraction)
 
@@ -192,11 +163,14 @@ Both factory functions return a `MockMotorController` in test mode — the mock 
 # subsystems/arm.py (NEW WAY - testable)
 from commands2 import SubsystemBase, Command
 from hardware import create_motor
-from constants import MOTOR_IDS, CON_ARM  # or: from constants.ids import MOTOR_IDS
+from constants.ids import MOTOR_IDS
+from constants.arm import CON_ARM
 
 class Arm(SubsystemBase):
     def __init__(self):
         super().__init__()
+        # MOTOR_IDS["arm_main"] is a config dict like:
+        #   {"can_id": 10, "type": "talon_fx", "wired": True}
         self.motor = create_motor(MOTOR_IDS["arm_main"])
         self.target_position = 0.0
 
@@ -266,11 +240,13 @@ Each mechanism gets its own file in `subsystems/`. A subsystem:
 
 from commands2 import SubsystemBase, Command
 from hardware import create_motor
-from constants import MOTOR_IDS, CON_[MECHANISM]  # or import from specific file
+from constants.ids import MOTOR_IDS
+from constants.[mechanism] import CON_[MECHANISM]
 
 class [Mechanism](SubsystemBase):
     def __init__(self):
         super().__init__()
+        # MOTOR_IDS["mechanism_name"] is a config dict with can_id, type, wired
         self.motor = create_motor(MOTOR_IDS["mechanism_name"])
         self._target = 0.0
 

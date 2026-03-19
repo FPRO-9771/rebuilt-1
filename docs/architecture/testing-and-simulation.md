@@ -21,7 +21,7 @@ This doc covers writing automated tests with mock hardware and running physics s
 
 ### Test Convention
 
-Tests live in `tests/` with one file per subsystem or concern (e.g., `test_arm.py`, `test_vision.py`, `test_autonomous.py`). All tests run against mock hardware — the `conftest.py` fixture below enables that automatically.
+Tests live in `tests/` with one file per subsystem or concern (e.g., `test_arm.py`, `test_vision.py`, `test_autonomous.py`). All tests run against mock hardware -- the `conftest.py` fixture below enables that automatically.
 
 ### conftest.py (Test Setup)
 
@@ -30,7 +30,7 @@ Tests live in `tests/` with one file per subsystem or concern (e.g., `test_arm.p
 
 import pytest
 from hardware import set_mock_mode
-from handlers import set_mock_vision_mode
+# from handlers import set_mock_vision_mode  # vision providers disabled
 
 @pytest.fixture(autouse=True)
 def mock_hardware():
@@ -39,13 +39,12 @@ def mock_hardware():
     yield
     set_mock_mode(False)
 
-@pytest.fixture(autouse=True)
-def mock_vision():
-    """Automatically use mock vision for all tests."""
-    set_mock_vision_mode(True)
-    yield
-    set_mock_vision_mode(False)
+# mock_vision fixture removed -- vision providers disabled (2026-03-19)
 ```
+
+**Note:** The `set_mock_vision_mode` and `get_mock_vision` helpers in `handlers/__init__.py` are commented out. The VisionProvider layer is not currently wired -- the Limelight is only used for camera streams (CameraServer) and NT-based odometry resets (`limelight_helpers.py`). The mock vision code is preserved for future use.
+
+The conftest also includes a `_patch_constants` fixture that replaces every `CON_*` dict with test-specific values (simple round numbers for easy mental math), so production constants never leak into tests.
 
 ### Example Tests
 
@@ -583,7 +582,7 @@ class SimulationRunner:
 
 ### Example Tests with Physics
 
-These three tests show the key patterns: basic movement verification, vision-in-the-loop alignment, and full auto integration.
+These tests show the key patterns: basic movement verification and full auto integration. (Vision-in-the-loop tests are not currently possible since the VisionProvider layer is disabled -- see conftest.py note above.)
 
 ```python
 # tests/test_auto_physics.py
@@ -592,22 +591,18 @@ import pytest
 from testing.physics_sim import Pose2D
 from testing.sim_runner import SimulationRunner
 from hardware import set_mock_mode
-from handlers import set_mock_vision_mode, get_mock_vision
-from handlers.vision import VisionTarget
 
 @pytest.fixture
 def sim():
     """Create simulation environment."""
     set_mock_mode(True)
-    set_mock_vision_mode(True)
     runner = SimulationRunner()
     yield runner
     set_mock_mode(False)
-    set_mock_vision_mode(False)
 
 
 def test_drive_forward_reaches_target(sim):
-    """Pattern: basic movement — command the drivetrain, step time, check position."""
+    """Pattern: basic movement -- command the drivetrain, step time, check position."""
     from subsystems.drivetrain import Drivetrain
 
     drivetrain = Drivetrain()  # Uses mock with physics
@@ -616,55 +611,19 @@ def test_drive_forward_reaches_target(sim):
     drivetrain.drive(velocity_x=2.0, velocity_y=0, rotation=0)
     sim.run_for(2.0)
 
-    # At 2 m/s for 2 seconds ≈ 4 meters (with acceleration ramp)
+    # At 2 m/s for 2 seconds ~ 4 meters (with acceleration ramp)
     assert 3.5 < drivetrain.pose.x < 4.5
     assert abs(drivetrain.pose.y) < 0.1, "Should not drift sideways"
 
 
-def test_vision_alignment(sim):
-    """Pattern: vision-in-the-loop — update mock vision each cycle as robot moves."""
-    from subsystems.drivetrain import Drivetrain
-    from autonomous.auton_drive import AutonDrive
-
-    drivetrain = Drivetrain()
-    sim.register(drivetrain)
-
-    vision = get_mock_vision()
-    vision.simulate_target_left(tag_id=20, offset_degrees=15, distance=3.0)
-
-    cmd = AutonDrive(drivetrain).align_to_tag(20)
-    cmd.initialize()
-
-    for i in range(50):  # 1 second of simulation
-        cmd.execute()
-        sim.step()
-
-        # Simulate target getting more centered as robot approaches
-        current_offset = 15 - (i * 0.3)
-        current_distance = 3.0 - (i * 0.04)
-        if current_distance < 1.0:
-            vision.simulate_target_centered(tag_id=20, distance=1.0)
-            break
-        else:
-            vision.set_target(VisionTarget(
-                tag_id=20, tx=-current_offset, ty=0,
-                distance=current_distance, yaw=0,
-            ))
-
-    assert drivetrain.pose.x > 0.5, "Should have driven forward"
-
-
 def test_full_auto_integration(sim):
-    """Pattern: end-to-end — create RobotContainer, run a full auto, verify outcome."""
+    """Pattern: end-to-end -- create RobotContainer, run a full auto, verify outcome."""
     from robot_container import RobotContainer
 
     container = RobotContainer()  # All subsystems created with mocks
     sim.register(container.drivetrain)
-    sim.register(container.arm)
 
-    vision = get_mock_vision()
     container.drivetrain.physics.reset(Pose2D(x=0, y=0, heading=0))
-    vision.simulate_target_centered(tag_id=20, distance=2.0)
 
     auto_cmd = container.auton_modes.simple_score("blue_left")
     finished = sim.run_command(auto_cmd, timeout=15.0)
@@ -745,5 +704,5 @@ Before competition, run these calibration tests on the real robot.
 
 **See also:**
 - [Hardware & Subsystems](hardware-and-subsystems.md) - Mock hardware that feeds into physics simulation
-- [Vision](vision.md) - Testing vision-based alignment with mocks
+- [Vision](vision.md) - Vision system and Limelight setup (VisionProvider layer currently disabled)
 - [Autonomous](autonomous.md) - Auto routines tested with simulation

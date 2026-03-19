@@ -94,10 +94,11 @@ From `generated/tuner_constants.py`:
 
 | Parameter | Value |
 |-----------|-------|
-| Max speed at 12V | 6.29 m/s |
+| Swerve module | WCP Swerve X2c (X3 ratio set, 12t pinion) |
+| Max speed at 12V | 5.72 m/s |
 | Drive gear ratio | 5.4:1 |
 | Steer gear ratio | 12.1:1 |
-| Wheel radius | 2.2 in |
+| Wheel radius | 2.0 in (4" OD WCP Molded Wheel Hub, High-Grip tread) |
 | Slip current | 120 A |
 | Pigeon 2 ID | 10 |
 | Module spacing | 20 in x 26 in (center to center) |

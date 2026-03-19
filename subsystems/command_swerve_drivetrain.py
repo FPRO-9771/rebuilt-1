@@ -3,7 +3,7 @@ from commands2.sysid import SysIdRoutine
 import math
 from phoenix6 import SignalLogger, swerve, units, utils
 from typing import Callable, overload
-from wpilib import DriverStation, Notifier, RobotController
+from wpilib import DriverStation, Notifier, RobotController, SmartDashboard
 from wpilib.sysid import SysIdRoutineLog
 from wpimath.geometry import Pose2d, Rotation2d
 
@@ -12,6 +12,12 @@ from pathplannerlib.config import RobotConfig, PIDConstants
 from pathplannerlib.controller import PPHolonomicDriveController
 
 from generated.tuner_constants import TunerSwerveDrivetrain
+from handlers.limelight_helpers import (
+    get_bot_pose_estimate_wpi_blue_megatag2,
+    set_robot_orientation,
+)
+from constants.debug import DEBUG
+from constants.match import HUB_RESET_POSES
 from utils.logger import get_logger
 
 _log = get_logger("drivetrain")
@@ -27,6 +33,7 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
     """
 
     _SIM_LOOP_PERIOD: units.second = 0.004  # 4 ms
+    _LIMELIGHT_NAME = "limelight-shooter"
 
     _BLUE_ALLIANCE_PERSPECTIVE_ROTATION = Rotation2d.fromDegrees(0)
     """Blue alliance sees forward as 0 degrees (toward red alliance wall)"""
@@ -229,6 +236,9 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         self._sys_id_routine_to_apply = self._sys_id_routine_translation
         """The SysId routine to test"""
 
+        # --- Limelight MegaTag2 odometry reset ---
+        self._limelight_reset_enabled = False
+
         # PathPlanner AutoBuilder configuration
         self._path_apply_robot_speeds = swerve.requests.ApplyRobotSpeeds()
         try:
@@ -241,10 +251,10 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                     self._path_apply_robot_speeds
                     .with_speeds(speeds)
                     .with_wheel_force_feedforwards_x(
-                        feedforwards.robot_relative_forces_x_newtons
+                        feedforwards.robotRelativeForcesXNewtons
                     )
                     .with_wheel_force_feedforwards_y(
-                        feedforwards.robot_relative_forces_y_newtons
+                        feedforwards.robotRelativeForcesYNewtons
                     )
                 ),
                 PPHolonomicDriveController(
@@ -316,6 +326,87 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                     else self._BLUE_ALLIANCE_PERSPECTIVE_ROTATION
                 )
                 self._has_applied_operator_perspective = True
+
+        # --- MegaTag2: always send heading so Limelight can fuse ---
+        # This is cheap (6 doubles to NT) and must run every loop so
+        # MegaTag2 can break the single-tag PnP ambiguity.
+        yaw_deg = self.get_pose().rotation().degrees()
+        set_robot_orientation(self._LIMELIGHT_NAME, yaw_deg)
+
+        # Only read/apply the pose estimate when a reset is pending.
+        # The NT read + parse is the expensive part we gate.
+        if self._limelight_reset_enabled:
+            odom_pose = self.get_pose()
+            estimate = get_bot_pose_estimate_wpi_blue_megatag2(
+                self._LIMELIGHT_NAME
+            )
+
+            if estimate and estimate.tag_count > 0:
+                # Use vision X/Y but keep current gyro heading
+                corrected = Pose2d(
+                    estimate.pose.x,
+                    estimate.pose.y,
+                    odom_pose.rotation(),
+                )
+                self.reset_pose(corrected)
+                self._limelight_reset_enabled = False
+
+                if DEBUG["limelight_reset_logging"]:
+                    _log.info(
+                        f"MT2 RESET | "
+                        f"sent_yaw={yaw_deg:.1f} | "
+                        f"odom_before=({odom_pose.x:.2f}, "
+                        f"{odom_pose.y:.2f}, "
+                        f"{odom_pose.rotation().degrees():.1f}) | "
+                        f"vision_raw=({estimate.pose.x:.2f}, "
+                        f"{estimate.pose.y:.2f}, "
+                        f"{estimate.pose.rotation().degrees():.1f}) | "
+                        f"applied=({corrected.x:.2f}, "
+                        f"{corrected.y:.2f}, "
+                        f"{corrected.rotation().degrees():.1f}) | "
+                        f"tags={estimate.tag_count} "
+                        f"avg_dist={estimate.avg_tag_dist:.2f}m "
+                        f"avg_area={estimate.avg_tag_area:.2f} "
+                        f"latency={estimate.latency:.0f}ms"
+                    )
+                else:
+                    _log.info(
+                        f"MT2 reset: "
+                        f"({odom_pose.x:.1f},{odom_pose.y:.1f})"
+                        f"->({corrected.x:.1f},{corrected.y:.1f}) "
+                        f"tags={estimate.tag_count}"
+                    )
+            elif DEBUG["limelight_reset_logging"]:
+                _log.warning(
+                    f"MT2 RESET FAILED | "
+                    f"sent_yaw={yaw_deg:.1f} | "
+                    f"odom=({odom_pose.x:.2f}, "
+                    f"{odom_pose.y:.2f}, "
+                    f"{odom_pose.rotation().degrees():.1f}) | "
+                    f"estimate={'no tags' if estimate else 'no data'}"
+                )
+
+    def request_limelight_reset(self) -> None:
+        """Request a one-shot Limelight MegaTag2 odometry reset."""
+        self._limelight_reset_enabled = True
+        _log.info("Limelight one-shot reset requested")
+
+    def request_hub_reset(self) -> None:
+        """Hard-reset odometry to the front of the alliance Hub."""
+        alliance = DriverStation.getAlliance()
+        if alliance == DriverStation.Alliance.kBlue:
+            key = "Blue"
+        else:
+            key = "Red"
+        pose_cfg = HUB_RESET_POSES[key]
+        pose = Pose2d(pose_cfg["x"], pose_cfg["y"],
+                      Rotation2d.fromDegrees(pose_cfg["heading"]))
+        self.reset_pose(pose)
+        _log.warning(
+            f"HUB RESET ({key}): "
+            f"x={pose_cfg['x']:.2f} y={pose_cfg['y']:.2f} "
+            f"heading={pose_cfg['heading']:.0f}"
+        )
 
     def _start_sim_thread(self):
         def _sim_periodic():

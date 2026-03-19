@@ -54,7 +54,7 @@ A robot may only score one Tower level during teleop.
 
 RobotPy (Python) codebase for an FRC competition robot using the WPILib command-based framework with Phoenix 6 motor controllers. This is a starting-point codebase for the 2026 season built on lessons learned from 2025.
 
-**Hardware note:** The shooter Limelight is mounted on the turret and moves with it. This means vision measurements are always relative to the turret's current heading, not the robot frame.
+**Hardware note:** The shooter Limelight (`limelight-shooter`) is fixed-mounted facing forward from the back of the robot, offset approximately 6 inches behind center.
 
 ## Code Principles
 
@@ -105,7 +105,15 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 
 ## IMPORTANT: Read Docs First
 
-**Before reading or modifying ANY code, read the relevant docs below.** The docs are the authoritative reference for how this codebase is structured, what patterns we use, and why. Jumping straight into code without reading the docs first will lead to mistakes — wrong patterns, duplicated work, or changes that break conventions. Always start here.
+**Before reading or modifying ANY code, read the relevant docs below.** The docs are the authoritative reference for how this codebase is structured, what patterns we use, and why. Jumping straight into code without reading the docs first will lead to mistakes -- wrong patterns, duplicated work, or changes that break conventions. Always start here.
+
+**Why this matters:** The docs are kept in sync with code (as of 2026-03-19). Reading the right doc first gives you the architecture, constants, patterns, and current status of each subsystem in one pass -- far faster than exploring the codebase file by file. For any task:
+
+1. **Identify which docs are relevant** from the table below (often 1-3 docs).
+2. **Read those docs fully** before opening any source files.
+3. **Then read code** only for the specific files the docs point you to.
+
+This approach avoids wasted tool calls and context window. The docs tell you what exists, what's disabled, and where to look.
 
 | Document | Description |
 |----------|-------------|
@@ -113,8 +121,9 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 | `docs/architecture/hardware-and-subsystems.md` | Hardware abstraction layer and subsystem design patterns |
 | `docs/architecture/commands-and-controls.md` | Command-based architecture and controller bindings |
 | `docs/architecture/shooter-system.md` | Shooter subsystems, distance lookup table, and orchestrator |
-| `docs/architecture/auto-aim.md` | Auto-aim deep dive: pose-based turret aiming, PD controller, movement compensation, debugging |
-| `docs/architecture/controls.md` | Binding extraction pattern, operator control map, manual overrides |
+| `docs/architecture/intake-and-feeding.md` | Intake arm/spinner and H-feed/V-feed subsystems, Fuel path |
+| `docs/architecture/auto-aim.md` | Auto-aim deep dive: pose-based turret aiming, PD controller, movement compensation, debugging (DISABLED) |
+| `docs/architecture/controls.md` | Binding extraction pattern, GameController wrapper, operator control map |
 | `docs/architecture/match-setup.md` | Pre-match alliance/pose selection, tag priorities, SmartDashboard choosers |
 | `docs/architecture/autonomous.md` | Autonomous system: routines, constants, chooser setup |
 | `docs/architecture/drivetrain.md` | Swerve drivetrain setup with Phoenix Tuner X |
@@ -127,6 +136,7 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 | `docs/PYTHON_SETUP.md` | Python installation for Mac and Windows |
 | `docs/roborio-deploy.md` | RoboRIO setup, deployment, and troubleshooting |
 | `docs/debugging.md` | SSH access, remote logs, and common debugging scenarios |
+| `docs/cli-and-tooling.md` | Team CLI (./cli/team.sh), menus, setup commands, how to extend |
 | `docs/QUICK-REFERENCE.md` | Printable 1-page cheat sheet for the team (Python, git, deploy) |
 
 ## Quick Reference

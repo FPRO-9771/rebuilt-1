@@ -72,11 +72,6 @@ class Hood(Subsystem):
             _log.warning("_set_position called but hood DISABLED")
             return
         clamped = max(CON_HOOD["min_position"], min(position, CON_HOOD["max_position"]))
-        # if clamped != self._last_target:
-        #     _log.info(
-        #         f"_set_position: target={clamped:.4f} current={self.get_position():.4f} "
-        #         f"error={clamped - self.get_position():.4f}"
-        #     )
         self._last_target = clamped
         self.motor.set_position(clamped)
 

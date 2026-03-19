@@ -32,7 +32,6 @@ class Robot(wpilib.TimedRobot):
             wpilib.DriverStation.silenceJoystickConnectionWarning(True)
         self.container = RobotContainer()
         self.auto_command = None
-        self._apply_selected_pose()
 
     def _apply_selected_pose(self):
         """Reset drivetrain odometry to the pose selected in Elastic."""
@@ -40,8 +39,6 @@ class Robot(wpilib.TimedRobot):
         x = pose.get("start_x", 0.0)
         y = pose.get("start_y", 0.0)
         heading = pose.get("start_heading", 0.0)
-        if x == 0.0 and y == 0.0:
-            return
         field_pose = Pose2d(x, y, Rotation2d.fromDegrees(heading))
         self.container.drivetrain.reset_pose(field_pose)
         _log.info(f"Pose reset to ({x:.1f}, {y:.1f}, {heading:.0f} deg)")
@@ -56,6 +53,7 @@ class Robot(wpilib.TimedRobot):
 
     def autonomousInit(self):
         """Called when autonomous mode starts."""
+        self._apply_selected_pose()
         pose = self.container.match_setup.get_pose()
         path_name = pose.get("auto_path", "")
 
@@ -84,7 +82,6 @@ class Robot(wpilib.TimedRobot):
 
     def teleopInit(self):
         """Called when teleop mode starts."""
-        # Cancel any running auto command
         if self.auto_command:
             self.auto_command.cancel()
 

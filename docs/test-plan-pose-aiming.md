@@ -73,12 +73,12 @@ Step-by-step checkout for the new pose-based turret aiming and auto-shoot system
 
 | Step | Action | What to Look For | Pass? |
 |------|--------|-----------------|-------|
-| 3.1 | Place robot 3-4 meters from target, facing it. Press Y to enable coordinate aim. | Turret should rotate to point at the target. `AutoAim/OnTarget` on Elastic should turn True. | |
+| 3.1 | Place robot 3-4 meters from target, facing it. Press left bumper to enable coordinate aim. | Turret should rotate to point at the target. `AutoAim/OnTarget` on Elastic should turn True. | |
 | 3.2 | Read the SSH log. | You should see `[AIM HOLD]` lines. Check that `pose=` matches where you placed the robot, `tgt=` matches the Hub coordinates, `err=` is small (< 2 degrees). | |
-| 3.3 | Press Y to disable. Manually rotate turret with left stick. Press Y again. | Turret should swing back to point at the target. | |
-| 3.4 | Place robot at a different position (e.g. 45 degrees off to the side). Press Y. | Turret should aim at the target from the new angle. | |
-| 3.5 | Place robot 1 meter from target. Press Y. | Turret aims. Distance on log should show ~1m. | |
-| 3.6 | Place robot 5+ meters from target. Press Y. | Turret aims. Distance on log should show ~5m. | |
+| 3.3 | Press left bumper to disable. Manually rotate turret with left stick. Press left bumper again. | Turret should swing back to point at the target. | |
+| 3.4 | Place robot at a different position (e.g. 45 degrees off to the side). Press left bumper. | Turret should aim at the target from the new angle. | |
+| 3.5 | Place robot 1 meter from target. Press left bumper. | Turret aims. Distance on log should show ~1m. | |
+| 3.6 | Place robot 5+ meters from target. Press left bumper. | Turret aims. Distance on log should show ~5m. | |
 
 **If turret points the wrong way:**
 - Flip `turret_aim_inverted` in `CON_SHOOTER`
@@ -103,7 +103,7 @@ Step-by-step checkout for the new pose-based turret aiming and auto-shoot system
 
 | Step | Action | What to Look For | Pass? |
 |------|--------|-----------------|-------|
-| 4.1 | Press Y to enable aim. Slowly drive forward toward the target. | Turret stays pointed at target. On the log, `trk=` (tracking correction) should be small. | |
+| 4.1 | Press left bumper to enable aim. Slowly drive forward toward the target. | Turret stays pointed at target. On the log, `trk=` (tracking correction) should be small. | |
 | 4.2 | Drive slowly to the left (strafe). | Turret compensates. `trk=` should be nonzero. The turret should stay roughly aimed. | |
 | 4.3 | Drive slowly to the right (strafe). | Turret compensates in the other direction. `trk=` flips sign. | |
 | 4.4 | Drive in a circle around the target. | Turret continuously tracks. It should never lose the target (there is no "lost" state with pose-based aiming). | |
@@ -127,11 +127,11 @@ Step-by-step checkout for the new pose-based turret aiming and auto-shoot system
 
 | Step | Action | What to Look For | Pass? |
 |------|--------|-----------------|-------|
-| 5.1 | Place robot 2m from target. Hold left bumper (AutoShoot). | Launcher spins up. On the log: `[SHOOT] rawDist=~2.00` and `rps=` should match the 2m entry in the distance table. | |
-| 5.2 | Release left bumper. | Launcher and hood stop. | |
-| 5.3 | Move to 3m. Hold left bumper. | `rawDist=~3.00`, `rps=` should be higher (farther = more power). | |
-| 5.4 | Move to 1m. Hold left bumper. | `rawDist=~1.00`, `rps=` should be lower. | |
-| 5.5 | While holding left bumper, slowly drive away from target. | `rawDist` increases, `corrDist` should be slightly higher than raw (closing speed is negative = retreating). `rps` should gradually increase. | |
+| 5.1 | Place robot 2m from target. Enable coordinate aim (left bumper). Hold left trigger (ShootWhenReady). | Launcher spins up. On the log: `[SHOOT] rawDist=~2.00` and `rps=` should match the 2m entry in the distance table. | |
+| 5.2 | Release left trigger. | Launcher and hood stop. | |
+| 5.3 | Move to 3m. Hold left trigger. | `rawDist=~3.00`, `rps=` should be higher (farther = more power). | |
+| 5.4 | Move to 1m. Hold left trigger. | `rawDist=~1.00`, `rps=` should be lower. | |
+| 5.5 | While holding left trigger, slowly drive away from target. | `rawDist` increases, `corrDist` should be slightly higher than raw (closing speed is negative = retreating). `rps` should gradually increase. | |
 
 **If RPS does not change with distance:**
 - Check the distance table in `CON_SHOOTER` -- are there enough entries?
@@ -149,7 +149,7 @@ Step-by-step checkout for the new pose-based turret aiming and auto-shoot system
 
 | Step | Action | What to Look For | Pass? |
 |------|--------|-----------------|-------|
-| 6.1 | Press Y (coordinate aim on). Hold left trigger (shoot when ready). | Turret aims, launcher spins up. Feeds should NOT run yet. Log shows `WAITING`. | |
+| 6.1 | Press left bumper (coordinate aim on). Hold left trigger (shoot when ready). | Turret aims, launcher spins up. Feeds should NOT run yet. Log shows `WAITING`. | |
 | 6.2 | Wait for launcher to reach speed and turret to be on target. | Feeds start running. Log shows `AT_SPEED ON_TARGET FEEDING`. `AutoAim/OnTarget` = True on Elastic. | |
 | 6.3 | While holding left trigger, manually bump the turret with left stick X. | Feeds should stop (turret off target). Log shows `AT_SPEED` but not `ON_TARGET`. | |
 | 6.4 | Release left stick. Let turret re-aim. | Feeds resume when back on target. | |

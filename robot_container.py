@@ -17,7 +17,7 @@ from subsystems.v_feed import VFeed
 from subsystems.intake import Intake
 from subsystems.intake_spinner import IntakeSpinner
 from controls import configure_driver, configure_operator
-from handlers import get_vision_providers
+# from handlers import get_vision_providers  # COMMENTED OUT -- not using vision providers (2026-03-19)
 from match_setup import MatchSetup
 from telemetry import setup_telemetry
 
@@ -43,7 +43,9 @@ class RobotContainer:
         self.intake_spinner = IntakeSpinner()
 
         # --- Vision ---
-        self.vision = get_vision_providers()
+        # Vision providers commented out -- not using vision-based aiming.
+        # Limelight stream and odometry resets work without VisionProvider.
+        # self.vision = get_vision_providers()
 
         # --- Controllers ---
         use_ps4 = CON_ROBOT["use_ps4"]
@@ -58,7 +60,7 @@ class RobotContainer:
 
         # --- Telemetry ---
         setup_telemetry(None, self.turret, self.launcher,
-                        self.hood, self.vision,
+                        self.hood, {},  # vision providers disabled
                         self.h_feed, self.v_feed,
                         self.intake_spinner,
                         drivetrain=self.drivetrain,
@@ -75,7 +77,7 @@ class RobotContainer:
         # --- Operator Controls ---
         configure_operator(
             self.operator, None, self.turret,
-            self.launcher, self.hood, self.vision["shooter"],
+            self.launcher, self.hood, None,  # vision provider disabled
             self.match_setup, self.h_feed, self.v_feed,
             drivetrain=self.drivetrain,
         )

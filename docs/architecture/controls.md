@@ -41,17 +41,32 @@ from controls import configure_driver, configure_operator
 
 class RobotContainer:
     def _configure_bindings(self):
-        configure_driver(self.driver, self.drivetrain)
+        configure_driver(self.driver, self.drivetrain,
+                         intake=self.intake,
+                         intake_spinner=self.intake_spinner)
         configure_operator(
-            self.operator, self.conveyor, self.turret,
+            self.operator, None, self.turret,
             self.launcher, self.hood, self.vision["shooter"],
-            self.match_setup,
-            h_feed=self.h_feed, v_feed=self.v_feed, intake=self.intake,
-            intake_spinner=self.intake_spinner,
+            self.match_setup, self.h_feed, self.v_feed,
+            drivetrain=self.drivetrain,
         )
 ```
 
 Each binding module receives the controller and subsystems, then wires everything internally. `robot_container.py` doesn't need to know which button does what.
+
+### GameController Wrapper
+
+`controls/game_controller.py` defines a `GameController` class that wraps either a `CommandXboxController` or a `CommandPS4Controller` behind a single, Xbox-style interface. The constructor takes a joystick port and a `use_ps4` flag (read from `CON_ROBOT["use_ps4"]` in `constants/controls.py`). When `use_ps4` is `True`, Xbox-named methods like `a()`, `b()`, `leftBumper()`, and `getLeftTriggerAxis()` delegate to the PS4 equivalents (`cross()`, `circle()`, `L1()`, `getL2Axis()`, etc.). D-pad and stick axes are the same on both controller types and pass straight through.
+
+`robot_container.py` creates one `GameController` per role:
+
+```python
+use_ps4 = CON_ROBOT["use_ps4"]
+self.driver = GameController(CON_ROBOT["driver_controller_port"], use_ps4)
+self.operator = GameController(CON_ROBOT["operator_controller_port"], use_ps4)
+```
+
+The binding modules (`driver_controls.py`, `operator_controls.py`) only call Xbox-style methods, so switching to PS4 controllers for simulation requires changing just the one constant -- no binding code needs to change.
 
 ### Adding a New Binding
 
@@ -71,17 +86,26 @@ When you add a new control:
 |-------|---------|--------|
 | Left stick | Default command | Drive translation (X = strafe, Y = forward/back) |
 | Right stick X | Default command | Rotation |
-| A button | `whileTrue` | Brake (lock wheels in X pattern) |
-| B button | `whileTrue` | Point wheels in left stick direction |
+| A button | `onTrue` | Manual Hub odometry reset (when all else fails) |
+| B button | `onTrue` | One-shot Limelight MegaTag2 odometry reset |
 | Left bumper | `onTrue` | Reset field-centric heading |
 | Right bumper | `onTrue` | Toggle field-centric / robot-centric |
+| Y button | `onTrue` | Toggle intake deploy (down/up) |
 | Left trigger | `whileTrue` | Run intake (spin rollers + hold arm) |
-| Right trigger | axis (default cmd) | Slow mode — hold to reduce drive speed to 25% |
-| Y button | `whileTrue` | Drive straight forward (alignment test, 25% speed) |
+| Right trigger | axis (default cmd) | Slow mode -- hold to reduce drive speed to 10% |
 | Back + Y | `whileTrue` | SysId dynamic forward |
 | Back + X | `whileTrue` | SysId dynamic reverse |
 | Start + Y | `whileTrue` | SysId quasistatic forward |
 | Start + X | `whileTrue` | SysId quasistatic reverse |
+
+### Drive Response Curve
+
+Joystick inputs pass through a power curve (`_apply_curve` in `driver_controls.py`) before becoming velocity commands. The exponent is configurable in `constants/controls.py`:
+
+- `drive_exponent` (currently 4.0) -- translation (left stick)
+- `rotation_exponent` (currently 5.0) -- rotation (right stick X)
+
+Higher exponents give more fine control at low/mid stick. See `docs/drive-team-guide.md` for a tuning reference table.
 
 ### Source
 
@@ -97,25 +121,25 @@ When you add a new control:
 | Input | Binding | Action |
 |-------|---------|--------|
 | Left stick X | `whileTrue` | Manual turret aim |
-| Left stick Y | default command | Manual hood nudge (tap up = closed, tap down = open) |
-| Right stick Y | (via A toggle) | Launcher speed (stick maps to RPS range) |
-| A button | `toggleOnTrue` | Toggle manual launcher on/off |
-| B button | `toggleOnTrue` | Toggle feed system on/off (H feed + V feed) |
+| Left stick Y | | *unassigned* |
+| Right stick Y | (via right trigger) | Launcher speed (stick maps to RPS range) |
+| A button | | *unassigned* |
+| B button | | *unassigned* |
 | X button | | *unassigned* |
-| Y button | `toggleOnTrue` | Toggle coordinate aim on/off |
-| Left bumper | `whileTrue` | Auto-shoot (pose-based distance -> launcher/hood from table) |
-| Left trigger | `whileTrue` | Shoot when ready (launcher + hood + feeds when on target) |
-| Right bumper | `toggleOnTrue` | Toggle intake deploy + spinner on/off |
-| Right trigger | `whileTrue` | Reverse H feed (unjam) |
+| Y button | | *unassigned* |
+| Left bumper | `toggleOnTrue` | Coordinate aim (turret aims at Hub via odometry) |
+| Left trigger | `whileTrue` | Shoot when ready (launcher + hood + auto-feed when aligned and at speed) |
+| Right bumper | `whileTrue` | Reverse all feeds (unjam H feed + V feed + conveyor, interrupts right trigger) |
+| Right trigger | `whileTrue` | Manual shoot (launcher + auto-feed when at speed, speed from right stick Y) |
 
 ### Source
 
 - `controls/operator_controls.py` -- all operator bindings
+- `commands/manual_shoot.py` -- launcher spin-up + auto-feed when at speed
+- `commands/manual_launcher.py` -- stick-to-RPS mapping (fallback when feeds not wired)
+- `commands/reverse_feeds.py` -- reverse all feeds to clear jams (shared by manual and auto)
 - `commands/coordinate_aim.py` -- odometry-based turret aiming
-- `commands/auto_shoot.py` -- distance-based launcher/hood
-- `commands/manual_launcher.py` -- stick-to-RPS mapping
-- `commands/manual_hood.py` -- nudge-style hood angle control
-- `commands/shoot_when_ready.py` -- auto-shoot + auto-feed combo
+- `commands/shoot_when_ready.py` -- launcher + hood + auto-feed combo (uses shared unjam logic from reverse_feeds)
 
 ---
 
@@ -125,31 +149,23 @@ The operator can mix manual and automatic controls freely. Each command is indep
 
 ### Always Manual
 - **Left stick X** -- turret aim (works regardless of coordinate aim state)
-- **Left stick Y** -- hood nudge (always active as default command)
-- **A toggle + right stick Y** -- launcher speed
-- **B toggle** -- feed system
-- **Right bumper toggle** -- intake deploy + spinner
+- **Right trigger hold + right stick Y** -- manual shoot (launcher + auto-feed when at speed)
+- **Right bumper hold** -- reverse all feeds (unjam)
 
-### Optional Auto
-- **Y toggle** -- coordinate aim (turret aims at Hub using odometry)
-- **Left bumper hold** -- auto-shoot (pose-based distance sets launcher RPS and hood position from lookup table)
-- **Left trigger hold** -- shoot when ready (auto-shoot + auto-feed when aligned and at speed)
+### Auto Aim
+- **Left bumper toggle** -- coordinate aim (turret aims at Hub using odometry)
+- **Left trigger hold** -- shoot when ready (launcher + hood + auto-feed when aligned and at speed)
 
 ### Typical Workflows
 
-**Full manual (testing/practice):**
-1. Use left stick X to aim turret, tap left stick Y to adjust hood
-2. Press A to toggle launcher on, use right stick Y to set speed
-3. Press B to run feeds
+**Full manual:**
+1. Use left stick X to aim turret
+2. Hold right trigger to spin launcher, use right stick Y to set speed
+3. Feeds run automatically when launcher reaches target speed
 
-**Manual aim + auto shoot:**
-1. Use left stick X to aim turret at target
-2. Hold left bumper -- auto-shoot reads distance and sets launcher speed + hood automatically
-3. Press B to run feeds
-
-**Coordinate aim + shoot when ready:**
-1. Press Y to enable coordinate aim (turret aims at Hub automatically)
-2. Hold left trigger -- launcher spins up, hood sets angle, feeds run when on target
+**Auto aim:**
+1. Toggle left bumper to enable coordinate aim (turret tracks Hub)
+2. Hold left trigger to shoot when ready (launcher spins, feeds when on target and at speed)
 
 ---
 
@@ -159,12 +175,11 @@ Commands interact through the WPILib requirement system:
 
 | Action | What Happens |
 |--------|-------------|
-| CoordinateAim on, push left stick (manual turret) | Manual turret requires turret -> interrupts CoordinateAim; resumes when stick released (still toggled on) |
-| ManualLauncher on, hold left bumper (AutoShoot) | AutoShoot requires launcher+hood -> interrupts ManualLauncher and ManualHood. Release bumper, press A to restart manual. |
-| CoordinateAim on + AutoShoot held | Both run -- different subsystem requirements (turret vs launcher+hood) |
-| ManualLauncher on + CoordinateAim on | Both run -- different subsystem requirements (launcher vs turret) |
-| ManualHood (default) + AutoShoot held | AutoShoot takes hood; ManualHood resumes when AutoShoot ends |
-| IntakeSpinner on + feeds on | Both run -- different subsystem requirements (intake_spinner vs h_feed/v_feed) |
+| Reverse all feeds (right bumper) + manual shoot (right trigger) | ReverseFeeds requires h_feed + v_feed -> interrupts ManualShoot. Release right bumper, hold right trigger again to resume. |
+| Reverse all feeds (right bumper) + shoot when ready (left trigger) | ReverseFeeds requires h_feed + v_feed -> interrupts ShootWhenReady. Release right bumper, hold left trigger again to resume. |
+| Manual turret (left stick) + coordinate aim (left bumper) | Both require turret -> manual stick interrupts CoordinateAim. Toggle left bumper again to re-enable. |
+| ManualShoot (right trigger) + coordinate aim (left bumper) | Different subsystems (launcher/feeds vs turret) -> both run simultaneously. |
+| IntakeSpinner on (driver) + manual shoot (operator) | Both run -- different subsystem requirements (intake_spinner vs launcher/h_feed/v_feed) |
 
 Key principle: commands that require different subsystems can run simultaneously. Commands that require the same subsystem will interrupt each other, with the most recently scheduled command winning.
 

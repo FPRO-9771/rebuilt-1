@@ -93,10 +93,6 @@ class LimelightVisionProvider(VisionProvider):
             with self._lock:
                 self._cached_targets = targets
 
-            if targets:
-                tx_vals = " ".join(f"{t.tag_id}:{t.tx:.2f}" for t in targets)
-                _log.debug(f"[LL] {fresh} {tx_vals}")
-
             time.sleep(_POLL_INTERVAL)
 
     @staticmethod

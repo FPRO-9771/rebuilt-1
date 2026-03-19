@@ -3,21 +3,17 @@ Operator controller bindings.
 All operator button/stick mappings live here to keep robot_container short.
 
 Controls:
-    Left stick X        -- Manual turret aim
-    Left stick Y        -- Manual hood nudge (tap up = more closed, tap down = more open)
-    Right stick Y       -- Launcher speed (when toggled on via A)
-    A button (toggle)   -- Launcher on/off (speed from right stick Y)
-    B button (toggle)   -- Feed system on/off (H feed + V feed)
-    Y button (toggle)   -- Coordinate aim (turret aims at Hub via odometry)
-    Left bumper (hold)  -- Auto-shoot (pose distance -> launcher/hood)
-    Left trigger (hold) -- Shoot when ready (launcher + feed when on target)
-    Right trigger (hold) -- Reverse H feed (un-jam)
+    Left stick X         -- Manual turret aim
+    Right stick Y        -- Launcher speed (when held via right trigger)
+    Left bumper (toggle) -- Coordinate aim (turret aims at Hub via odometry)
+    Left trigger (hold)  -- Shoot when ready (launcher + feed when on target)
+    Right bumper (hold)  -- Reverse all feeds (un-jam, interrupts right trigger)
+    Right trigger (hold) -- Manual shoot (launcher + auto-feed when at speed)
 """
 
-from commands2 import ParallelCommandGroup
 from commands2.button import Trigger
 
-from constants import CON_ROBOT, CON_H_FEED, CON_V_FEED
+from constants import CON_ROBOT
 from constants.shooter import CON_TURRET_MINION
 from constants.pose import CON_POSE
 from calculations.shooter_position import get_shooter_field_position
@@ -27,25 +23,18 @@ from utils.logger import get_logger
 
 _log = get_logger("operator")
 from subsystems.turret import Turret
-from subsystems.launcher import Launcher
-from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
-from commands.auto_shoot import AutoShoot
 from commands.coordinate_aim import CoordinateAim
-from commands.manual_hood import ManualHood
 from commands.manual_launcher import ManualLauncher
+from commands.manual_shoot import ManualShoot
+from commands.reverse_feeds import ReverseFeeds
 from commands.shoot_when_ready import ShootWhenReady
 
 
 def _make_shoot_context_supplier(drivetrain, alliance_supplier,
                                  velocity_supplier=None):
-    """Build a callable that returns a ShootContext with full pose context.
-
-    Computes the distance from the shooter (not robot center) to the
-    alliance Hub, adjusts for closing speed, and packages everything
-    the commands need for both control and logging.
-    """
+    """Build a callable that returns a ShootContext with full pose context."""
     def _get_context():
         pose = drivetrain.get_pose()
         shooter_xy = get_shooter_field_position(
@@ -53,18 +42,14 @@ def _make_shoot_context_supplier(drivetrain, alliance_supplier,
             CON_POSE["shooter_offset_x"],
             CON_POSE["shooter_offset_y"],
         )
-
         alliance = alliance_supplier()
         target_xy = (alliance["target_x"], alliance["target_y"])
-
         vx, vy = 0.0, 0.0
         if velocity_supplier is not None:
             vx, vy = velocity_supplier()
-
         raw_distance, closing = compute_range_state(
             shooter_xy, target_xy, (vx, vy))
         corrected = compute_corrected_distance(raw_distance, closing)
-
         return ShootContext(
             corrected_distance=corrected,
             raw_distance=raw_distance,
@@ -79,7 +64,6 @@ def _make_shoot_context_supplier(drivetrain, alliance_supplier,
             vx=vx,
             vy=vy,
         )
-
     return _get_context
 
 
@@ -97,50 +81,27 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
         turret.manual(lambda: operator.getLeftX())
     )
 
-    # --- Manual hood: left stick Y nudge ---
-    # Tap up = more closed, tap down = more open
-    hood.setDefaultCommand(
-        ManualHood(hood, lambda: -operator.getLeftY(), deadband)
-    )
-
-    # --- DEBUG: D-pad up/down sends raw voltage to hood ---
-    # This bypasses closed-loop control to test if the motor moves at all.
-    # Remove after debugging.
-    _test_volts = 6.0
-    operator.povUp().whileTrue(
-        hood.runEnd(
-            lambda: hood._set_voltage(_test_volts),
-            lambda: hood._stop(),
-        )
-    )
-    operator.povDown().whileTrue(
-        hood.runEnd(
-            lambda: hood._set_voltage(-_test_volts),
-            lambda: hood._stop(),
-        )
-    )
-
-    # --- Launcher: A button toggle, right stick Y controls speed ---
-    operator.a().toggleOnTrue(
-        ManualLauncher(launcher, lambda: -operator.getRightY())
-    )
-
-    # --- Feeds: B button toggle ---
+    # --- Manual shoot: right trigger hold, right stick Y controls speed ---
+    # Stick Y maps to virtual distance via the shooter distance table,
+    # which sets both launcher RPS and hood position. Auto-feeds when at speed.
     if h_feed is not None and v_feed is not None:
-        operator.b().toggleOnTrue(
-            ParallelCommandGroup(
-                h_feed.run_at_voltage(CON_H_FEED["feed_voltage"]),
-                v_feed.run_at_voltage(CON_V_FEED["feed_voltage"]),
-            )
-        )
-
-    # --- Reverse H feed (un-jam): right trigger hold ---
-    if h_feed is not None:
         operator.rightTrigger().whileTrue(
-            h_feed.run_at_voltage(CON_H_FEED["reverse_voltage"])
+            ManualShoot(launcher, hood, h_feed, v_feed,
+                        lambda: -operator.getRightY())
+        )
+    else:
+        operator.rightTrigger().whileTrue(
+            ManualLauncher(launcher, lambda: -operator.getRightY())
         )
 
-    # --- Robot velocity supplier for coordinate aim and distance ---
+    # --- Reverse all feeds (un-jam): right bumper hold ---
+    # Requires h_feed + v_feed, so it interrupts the right trigger ManualShoot.
+    if h_feed is not None and v_feed is not None:
+        operator.rightBumper().whileTrue(
+            ReverseFeeds(h_feed, v_feed, conveyor)
+        )
+
+    # --- Robot velocity supplier ---
     vel_supplier = None
     if drivetrain is not None:
         def _get_robot_velocity():
@@ -148,27 +109,18 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
             return (dt_state.speeds.vx, dt_state.speeds.vy)
         vel_supplier = _get_robot_velocity
 
-    # --- Shoot context supplier (shared by all shooter commands) ---
+    # --- Shoot context supplier ---
     context_supplier = None
     if drivetrain is not None:
         context_supplier = _make_shoot_context_supplier(
             drivetrain, match_setup.get_alliance, vel_supplier)
 
-    # --- Coordinate aim: Y button toggle ---
-    # Aims turret at Hub using odometry -- no vision needed.
+    # --- Coordinate aim: left bumper toggle ---
     coord_aim = CoordinateAim(turret, context_supplier=context_supplier,
                               turret_config=CON_TURRET_MINION)
-    operator.y().toggleOnTrue(coord_aim)
-
-    # --- Auto-shoot: left bumper hold ---
-    if context_supplier is not None:
-        operator.leftBumper().whileTrue(
-            AutoShoot(launcher, hood,
-                      context_supplier=context_supplier)
-        )
+    operator.leftBumper().toggleOnTrue(coord_aim)
 
     # --- Shoot when ready: left trigger hold ---
-    # Spins launcher immediately; feeds only when at speed AND on target.
     if h_feed is not None and v_feed is not None and context_supplier is not None:
         operator.leftTrigger().whileTrue(
             ShootWhenReady(
