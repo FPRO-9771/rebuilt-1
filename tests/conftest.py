@@ -115,7 +115,7 @@ TEST_CON_MANUAL = {
 
 TEST_CON_INTAKE = {
     "up_position": 0.0,
-    "gear_ratio": 5.0,
+    "gear_ratio": 15.0,
     "down_position": -2.0,
     "position_tolerance": 0.05,
     "hold_kP": 4.0,
