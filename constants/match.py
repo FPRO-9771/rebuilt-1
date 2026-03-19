@@ -32,21 +32,21 @@ ALLIANCES = {
                 "default": True,
                 "start_x": 13.0,
                 "start_y": 4.0,
-                "start_heading": 0.0,
+                "start_heading": 180.0,
                 "auto_path": "Auto Red Center",
             },
             {
                 "name": "Left",
                 "start_x": 13.0,
                 "start_y": 0.55,
-                "start_heading": 0.0,
+                "start_heading": 180.0,
                 "auto_path": "Auto Red Left",
             },
             {
                 "name": "Right",
                 "start_x": 13.0,
                 "start_y": 7.5,
-                "start_heading": 0.0,
+                "start_heading": 180.0,
                 "auto_path": "Auto Red Right",
             },
         ],
@@ -95,6 +95,10 @@ DEFAULT_ALLIANCE = "Red"
 #
 # Measure X/Y from the field origin (blue driver station right corner).
 # Heading: 0 for blue (facing red wall), 180 for red (facing blue wall).
+# How long (seconds) a Limelight one-shot reset waits for tags before
+# giving up.  Keeps logs clean when the camera has no view.
+LIMELIGHT_RESET_TIMEOUT = 2.0
+
 HUB_RESET_POSES = {
     "Blue": {"x": 4.6, "y": 4.0, "heading": 0.0},
     "Red":  {"x": 12.0, "y": 4.0, "heading": 180.0},

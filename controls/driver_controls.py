@@ -33,6 +33,7 @@ from constants.controls import CON_ROBOT
 from constants.debug import DEBUG
 from commands.run_intake import RunIntake
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
+from telemetry.drive_input_logging import log_drive_inputs
 from telemetry.swerve_telemetry import SwerveTelemetry
 from utils.logger import get_logger
 
@@ -99,10 +100,21 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
         trigger = driver.getRightTriggerAxis()
         speed_scale = 1.0 - trigger * (1.0 - slow_factor)
 
+        curved_ly = _apply_curve(raw_ly, drive_exp)
+        curved_lx = _apply_curve(raw_lx, drive_exp)
+        curved_rx = _apply_curve(raw_rx, rot_exp)
 
-        vel_x = -_apply_curve(raw_ly, drive_exp) * max_speed * speed_scale
-        vel_y = -_apply_curve(raw_lx, drive_exp) * max_speed * speed_scale
-        rot = -_apply_curve(raw_rx, rot_exp) * max_angular_rate * speed_scale
+        vel_x = -curved_ly * max_speed * speed_scale
+        vel_y = -curved_lx * max_speed * speed_scale
+        rot = -curved_rx * max_angular_rate * speed_scale
+
+        # --- Drive input logging ---
+        log_drive_inputs(
+            raw_ly, raw_lx, raw_rx,
+            curved_ly, curved_lx, curved_rx,
+            vel_x, vel_y, rot,
+            speed_scale, drive_exp, rot_exp,
+        )
 
         return (
             req.with_velocity_x(vel_x)

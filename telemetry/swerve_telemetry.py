@@ -9,7 +9,7 @@ import math
 
 from ntcore import NetworkTableInstance
 from phoenix6 import SignalLogger, swerve, units
-from wpilib import Color, Color8Bit, Mechanism2d, MechanismLigament2d, SmartDashboard
+from wpilib import Color, Color8Bit, Field2d, Mechanism2d, MechanismLigament2d, SmartDashboard
 from wpimath.geometry import Pose2d
 from wpimath.kinematics import ChassisSpeeds, SwerveModulePosition, SwerveModuleState
 
@@ -46,10 +46,9 @@ class SwerveTelemetry:
         self._drive_timestamp = self._drive_state_table.getDoubleTopic("Timestamp").publish()
         self._drive_odometry_frequency = self._drive_state_table.getDoubleTopic("OdometryFrequency").publish()
 
-        # Robot pose for field positioning
-        self._table = self._inst.getTable("Pose")
-        self._field_pub = self._table.getDoubleArrayTopic("robotPose").publish()
-        self._field_type_pub = self._table.getStringTopic(".type").publish()
+        # Robot pose for field positioning (Field2d on SmartDashboard)
+        self._field = Field2d()
+        SmartDashboard.putData("Field", self._field)
 
         # Mechanisms to represent the swerve module states
         self._module_mechanisms: list[Mechanism2d] = [
@@ -98,6 +97,10 @@ class SwerveTelemetry:
         Accept the swerve drive state and telemeterize it to SmartDashboard and SignalLogger.
         """
         self._cycle += 1
+
+        # Always publish Field2d pose -- essential for odometry debugging
+        self._field.setRobotPose(state.pose)
+
         if not DEBUG["debug_telemetry"]:
             return
         if self._cycle % self._PUBLISH_EVERY_N != self._PUBLISH_OFFSET:
@@ -127,12 +130,6 @@ class SwerveTelemetry:
         SignalLogger.write_double(
             "DriveState/OdometryPeriod", state.odometry_period, "seconds"
         )
-
-        # Telemeterize the pose to a Field2d
-        self._field_type_pub.set("Field2d")
-
-        pose_array = [state.pose.x, state.pose.y, state.pose.rotation().degrees()]
-        self._field_pub.set(pose_array)
 
         # Pose estimation -- human-readable values on SmartDashboard
         SmartDashboard.putNumber("Drive/Pose X (m)", round(state.pose.x, 2))

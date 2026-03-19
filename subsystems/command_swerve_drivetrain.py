@@ -3,7 +3,7 @@ from commands2.sysid import SysIdRoutine
 import math
 from phoenix6 import SignalLogger, swerve, units, utils
 from typing import Callable, overload
-from wpilib import DriverStation, Notifier, RobotController, SmartDashboard
+from wpilib import DriverStation, Notifier, RobotController, SmartDashboard, Timer
 from wpilib.sysid import SysIdRoutineLog
 from wpimath.geometry import Pose2d, Rotation2d
 
@@ -17,7 +17,7 @@ from handlers.limelight_helpers import (
     set_robot_orientation,
 )
 from constants.debug import DEBUG
-from constants.match import HUB_RESET_POSES
+from constants.match import HUB_RESET_POSES, LIMELIGHT_RESET_TIMEOUT
 from utils.logger import get_logger
 
 _log = get_logger("drivetrain")
@@ -238,6 +238,7 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
 
         # --- Limelight MegaTag2 odometry reset ---
         self._limelight_reset_enabled = False
+        self._limelight_reset_deadline = 0.0
 
         # PathPlanner AutoBuilder configuration
         self._path_apply_robot_speeds = swerve.requests.ApplyRobotSpeeds()
@@ -336,6 +337,15 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         # Only read/apply the pose estimate when a reset is pending.
         # The NT read + parse is the expensive part we gate.
         if self._limelight_reset_enabled:
+            # Give up after the timeout so we don't flood logs / overrun the loop
+            if Timer.getFPGATimestamp() > self._limelight_reset_deadline:
+                self._limelight_reset_enabled = False
+                _log.warning(
+                    f"MT2 reset timed out after {LIMELIGHT_RESET_TIMEOUT}s "
+                    f"-- no tags seen"
+                )
+                return
+
             odom_pose = self.get_pose()
             estimate = get_bot_pose_estimate_wpi_blue_megatag2(
                 self._LIMELIGHT_NAME
@@ -376,19 +386,13 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                         f"->({corrected.x:.1f},{corrected.y:.1f}) "
                         f"tags={estimate.tag_count}"
                     )
-            elif DEBUG["limelight_reset_logging"]:
-                _log.warning(
-                    f"MT2 RESET FAILED | "
-                    f"sent_yaw={yaw_deg:.1f} | "
-                    f"odom=({odom_pose.x:.2f}, "
-                    f"{odom_pose.y:.2f}, "
-                    f"{odom_pose.rotation().degrees():.1f}) | "
-                    f"estimate={'no tags' if estimate else 'no data'}"
-                )
 
     def request_limelight_reset(self) -> None:
         """Request a one-shot Limelight MegaTag2 odometry reset."""
         self._limelight_reset_enabled = True
+        self._limelight_reset_deadline = (
+            Timer.getFPGATimestamp() + LIMELIGHT_RESET_TIMEOUT
+        )
         _log.info("Limelight one-shot reset requested")
 
     def request_hub_reset(self) -> None:
