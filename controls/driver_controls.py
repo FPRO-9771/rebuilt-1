@@ -6,7 +6,7 @@ Controls:
     Left stick      -- Drive (X/Y translation)
     Right stick X   -- Rotation
     A button        -- Drive straight forward (alignment test, 25% speed)
-    B button        -- Toggle Limelight MegaTag2 odometry reset
+    B button        -- One-shot Limelight MegaTag2 odometry reset
     Left bumper     -- Reset field-centric heading
     Right bumper    -- Toggle field-centric / robot-centric
     Y button        -- Toggle intake deploy (down/up)
@@ -163,9 +163,9 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
         )
     )
 
-    # --- B button: toggle Limelight MegaTag2 odometry reset ---
+    # --- B button: one-shot Limelight MegaTag2 odometry reset ---
     driver.b().onTrue(
-        InstantCommand(drivetrain.toggle_limelight_reset)
+        InstantCommand(drivetrain.request_limelight_reset)
     )
 
     # --- Left bumper: reset field-centric heading ---

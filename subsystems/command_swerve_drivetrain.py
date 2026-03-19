@@ -374,14 +374,15 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
             "Limelight/Reset Enabled", self._limelight_reset_enabled
         )
 
-        # Apply vision measurement if toggle is on and tags visible
+        # Apply vision measurement once and auto-disable (one-shot reset)
         if self._limelight_reset_enabled and estimate and tag_visible:
             self.add_vision_measurement(
                 estimate.pose, estimate.timestamp_seconds
             )
+            self._limelight_reset_enabled = False
             reset_applied = True
-            _log.debug(
-                f"MT2 reset applied: x={estimate.pose.x:.2f} "
+            _log.info(
+                f"MT2 one-shot reset: x={estimate.pose.x:.2f} "
                 f"y={estimate.pose.y:.2f} "
                 f"rot={estimate.pose.rotation().degrees():.1f} "
                 f"tags={estimate.tag_count}"
@@ -391,11 +392,10 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
             "Limelight/Reset Applied", reset_applied
         )
 
-    def toggle_limelight_reset(self) -> None:
-        """Toggle the continuous Limelight MegaTag2 odometry reset."""
-        self._limelight_reset_enabled = not self._limelight_reset_enabled
-        state = "ENABLED" if self._limelight_reset_enabled else "DISABLED"
-        _log.info(f"Limelight odometry reset {state}")
+    def request_limelight_reset(self) -> None:
+        """Request a one-shot Limelight MegaTag2 odometry reset."""
+        self._limelight_reset_enabled = True
+        _log.info("Limelight one-shot reset requested")
 
     def _start_sim_thread(self):
         def _sim_periodic():

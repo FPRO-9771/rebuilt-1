@@ -54,7 +54,7 @@ A robot may only score one Tower level during teleop.
 
 RobotPy (Python) codebase for an FRC competition robot using the WPILib command-based framework with Phoenix 6 motor controllers. This is a starting-point codebase for the 2026 season built on lessons learned from 2025.
 
-**Hardware note:** The shooter Limelight is mounted on the turret and moves with it. This means vision measurements are always relative to the turret's current heading, not the robot frame.
+**Hardware note:** The shooter Limelight (`limelight-shooter`) is fixed-mounted facing forward from the back of the robot, offset approximately 6 inches behind center.
 
 ## Code Principles
 
