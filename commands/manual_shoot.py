@@ -3,8 +3,8 @@ Manual shoot command -- spins launcher from joystick, auto-feeds when at speed.
 
 Maps the joystick Y axis to a virtual distance using the shooter distance
 table. The distance table provides both launcher RPS and hood position.
-Once the flywheel reaches speed, both H feed and V feed activate
-automatically. Feeds stop when launcher drops below speed or the command ends.
+Once the flywheel reaches speed for the first time, both H feed and V feed
+activate and stay on until the command ends (trigger released).
 """
 
 from typing import Callable
@@ -50,8 +50,11 @@ class ManualShoot(Command):
         self.h_feed = h_feed
         self.v_feed = v_feed
         self._stick_supplier = stick_supplier
-        self._feeding = False
+        self._reached_speed = False
         self.addRequirements(launcher, hood, h_feed, v_feed)
+
+    def initialize(self):
+        self._reached_speed = False
 
     def execute(self):
         stick = self._stick_supplier()
@@ -60,16 +63,13 @@ class ManualShoot(Command):
         self.launcher._set_velocity(target_rps)
         self.hood._set_position(hood_pos)
 
-        # Run feeds when launcher is at speed
-        if self.launcher.is_at_speed(target_rps):
+        # One-time gate: once launcher reaches speed, feeds stay on
+        if not self._reached_speed and self.launcher.is_at_speed(target_rps):
+            self._reached_speed = True
+
+        if self._reached_speed:
             self.h_feed._set_voltage(CON_H_FEED["feed_voltage"])
             self.v_feed._set_voltage(CON_V_FEED["feed_voltage"])
-            self._feeding = True
-        else:
-            if self._feeding:
-                self.h_feed._stop()
-                self.v_feed._stop()
-                self._feeding = False
 
     def isFinished(self) -> bool:
         return False
