@@ -1,37 +1,38 @@
 """
-Autonomous mode selector.
-Creates a SmartDashboard/Shuffleboard chooser for selecting auto routines.
+Test override chooser for autonomous.
 
+Normally the auto routine is derived automatically from the Alliance and
+Starting Pose choosers in MatchSetup. This chooser lets the team override
+that and run a specific test routine instead.
+
+REMOVE test entries before competition (or just leave override on "None").
 IMPORTANT: Store factory lambdas in chooser, not command instances.
 Commands carry state and must be created fresh each auto period.
-
-TODO: Implement when AutonModes is ready.
 """
 
 from wpilib import SmartDashboard, SendableChooser
 
-# from .auton_modes import AutonModes
+from .auton_modes import AutonModes
 
 
-def create_auton_chooser(auton_modes) -> SendableChooser:
+def create_test_chooser(auton_modes: AutonModes) -> SendableChooser:
     """
-    Create and publish the autonomous mode chooser.
+    Create and publish the test override chooser.
 
-    Args:
-        auton_modes: AutonModes instance with subsystems injected
+    Default is None (no override -- derive routine from Alliance + Starting Pose).
+    Add test paths here as needed; remove before competition.
 
     Returns:
-        SendableChooser that returns factory lambdas (not command instances!)
+        SendableChooser that returns a factory lambda or None.
     """
     chooser = SendableChooser()
 
-    # IMPORTANT: Store lambdas that CREATE commands, not the commands themselves
-    chooser.setDefaultOption("Do Nothing", lambda: auton_modes.do_nothing())
+    chooser.setDefaultOption("None", None)
 
-    # TODO: Add more options as auto routines are implemented
-    # chooser.addOption("Simple Exit", lambda: auton_modes.simple_exit())
-    # chooser.addOption("Score Blue Left", lambda: auton_modes.simple_score("blue_left"))
-    # chooser.addOption("Score Blue Center", lambda: auton_modes.simple_score("blue_center"))
+    chooser.addOption("Do Nothing", lambda: auton_modes.do_nothing())
 
-    SmartDashboard.putData("Auto Mode", chooser)
+    # TODO: Remove before competition
+    chooser.addOption("Mini Test", lambda: auton_modes.mini_test())
+
+    SmartDashboard.putData("Auton Override", chooser)
     return chooser

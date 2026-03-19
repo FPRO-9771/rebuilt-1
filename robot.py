@@ -5,8 +5,6 @@ Subclasses TimedRobot and delegates to RobotContainer.
 
 import wpilib
 from commands2 import CommandScheduler
-from pathplannerlib.auto import AutoBuilder
-from pathplannerlib.path import PathPlannerPath
 from wpimath.geometry import Pose2d, Rotation2d
 from robot_container import RobotContainer
 from telemetry import update_telemetry
@@ -39,9 +37,10 @@ class Robot(wpilib.TimedRobot):
         x = pose.get("start_x", 0.0)
         y = pose.get("start_y", 0.0)
         heading = pose.get("start_heading", 0.0)
+        _log.info(f"_apply_selected_pose: x={x:.3f} y={y:.3f} heading={heading:.1f}")
         field_pose = Pose2d(x, y, Rotation2d.fromDegrees(heading))
         self.container.drivetrain.reset_pose(field_pose)
-        _log.info(f"Pose reset to ({x:.1f}, {y:.1f}, {heading:.0f} deg)")
+        _log.info(f"_apply_selected_pose: odometry reset to ({x:.3f}, {y:.3f}, {heading:.1f} deg)")
 
     def robotPeriodic(self):
         """Called every 20ms regardless of mode."""
@@ -53,21 +52,23 @@ class Robot(wpilib.TimedRobot):
 
     def autonomousInit(self):
         """Called when autonomous mode starts."""
+        _log.info("autonomousInit: fired")
         self._apply_selected_pose()
-        pose = self.container.match_setup.get_pose()
-        path_name = pose.get("auto_path", "")
 
-        if not path_name:
-            _log.warning("No auto path configured for selected pose")
-            return
+        # Test override takes priority over the derived routine.
+        test_factory = self.container.test_chooser.getSelected()
+        if test_factory is not None:
+            _log.info("autonomousInit: test override selected")
+            self.auto_command = test_factory()
+        else:
+            alliance_name = self.container.match_setup.get_alliance()["name"]
+            pose_name = self.container.match_setup.get_pose_name()
+            _log.info(f"autonomousInit: deriving routine from alliance='{alliance_name}' pose='{pose_name}'")
+            self.auto_command = self.container.auton_modes.get_auto_command(alliance_name, pose_name)
 
-        try:
-            path = PathPlannerPath.fromPathFile(path_name)
-            self.auto_command = AutoBuilder.followPath(path)
-            self.auto_command.schedule()
-            _log.info(f"Auto started: {path_name}")
-        except Exception as e:
-            _log.error(f"Failed to load auto path '{path_name}': {e}")
+        _log.info(f"autonomousInit: scheduling {type(self.auto_command).__name__}")
+        self.auto_command.schedule()
+        _log.info("autonomousInit: done")
 
     def autonomousPeriodic(self):
         """Called every 20ms during autonomous."""

@@ -272,6 +272,7 @@ class Intake(Subsystem):
             return False
 
         def end(self, interrupted: bool):
+            _log.info(f"Intake stopped (interrupted={interrupted})")
             self.intake._stop()
 
     class _TwoPhaseMove(Command):

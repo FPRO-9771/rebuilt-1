@@ -1,0 +1,126 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.505,
+        "y": 0.545
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.094676938658889,
+        "y": 0.8549887152705105
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.399736038774629,
+        "y": 1.5752611400390286
+      },
+      "prevControl": {
+        "x": 4.581898303032812,
+        "y": 0.8884158491274221
+      },
+      "nextControl": {
+        "x": 5.833946542246852,
+        "y": 1.9399244791593993
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.139101128473703,
+        "y": 2.4769466869140286
+      },
+      "prevControl": {
+        "x": 5.887550347223704,
+        "y": 2.001795211219585
+      },
+      "nextControl": {
+        "x": 6.49400860351641,
+        "y": 3.1473274731058103
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.2641548032422225,
+        "y": 4.044907190386251
+      },
+      "prevControl": {
+        "x": 6.491757740163519,
+        "y": 3.7049790219834735
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.0,
+      "rotationDegrees": 90.0
+    },
+    {
+      "waypointRelativePos": 2.0,
+      "rotationDegrees": 90.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "IntakeDown",
+      "waypointRelativePos": 0.09803259966777411,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "IntakeStart",
+      "waypointRelativePos": 1.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "IntakeStop",
+      "waypointRelativePos": 2.4,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "ShooterStart",
+      "waypointRelativePos": 2.4,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "FeedersStart",
+      "waypointRelativePos": 3.0,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 1.0,
+    "maxAcceleration": 1.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -171.57733731293536
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}
