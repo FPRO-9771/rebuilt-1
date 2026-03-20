@@ -29,3 +29,4 @@ from constants.debug import *
 from constants.vision import *
 from constants.match import *
 from constants.pose import *
+from constants.compensation import *

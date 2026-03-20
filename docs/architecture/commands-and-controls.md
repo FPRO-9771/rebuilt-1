@@ -120,7 +120,7 @@ class RobotContainer:
         )
 
         # Manual control with deadband
-        deadband = CON_ROBOT["joystick_deadband"]
+        deadband = CON_ROBOT["stick_deadband"]
         Trigger(lambda: abs(self.operator.getLeftY()) > deadband).whileTrue(
             self.arm.manual(lambda: self.operator.getLeftY())
         )

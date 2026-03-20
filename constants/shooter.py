@@ -104,21 +104,19 @@ CON_SHOOTER = {
     "turret_max_auto_voltage": 2.0,     # Max voltage during auto-aim (sqrt P handles decel now)
     "turret_max_brake_voltage": 2.5,    # Brake limit -- higher than drive to stop quickly
     "turret_min_move_voltage": 1.10,    # Deadband comp -- minimum voltage to overcome static friction
-    "turret_velocity_ff_gain": -0.4,     # Feedforward: volts per (m/s) of lateral robot velocity
     "turret_tx_filter_alpha": 0.95,      # EMA smoothing for tx (0=max smooth, 1=no filter)
-    "velocity_lead_enabled": True,       # Enable velocity lead compensation (aim ahead while moving)
 
-    # Distance lookup table: (distance_m, launcher_rps, hood_position, ball_speed_mps)
-    # ball_speed_mps: estimated ball speed at this distance -- used for
-    # velocity lead compensation (how far ahead to aim while moving).
-    # Tune per-entry on real robot by shooting while strafing.
+    # Distance lookup table: (distance_m, launcher_rps, hood_position, flight_time_s)
+    # flight_time_s: how long the ball is in the air (seconds) at this distance.
+    # Used by movement compensation to calculate lead angle and distance correction.
+    # Measure with a stopwatch: time from launch to landing in the Hub.
     # Sorted by distance -- interpolated at runtime
     "distance_table": [
-        (1.5, 35.0, 0, 5.0),
-        (2.0, 37.0, 0, 7.0),
-        (3.0, 45.0, 0, 9.0),
-        (4.0, 54.0, 0, 12.0),
-        (5.0, 70.0, 0, 15.0),
+        (1.5, 35.0, 0, 0.85),
+        (2.0, 37.0, 0, 0.95),
+        (3.0, 45.0, 0, 1.2),
+        (4.0, 54.0, 0, 1.6),
+        (5.0, 70.0, 0, 2),
     ],
 
     # Manual shoot stick mapping -- maps joystick Y to virtual distance,

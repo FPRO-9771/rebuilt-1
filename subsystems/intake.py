@@ -42,6 +42,11 @@ class Intake(Subsystem):
             slot0=_SLOT0,
         )
 
+        # Default command: hold position when arm is near up_position.
+        # Uses deadband so 0V (no power) when arm is still.
+        # Only activates near up -- when down, gravity holds the arm.
+        self.setDefaultCommand(self.position_guard())
+
     # --- Sensor reads (public) ---
 
     def get_position(self) -> float:
@@ -92,6 +97,15 @@ class Intake(Subsystem):
         Otherwise motors rest in brake mode (0V).
         """
         return self._GoToPositionCommand(self, position, hold_condition)
+
+    def position_guard(self) -> Command:
+        """Default command: hold arm near up_position after impacts.
+
+        Only applies voltage when the arm is near up and drifts past the
+        deadband.  Does nothing (0V) when the arm is down or already in
+        place, so power draw is essentially zero during normal operation.
+        """
+        return self._PositionGuardCommand(self)
 
     def hold_down(self) -> Command:
         """Snapshot current position and hold it with soft P-control."""
@@ -273,6 +287,43 @@ class Intake(Subsystem):
 
         def end(self, interrupted: bool):
             _log.info(f"Intake stopped (interrupted={interrupted})")
+            self.intake._stop()
+
+    class _PositionGuardCommand(Command):
+        """Hold arm at up_position only when it's near up.
+
+        When the arm is far from up (i.e. deployed down), this command
+        applies 0V and lets gravity/brake do the work.  When near up,
+        it uses soft P-control with deadband -- identical to the hold
+        logic but only active in the guard zone.
+        """
+
+        def __init__(self, intake: "Intake"):
+            super().__init__()
+            self.intake = intake
+            self._target = CON_INTAKE["up_position"]
+            self.addRequirements(intake)
+
+        def execute(self):
+            pos = self.intake.get_position()
+            # Only guard when arm is near up_position
+            if abs(pos - self._target) > CON_INTAKE["guard_zone"]:
+                self.intake._set_voltage(0)
+                return
+            error = self._target - pos
+            if abs(error) < CON_INTAKE["hold_deadband"]:
+                self.intake._set_voltage(0)
+                return
+            hold_kP = CON_INTAKE["hold_kP"]
+            max_v = CON_INTAKE["hold_max_voltage"]
+            volts = max(-max_v, min(hold_kP * error, max_v))
+            _log.debug(f"position_guard: pos={pos:.4f} err={error:.4f} v={volts:.2f}")
+            self.intake._set_voltage(volts)
+
+        def isFinished(self) -> bool:
+            return False
+
+        def end(self, interrupted: bool):
             self.intake._stop()
 
     class _TwoPhaseMove(Command):

@@ -85,7 +85,7 @@ Quick reference for what every button does on each Xbox controller.
 | **Left bumper** | Reset field-centric heading | Press once when robot faces away from you |
 | **Right bumper** | Toggle field/robot centric | Dashboard shows current mode |
 | **Left trigger (hold)** | Run intake | Spins intake rollers + holds arm in place |
-| **Right trigger** | Slow mode | Hold to reduce drive speed to 10% |
+| **Right trigger** | Slow mode | Squeeze to cap speed; harder squeeze = slower max |
 
 ### D-pad / Other
 
@@ -105,9 +105,11 @@ the very end of stick travel. Edit `constants/controls.py` to change these:
 
 | Setting | Current | What it does |
 |---------|---------|--------------|
-| `drive_exponent` | 4.0 | Translation (left stick) response curve |
-| `rotation_exponent` | 5.0 | Rotation (right stick X) response curve |
-| `slow_mode_factor` | 0.1 | Speed when right trigger is fully held (10%) |
+| `drive_exponent` | 4.0 | Translation (left stick) response curve (normal mode) |
+| `rotation_exponent` | 5.0 | Rotation (right stick X) response curve (normal mode) |
+| `stick_deadband` | 0.03 | 3% stick dead zone (prevents drift) |
+| `slow_max_speed` | 2.0 m/s | Speed ceiling at lightest trigger squeeze |
+| `slow_min_speed` | 0.5 m/s | Speed ceiling at full trigger squeeze |
 
 **Quick reference -- how much power at each stick position:**
 
@@ -124,7 +126,7 @@ the very end of stick travel. Edit `constants/controls.py` to change these:
 
 ### Driving tips
 
-- **10% deadband** is applied to both sticks -- small bumps are ignored
+- **3% deadband** is applied to both sticks -- small bumps are ignored
 - Default mode is **field-centric** -- pushing the stick "away from you" always drives away from the alliance wall, regardless of which way the robot is facing
 - Press **right bumper** to switch to **robot-centric** (stick directions are relative to the robot's nose) -- useful for camera-guided maneuvering. Press again to switch back
 - Check **Drive/Robot Centric** on the dashboard to see which mode is active

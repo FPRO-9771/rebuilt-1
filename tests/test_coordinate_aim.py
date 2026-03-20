@@ -92,17 +92,18 @@ def test_outside_tolerance_outputs_nonzero_voltage(mock_sd):
 
 @patch("commands.coordinate_aim.SmartDashboard")
 def test_velocity_compensation_shifts_aim(mock_sd):
-    """Lateral velocity shifts the aim compared to stationary."""
+    """Tangential velocity shifts the aim compared to stationary."""
+    # Hub is straight ahead (+X); lateral movement (vy) is tangential.
     # Stationary
-    ctx_still = _make_context(target_x=0.0, target_y=5.0)
+    ctx_still = _make_context(target_x=5.0, target_y=0.0)
     cmd_still, turret_still = _make_coord_aim(ctx_still)
     turret_still.motor.simulate_position(TEST_CON_POSE["center_position"])
     cmd_still.initialize()
     cmd_still.execute()
     v_still = turret_still.motor.get_last_voltage()
 
-    # Moving laterally
-    ctx_moving = _make_context(target_x=0.0, target_y=5.0, vy=2.0)
+    # Moving laterally (tangential to hub line)
+    ctx_moving = _make_context(target_x=5.0, target_y=0.0, vy=2.0)
     cmd_moving, turret_moving = _make_coord_aim(ctx_moving)
     turret_moving.motor.simulate_position(TEST_CON_POSE["center_position"])
     cmd_moving.initialize()

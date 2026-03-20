@@ -6,7 +6,7 @@ No vision required -- uses field position to calculate the angle.
 Pipeline each cycle:
   1. Read ShootContext (pose, shooter position, target, velocity)
   2. Compute target state (error, distance, closing speed)
-  3. Compute movement corrections (tracking + lead)
+  3. Compute angle compensation (lead correction for robot movement)
   4. Route through turret limits
   5. EMA filter
   6. PD control -> voltage
@@ -20,7 +20,7 @@ from wpilib import SmartDashboard
 
 from subsystems.turret import Turret
 from calculations.target_state import compute_target_state
-from calculations.movement_compensation import compute_movement_correction
+from calculations.movement_compensation import compute_angle_compensation
 from calculations.turret_routing import choose_rotation_direction
 from calculations.turret_pd import compute_turret_voltage
 from constants.shooter import CON_SHOOTER
@@ -30,6 +30,7 @@ from telemetry.auto_aim_telemetry import (
     init_aim_dashboard_keys, publish_aim_dashboard,
 )
 from telemetry.auto_aim_logging import log_hold, log_drive
+from telemetry.compensation_logging import log_compensation
 from constants.debug import DEBUG
 from utils.logger import get_logger
 
@@ -107,16 +108,16 @@ class CoordinateAim(Command):
         )
         self._last_state = state
 
-        # 3. Compute movement corrections
+        # 3. Compute angle compensation (lead correction for movement)
         # bearing_deg is the angle from robot front to hub; convert to
         # field-frame radians by adding heading, for velocity decomposition.
         bearing_field_rad = math.radians(state.bearing_deg + ctx.heading_deg)
-        tracking_deg, lead_deg = compute_movement_correction(
-            ctx.vx, ctx.vy, state.distance_m, bearing_field_rad, CON_SHOOTER,
+        lead_deg = compute_angle_compensation(
+            ctx.vx, ctx.vy, state.distance_m, bearing_field_rad,
         )
 
         # 4. Combine raw aim
-        raw_aim = state.error_deg + tracking_deg + lead_deg
+        raw_aim = state.error_deg + lead_deg
 
         # 5. Route through turret limits
         routed_aim = choose_rotation_direction(
@@ -144,6 +145,13 @@ class CoordinateAim(Command):
             self._cycle_count, state.distance_m, state.bearing_deg,
         )
 
+        # 7b. Compensation debug logging
+        log_compensation(
+            self._cycle_count,
+            ctx.vx, ctx.vy, state.distance_m, bearing_field_rad,
+            state.closing_speed_mps, ctx.corrected_distance, lead_deg,
+        )
+
         # 8. Control turret
         turret_pos = self.turret.get_position()
         if self._is_on_target():
@@ -158,9 +166,9 @@ class CoordinateAim(Command):
             )
         else:
             turret_vel = self.turret.get_velocity()
-            voltage, p_term, d_term, ff_term, raw_voltage = (
+            voltage, p_term, d_term, raw_voltage = (
                 compute_turret_voltage(
-                    self._filtered_error, turret_vel, ctx.vy,
+                    self._filtered_error, turret_vel,
                     self._aim_sign, CON_SHOOTER,
                 )
             )
@@ -172,9 +180,9 @@ class CoordinateAim(Command):
                 ctx.target_x, ctx.target_y,
                 turret_pos, state.error_deg, state.distance_m,
                 state.closing_speed_mps,
-                tracking_deg, lead_deg, routed_aim,
+                lead_deg, routed_aim,
                 self._filtered_error,
-                p_term, d_term, ff_term, raw_voltage, voltage,
+                p_term, d_term, raw_voltage, voltage,
                 turret_vel, ctx.vx, ctx.vy,
             )
 

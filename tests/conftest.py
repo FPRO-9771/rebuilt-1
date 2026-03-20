@@ -95,14 +95,12 @@ TEST_CON_SHOOTER = {
     "turret_max_auto_voltage": 5.0,
     "turret_max_brake_voltage": 5.0,
     "turret_min_move_voltage": 0.0,
-    "turret_velocity_ff_gain": 0.15,
     "turret_tx_filter_alpha": 1.0,
-    "velocity_lead_enabled": True,
     "distance_table": [
-        (1.0, 20.0, 0.10, 4.0),
-        (2.0, 40.0, 0.20, 6.0),
-        (3.0, 60.0, 0.30, 8.0),
-        (4.0, 80.0, 0.40, 10.0),
+        (1.0, 20.0, 0.10, 0.25),
+        (2.0, 40.0, 0.20, 0.33),
+        (3.0, 60.0, 0.30, 0.38),
+        (4.0, 80.0, 0.40, 0.40),
     ],
     "manual_min_distance": 1.0,
     "manual_center_distance": 2.0,
@@ -152,6 +150,12 @@ TEST_CON_POSE = {
     "shooter_offset_y": 0.0,
 }
 
+TEST_CON_COMPENSATION = {
+    "velocity_lead_enabled": True,
+    "velocity_lead_gain": 1.0,
+    "min_distance": 0.5,
+}
+
 # Tag priority: ordered list for vision-based distance lookup tests.
 TEST_TAG_PRIORITY = [4, 5, 6]
 
@@ -191,6 +195,15 @@ def _patch_constants(monkeypatch):
     monkeypatch.setattr("commands.coordinate_aim.CON_SHOOTER", TEST_CON_SHOOTER)
     monkeypatch.setattr("commands.coordinate_aim.CON_POSE", TEST_CON_POSE)
 
+    # Compensation constants (used by movement_compensation, distance_compensation,
+    # velocity_lead)
+    monkeypatch.setattr("calculations.movement_compensation.CON_COMPENSATION",
+                        TEST_CON_COMPENSATION)
+    monkeypatch.setattr("calculations.distance_compensation.CON_COMPENSATION",
+                        TEST_CON_COMPENSATION)
+    monkeypatch.setattr("calculations.velocity_lead.CON_COMPENSATION",
+                        TEST_CON_COMPENSATION)
+
     # Operator controls -- CON_POSE removed (shoot context supplier commented out)
 
     # Intake
@@ -208,9 +221,11 @@ def _patch_constants(monkeypatch):
 
     # Auto-aim telemetry and logging modules
     _test_debug = {"debug_telemetry": False, "verbose": False,
-                   "auto_aim_logging": True, "auto_aim_dashboard": False}
+                   "auto_aim_logging": True, "auto_aim_dashboard": False,
+                   "compensation_logging": False}
     monkeypatch.setattr("telemetry.auto_aim_telemetry.DEBUG", _test_debug)
     monkeypatch.setattr("telemetry.auto_aim_logging.DEBUG", _test_debug)
+    monkeypatch.setattr("telemetry.compensation_logging.DEBUG", _test_debug)
 
     # Swerve and motor telemetry -- enable debug so tests can verify all keys
     _test_debug_on = {"debug_telemetry": True, "verbose": False,

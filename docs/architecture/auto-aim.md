@@ -36,10 +36,10 @@ CoordinateAim is a WPILib `Command` toggled on/off with the **left bumper**. Whi
 
 1. Reads the shared `ShootContext` (pose, shooter field position, target, velocity)
 2. Computes the angle and distance from the shooter to the alliance Hub
-3. Applies movement compensation (tracking + lead corrections)
+3. Applies movement compensation (lead angle correction)
 4. Routes the desired turret angle through soft limits (shortest path)
 5. Filters the error through an EMA
-6. Computes a voltage via PD + feedforward control
+6. Computes a voltage via PD control
 7. Sends that voltage to the turret motor
 
 CoordinateAim only controls the **turret**. It does NOT set flywheel speed, hood angle, or lock status -- those are ShootWhenReady's job. Both commands run simultaneously because they require different subsystems.
@@ -105,9 +105,8 @@ ShootContext (from shared supplier)
        +-- closing_speed              "we are approaching at 1.1 m/s"
        |
        v
-  movement_compensation()             movement_compensation.py
+  compute_angle_compensation()        movement_compensation.py
        |
-       +-- tracking correction        compensate for robot rotation
        +-- lead correction            compensate for ball flight time
        |
        v
@@ -125,12 +124,12 @@ ShootContext (from shared supplier)
        v
   filtered_error                      this is what the PD controller sees
        |
-  +----+----+----+
-  |         |    |
-  v         v    v
- P term   D term  FF term             sqrt-P, velocity damping, lateral FF
-  |         |    |
-  +----+----+----+
+  +----+----+
+  |         |
+  v         v
+ P term   D term                      sqrt-P, velocity damping
+  |         |
+  +----+----+
        |
        v
   raw voltage
@@ -226,11 +225,7 @@ If ErrorDeg goes the wrong direction when you turn the turret, `center_position`
 
 ## 5. Movement Compensation
 
-`calculations/movement_compensation.py` applies two corrections to the raw error:
-
-### Tracking correction
-
-When the robot is rotating, the turret needs to counter-rotate to stay on target. This correction uses the robot's angular velocity (from the gyro) to anticipate how much the robot will rotate during the next control cycle.
+`calculations/movement_compensation.py` provides `compute_angle_compensation()`, which returns a single lead angle (degrees) to add to the turret error.
 
 ### Lead correction (velocity lead)
 
@@ -282,9 +277,9 @@ and because lead is negligible at point-blank range.
 
 **How it plugs in:** `movement_compensation.py` calls `compute_velocity_lead()`
 when `CON_SHOOTER["velocity_lead_enabled"]` is True and distance > 0.5 m. The
-returned `lead_deg` is added to the turret error alongside the tracking
-correction. The second return value (ball_speed) is discarded by the caller but
-is available for telemetry or debugging.
+returned `lead_deg` is the single output of `compute_angle_compensation()`,
+added to the turret error in CoordinateAim. The second return value (ball_speed)
+is discarded by the caller but is available for telemetry or debugging.
 
 ### Constants that control velocity lead
 
@@ -298,7 +293,7 @@ directly from physics (tangential velocity * flight time). To tune the lead
 amount, adjust the `ball_speed_mps` values in the distance table: lower ball
 speed means longer flight time, which increases the lead angle.
 
-> **Tuning guide:** See [Movement Compensation Tuning](../debugging/movement-compensation-tuning.md) for step-by-step practice field tuning instructions.
+> **Tuning guide:** See [Movement Compensation Tuning](../debug/movement-compensation-tuning.md) for step-by-step practice field tuning instructions.
 
 ---
 
@@ -333,7 +328,9 @@ The filter uses the `auto_aim_` naming convention in telemetry keys for consiste
 
 ## 8. PD Controller
 
-The PD controller lives in `calculations/turret_pd.py`. It converts filtered_error into a motor voltage. This module is unchanged from the previous system.
+The PD controller lives in `calculations/turret_pd.py`. It converts filtered_error into a motor voltage. It is pure P+D control with no feedforward -- all velocity compensation is handled upstream by `compute_angle_compensation()`.
+
+`compute_turret_voltage()` returns `(voltage, p_term, d_term, raw_voltage)`.
 
 ### P term (sqrt compression)
 
@@ -351,18 +348,10 @@ d_term = -turret_velocity * turret_d_velocity_gain
 
 This damps the turret's actual velocity (not the error derivative). It acts as a brake -- the faster the turret is spinning, the more it resists. This prevents overshoot. Too high and it causes sluggish response or oscillation; the current value (0.05) is intentionally light.
 
-### Feedforward (lateral velocity)
+### Voltage = P + D
 
 ```python
-ff_term = vy * turret_velocity_ff_gain * aim_sign
-```
-
-Pre-compensates for robot lateral movement. If the robot is strafing right, the turret needs to spin left to keep tracking. This term handles the "constant offset" part; the lead correction in movement compensation handles the ballistic part.
-
-### Voltage = P + D + FF
-
-```python
-raw_voltage = p_term * aim_sign + d_term + ff_term
+raw_voltage = p_term * aim_sign + d_term
 ```
 
 `aim_sign` is +1 or -1 depending on `turret_aim_inverted`. It flips the P term direction if the turret's wiring runs opposite to the expected convention. Currently `turret_aim_inverted = True`.
@@ -414,7 +403,6 @@ Auto-aim tuning constants live in three files:
 | `turret_max_auto_voltage` | 2.0 | Max driving voltage during auto-aim |
 | `turret_max_brake_voltage` | 2.5 | Max braking voltage (opposing turret direction) |
 | `turret_min_move_voltage` | 1.10 | Deadband compensation -- minimum voltage to overcome static friction |
-| `turret_velocity_ff_gain` | 0.25 | Feedforward gain for lateral robot velocity |
 | `turret_tx_filter_alpha` | 0.85 | EMA smoothing (0 = max smooth, 1 = no filter) |
 | `velocity_lead_enabled` | True | Enable aim-ahead compensation while strafing |
 
@@ -443,10 +431,10 @@ calculations/
                                  #   compute_range_state() -- all scalar math
   shooter_position.py            # get_shooter_field_position() -- robot offset to field coords
   distance_compensation.py       # compute_corrected_distance() -- closing speed adjustment
-  movement_compensation.py       # Tracking + lead corrections
+  movement_compensation.py       # Lead angle correction (compute_angle_compensation)
   velocity_lead.py               # Lead angle from tangential velocity + flight time
   turret_routing.py              # Shortest path within soft limits
-  turret_pd.py                   # PD + FF + deadband voltage calculation
+  turret_pd.py                   # PD + deadband voltage calculation
 
 commands/
   coordinate_aim.py              # Turret aiming command -- reads ShootContext
@@ -511,7 +499,7 @@ The `AutoAim/` prefix is kept for consistency with dashboard layouts and logging
 Auto-aim logs are controlled by `DEBUG["auto_aim_logging"]` in `constants/debug.py` (independent of `DEBUG["verbose"]`). Three log functions in `telemetry/auto_aim_logging.py`:
 
 - **`log_hold()`** -- `[AIM HOLD] pose=(X,Y) hdg=H shooter=(X,Y) tgt=(X,Y) err=E dist=D cls=C -- HOLD` -- on target, turret holding
-- **`log_drive()`** -- `[AIM DRIVE] pose=(X,Y) ... | err=E ... | P=p D=d FF=f rv=r v=V [ok/SAT] ...` -- full PD output with all terms
+- **`log_drive()`** -- `[AIM DRIVE] pose=(X,Y) ... | err=E ... | P=p D=d rv=r v=V [ok/SAT] ...` -- full PD output with all terms
 - **`log_shoot()`** -- `[SHOOT] pose=(X,Y) ... | rawDist=R corrDist=C ... | rps=R hood=H | AT_SPEED ON_TARGET FEEDING` -- auto-shoot pipeline
 
 All three show full pose context (robot pose, shooter field position, target position, velocity).

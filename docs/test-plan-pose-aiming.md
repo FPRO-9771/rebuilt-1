@@ -103,15 +103,15 @@ Step-by-step checkout for the new pose-based turret aiming and auto-shoot system
 
 | Step | Action | What to Look For | Pass? |
 |------|--------|-----------------|-------|
-| 4.1 | Press left bumper to enable aim. Slowly drive forward toward the target. | Turret stays pointed at target. On the log, `trk=` (tracking correction) should be small. | |
-| 4.2 | Drive slowly to the left (strafe). | Turret compensates. `trk=` should be nonzero. The turret should stay roughly aimed. | |
-| 4.3 | Drive slowly to the right (strafe). | Turret compensates in the other direction. `trk=` flips sign. | |
+| 4.1 | Press left bumper to enable aim. Slowly drive forward toward the target. | Turret stays pointed at target. On the log, `lead=` should be small (mostly radial motion). | |
+| 4.2 | Drive slowly to the left (strafe). | Turret compensates. `lead=` should be nonzero. The turret should stay roughly aimed. | |
+| 4.3 | Drive slowly to the right (strafe). | Turret compensates in the other direction. `lead=` flips sign. | |
 | 4.4 | Drive in a circle around the target. | Turret continuously tracks. It should never lose the target (there is no "lost" state with pose-based aiming). | |
 | 4.5 | Drive faster. | Turret may lag behind but should recover. If it overshoots, note it -- we'll tune later. | |
 
 **If turret lags badly while strafing:**
-- Increase `turret_velocity_ff_gain` in `CON_SHOOTER` (currently 0.15)
-- This is the feedforward that pre-compensates for lateral movement
+- Check `ball_speed_mps` values in the distance table -- lower values increase the lead angle
+- Increase `turret_p_gain` or `turret_max_auto_voltage` if the PD controller cannot keep up
 
 **If turret overshoots and oscillates while moving:**
 - Increase `turret_d_velocity_gain` slightly (currently 0.03)
@@ -168,7 +168,6 @@ After completing all phases, record these values for the tuning log:
 | `turret_max_auto_voltage` | 0.6 | | |
 | `turret_min_move_voltage` | 0.20 | | |
 | `turret_alignment_tolerance` | 1.5 | | |
-| `turret_velocity_ff_gain` | 0.15 | | |
 | `turret_tx_filter_alpha` | 0.85 | | |
 | `center_position` | 4.5 | | |
 | `degrees_per_rotation` | 40.0 | | |
@@ -206,8 +205,8 @@ err=degrees  dist=meters  cls=closing_speed  -- HOLD
 ```
 pose  shooter  tgt  tpos
 | err  dist  cls                          <- what we computed
-| trk=tracking  ld=lead  rte=routed  flt=filtered  <- corrections
-| P  D  FF  rv=raw_voltage  v=voltage [ok/SAT]  tvel  <- PD output
+| lead=lead  rte=routed  flt=filtered    <- corrections
+| P  D  rv=raw_voltage  v=voltage [ok/SAT]  tvel  <- PD output
 | vel=(vx,vy)                             <- robot velocity
 ```
 

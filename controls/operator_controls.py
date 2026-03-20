@@ -74,7 +74,7 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
     Wire all operator controller bindings.
     Call once from RobotContainer.__init__.
     """
-    deadband = CON_ROBOT["joystick_deadband"]
+    deadband = CON_ROBOT["stick_deadband"]
 
     # --- Manual turret: left stick X ---
     Trigger(lambda: abs(operator.getLeftX()) > deadband).whileTrue(

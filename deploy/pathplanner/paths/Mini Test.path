@@ -74,34 +74,92 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
+      "name": "AimStart",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "AimStart"
+        }
+      }
+    },
+    {
       "name": "IntakeDown",
       "waypointRelativePos": 0.09803259966777411,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeDown"
+        }
+      }
     },
     {
       "name": "IntakeStart",
       "waypointRelativePos": 1.0,
       "endWaypointRelativePos": null,
-      "command": null
-    },
-    {
-      "name": "IntakeStop",
-      "waypointRelativePos": 2.4,
-      "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeStart"
+        }
+      }
     },
     {
       "name": "ShooterStart",
       "waypointRelativePos": 2.4,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ShooterStart"
+        }
+      }
     },
     {
-      "name": "FeedersStart",
-      "waypointRelativePos": 3.0,
+      "name": "IntakeStop",
+      "waypointRelativePos": 2.4,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeStop"
+        }
+      }
+    },
+    {
+      "name": "IntakeUp",
+      "waypointRelativePos": 2.5,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeUp"
+        }
+      }
+    },
+    {
+      "name": "ShooterStop",
+      "waypointRelativePos": 3.3,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ShooterStop"
+        }
+      }
+    },
+    {
+      "name": "AimStop",
+      "waypointRelativePos": 3.5,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "AimStop"
+        }
+      }
     }
   ],
   "globalConstraints": {

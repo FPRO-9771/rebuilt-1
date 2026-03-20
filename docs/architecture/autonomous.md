@@ -2,7 +2,7 @@
 
 **Team 9771 FPRO - 2026**
 
-This doc covers how autonomous routines work, how paths are selected, and how robot.py runs them.
+This doc covers how autonomous routines work: named commands, PathPlanner event markers, path selection, and how robot.py runs them.
 
 > **When to read this:** You're building or editing auto routines.
 
@@ -10,184 +10,233 @@ This doc covers how autonomous routines work, how paths are selected, and how ro
 
 ## Table of Contents
 
-1. [Structure](#1-structure)
-2. [Autonomous Constants](#2-autonomous-constants)
-3. [Autonomous Mode Factory](#3-autonomous-mode-factory)
-4. [Autonomous Mode Selector](#4-autonomous-mode-selector)
-5. [Path Selection via Match Setup](#5-path-selection-via-match-setup)
-6. [Using in Robot.py](#6-using-in-robotpy)
+1. [How It Works](#1-how-it-works)
+2. [Named Commands](#2-named-commands)
+3. [PathPlanner Event Markers](#3-pathplanner-event-markers)
+4. [Auto Files](#4-auto-files)
+5. [Path Selection](#5-path-selection)
+6. [AutonModes Factory](#6-autonmodes-factory)
+7. [Using in Robot.py](#7-using-in-robotpy)
+8. [Adding a New Named Command](#8-adding-a-new-named-command)
 
 ---
 
-## 1. Structure
+## 1. How It Works
 
-The autonomous system has three concerns:
+The autonomous system has four layers:
 
-- **Routines** -- `AutonModes` provides factory methods that return commands. Currently: `do_nothing()` (safe default) and `follow_path(path_name)` (PathPlanner path following).
-- **Constants** -- Field-position data in `autonomous/auton_constants.py`: AprilTag IDs, drive paths, vision calibration, and driving behavior settings. These are placeholder values awaiting 2026 field calibration.
-- **Selection** -- Each starting pose in `constants/match.py` has an `auto_path` field. The drive team selects a pose on the Elastic dashboard before the match, and `robot.py` reads the path name from that pose at auto start.
+```
+PathPlanner GUI          You place event markers on paths
+       |
+Named Commands           Python code defines what each marker does
+       |
+.auto files              Simple wrapper: "follow this path"
+       |
+AutonModes               Pre-loads .auto files, robot.py picks one at match start
+```
+
+**The key idea:** The kids control *when* things happen by placing event markers in PathPlanner GUI. The code defines *what* each marker does by registering named commands. Clean separation.
 
 ---
 
-## 2. Autonomous Constants
+## 2. Named Commands
+
+All named commands are registered in one place: `autonomous/named_commands.py`.
 
 ```python
-# autonomous/auton_constants.py
+# autonomous/named_commands.py
 
-# AprilTag IDs for each starting position (TODO: update for 2026)
-APRILTAG_IDS = {
-    "blue_left": {"score": 1, "intake": 2},
-    "blue_center": {"score": 3},
-    # etc.
-}
+def register_named_commands(intake, intake_spinner, launcher, hood,
+                            h_feed, v_feed, turret, context_supplier):
+    NamedCommands.registerCommand("IntakeDown", intake.go_down())
+    NamedCommands.registerCommand("IntakeUp", intake.go_up())
+    NamedCommands.registerCommand("IntakeStart",
+        intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]))
+    NamedCommands.registerCommand("IntakeStop",
+        intake_spinner.runOnce(lambda: intake_spinner._stop()))
+    NamedCommands.registerCommand("AimStart",
+        CoordinateAim(turret, context_supplier, CON_TURRET_MINION))
+    NamedCommands.registerCommand("AimStop",
+        turret.runOnce(lambda: turret._stop()))
+    NamedCommands.registerCommand("ShooterStart",
+        ShootWhenReady(launcher, hood, h_feed, v_feed, ...))
+    NamedCommands.registerCommand("ShooterStop", ...)
+```
 
-# Drive paths: list of (vx, vy, omega, duration) tuples
-DRIVE_PATHS = {
-    "exit_zone": [
-        (2.0, 0, 0, 1.5),  # Drive forward at 2 m/s for 1.5 seconds
-    ],
-    # etc.
+Called from `robot_container.py` **before** any .auto files are loaded.
+
+### Available Named Commands
+
+| Name | What It Does | Runs Until |
+|------|-------------|------------|
+| `IntakeDown` | Lower the intake arm | Arm reaches position |
+| `IntakeUp` | Raise the intake arm | Arm reaches position |
+| `IntakeStart` | Spin intake wheels to pull in Fuel | Interrupted (by IntakeStop or path end) |
+| `IntakeStop` | Stop intake wheels | Instant |
+| `AimStart` | Turret auto-aim at Hub (CoordinateAim) | Interrupted (by AimStop or path end) |
+| `AimStop` | Stop turret | Instant |
+| `ShooterStart` | Spin up launcher, set hood, feed when at speed (ShootWhenReady) | Interrupted (by ShooterStop or path end) |
+| `ShooterStop` | Stop launcher, hood, and feeders | Instant |
+
+> **ShooterStart = ShootWhenReady.** It handles launcher spin-up, hood positioning, feeding when at speed, and auto-unjam -- all in one command. No need for separate feeder commands.
+
+---
+
+## 3. PathPlanner Event Markers
+
+Event markers are placed on `.path` files in the PathPlanner GUI. Each marker has a name and a position along the path (waypointRelativePos). When the robot reaches that position, PathPlanner fires the named command.
+
+### How to add an event marker in PathPlanner GUI
+
+1. Open a `.path` file in PathPlanner
+2. Click on the path where you want the marker
+3. Add an Event Marker
+4. Set the name to one of the named commands (e.g. `IntakeDown`, `ShooterStart`)
+5. The dropdown shows all available named commands
+
+### Example: Auto Blue Right path markers
+
+```
+Position 0.0  -> AimStart        (start aiming immediately)
+Position 0.6  -> IntakeDown      (lower arm as robot approaches Fuel)
+Position 1.75 -> IntakeStart     (spin wheels to collect Fuel)
+Position 3.5  -> IntakeStop      (stop wheels after collection)
+Position 5.0  -> ShooterStart    (spin up and shoot)
+Position 5.8  -> AimStop         (stop aiming near end)
+```
+
+### Important rules
+
+- **Start commands need matching stops.** If you place `AimStart`, place `AimStop` later. If you place `ShooterStart`, place `ShooterStop` later. If you forget, the path ending will cancel them automatically -- but explicit stops are clearer.
+- **Order matters.** Markers fire in order of their position along the path.
+- **The path end cancels everything.** When the path finishes, PathPlanner's EventScheduler calls `end()` on all still-running commands. This is clean -- no orphaned commands.
+
+---
+
+## 4. Auto Files
+
+Each `.auto` file in `deploy/pathplanner/autos/` is a simple wrapper that tells PathPlanner which path to follow:
+
+```json
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Auto Blue Right"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true
 }
 ```
 
-> **Note:** These constants are placeholder scaffolding. The actual auto paths are PathPlanner `.path` files loaded by name. The `DRIVE_PATHS` dict is not currently used by any auto routine.
+The `.auto` file just says "follow this path." All the interesting stuff (when to aim, when to shoot, when to intake) is on the path's event markers.
+
+### Current .auto files
+
+| File | Path |
+|------|------|
+| `Auto Blue Left.auto` | Auto Blue Left |
+| `Auto Blue Center.auto` | Auto Blue Center |
+| `Auto Blue Right.auto` | Auto Blue Right |
+| `Auto Red Left.auto` | Auto Red Left |
+| `Auto Red Center.auto` | Auto Red Center |
+| `Auto Red Right.auto` | Auto Red Right |
+| `Mini Test.auto` | Mini Test |
 
 ---
 
-## 3. Autonomous Mode Factory
+## 5. Path Selection
+
+The drive team selects a starting pose on the Elastic dashboard before the match. The auto routine is derived from the alliance (Blue/Red from Driver Station) and the pose name (Left/Center/Right from Elastic):
+
+```
+Alliance="Blue" + Pose="Right" -> loads "Auto Blue Right.auto"
+```
+
+A test override chooser (`Auton Override` on SmartDashboard) can override this for testing. Default is "None" (use the derived routine).
+
+---
+
+## 6. AutonModes Factory
 
 ```python
 # autonomous/auton_modes.py
 
-from commands2 import Command, WaitCommand
-from pathplannerlib.auto import AutoBuilder
-from pathplannerlib.path import PathPlannerPath
-
 class AutonModes:
-    def __init__(self, drivetrain=None, conveyor=None, vision=None):
-        self.drivetrain = drivetrain
-        self.conveyor = conveyor
-        self.vision = vision
+    def __init__(self):
+        # Pre-load all .auto files during robotInit (not autonomousInit!)
+        # This avoids file I/O during the 20-second auto period.
+        for name in _ALL_AUTO_NAMES:
+            self._cached_autos[name] = AutoBuilder.buildAuto(name)
 
-    def do_nothing(self) -> Command:
-        """Auto that does nothing -- safe default."""
-        return WaitCommand(15.0)
-
-    def follow_path(self, path_name: str) -> Command:
-        """Follow a PathPlanner path by name."""
-        try:
-            path = PathPlannerPath.fromPathFile(path_name)
-            return AutoBuilder.followPath(path)
-        except Exception as e:
-            _log.error(f"Failed to load path '{path_name}': {e}")
-            return WaitCommand(15.0)
+    def get_auto_command(self, alliance_name, pose_name):
+        auto_name = f"Auto {alliance_name} {pose_name}"
+        return self._cached_autos[auto_name]
 ```
 
 Key points:
-- `do_nothing()` returns a 15-second wait -- safe fallback if no path is configured.
-- `follow_path()` loads a PathPlanner `.path` file by name and returns an `AutoBuilder.followPath()` command. If the path file fails to load, it falls back to a 15-second wait and logs an error.
+- All `.auto` files are pre-loaded at construction time (during `robotInit`) to avoid file I/O during auto.
+- `get_auto_command()` does a dict lookup -- instant.
+- Falls back to `WaitCommand(15.0)` if a file fails to load.
 
 ---
 
-## 4. Autonomous Mode Selector
-
-`autonomous/auton_mode_selector.py` provides a `create_auton_chooser()` function that builds a SmartDashboard/Shuffleboard `SendableChooser` for picking auto routines from the dashboard.
+## 7. Using in Robot.py
 
 ```python
-# autonomous/auton_mode_selector.py
-
-def create_auton_chooser(auton_modes) -> SendableChooser:
-    chooser = SendableChooser()
-    chooser.setDefaultOption("Do Nothing", lambda: auton_modes.do_nothing())
-    # TODO: Add more options as auto routines are implemented
-    SmartDashboard.putData("Auto Mode", chooser)
-    return chooser
-```
-
-Key design detail: the chooser stores **factory lambdas**, not command instances. Commands carry state and must be created fresh each auto period -- storing a lambda like `lambda: auton_modes.do_nothing()` ensures a new command is built every time the selected option is retrieved.
-
-The function takes an `AutonModes` instance (with subsystems already injected) and publishes the chooser to SmartDashboard under the key `"Auto Mode"`.
-
-**Current status: not wired up.** The import in `autonomous/__init__.py` is commented out, and nothing in `robot_container.py` or `robot.py` calls `create_auton_chooser()`. The existing auto system selects paths via the starting pose's `auto_path` field instead (see section 5). When the team is ready for a standalone auto chooser -- separate from pose selection -- this module is the scaffold to build on.
-
----
-
-## 5. Path Selection via Match Setup
-
-There is no auto chooser widget wired up yet (`robot_container.py` has a `# TODO: Set up auto mode selector`; see section 4 for the scaffold). Instead, the auto path is tied to the starting pose.
-
-Each pose in `constants/match.py` has an `auto_path` field:
-
-```python
-# constants/match.py (excerpt)
-
-"poses": [
-    {
-        "name": "Center",
-        "default": True,
-        "start_x": 13.0,
-        "start_y": 4.0,
-        "start_heading": 180.0,
-        "auto_path": "TEST PATH FPRO",  # PathPlanner path name
-    },
-    {
-        "name": "Left",
-        "start_x": 0.0,
-        "start_y": 0.0,
-        "start_heading": 180.0,
-        "auto_path": "",  # Empty = no auto path
-    },
-]
-```
-
-The drive team selects a starting pose on the Elastic dashboard before the match. The `auto_path` value from that pose determines which PathPlanner path runs in auto. An empty string means no auto path (robot does nothing).
-
----
-
-## 6. Using in Robot.py
-
-`robot.py` handles autonomous directly without using `AutonModes`. It reads the path name from the selected pose and loads it inline:
-
-```python
-# robot.py (actual implementation)
+# robot.py
 
 def autonomousInit(self):
-    """Called when autonomous mode starts."""
-    self._apply_selected_pose()
-    pose = self.container.match_setup.get_pose()
-    path_name = pose.get("auto_path", "")
-
-    if not path_name:
-        _log.warning("No auto path configured for selected pose")
-        return
-
-    try:
-        path = PathPlannerPath.fromPathFile(path_name)
-        self.auto_command = AutoBuilder.followPath(path)
-        self.auto_command.schedule()
-        _log.info(f"Auto started: {path_name}")
-    except Exception as e:
-        _log.error(f"Failed to load auto path '{path_name}': {e}")
+    self._apply_selected_pose()       # Reset odometry to starting position
+    # Test override takes priority
+    test_factory = self.container.test_chooser.getSelected()
+    if test_factory is not None:
+        self.auto_command = test_factory()
+    else:
+        alliance_name = self.container.match_setup.get_alliance()["name"]
+        pose_name = self.container.match_setup.get_pose_name()
+        self.auto_command = self.container.auton_modes.get_auto_command(
+            alliance_name, pose_name)
+    self.auto_command.schedule()
 
 def autonomousExit(self):
-    """Called when autonomous mode ends."""
     if self.auto_command:
         self.auto_command.cancel()
 ```
 
 The flow:
-1. `_apply_selected_pose()` resets drivetrain odometry to the pose's field coordinates.
-2. `get_pose()` returns the selected pose dict (alliance from DS + pose name from Elastic).
-3. If `auto_path` is non-empty, it loads the PathPlanner path file and schedules it.
-4. If the path fails to load, it logs an error and the robot does nothing.
-5. `autonomousExit()` cancels any running auto command.
+1. `_apply_selected_pose()` resets drivetrain odometry to the selected starting position.
+2. Check for test override; otherwise derive the auto name from alliance + pose.
+3. Schedule the cached `PathPlannerAuto` command.
+4. `autonomousExit()` cancels the auto command (which cancels all event-scheduled commands).
 
-> **Note:** `robot.py` currently loads PathPlanner paths directly rather than going through `AutonModes`. The `AutonModes` class exists and has the same `follow_path()` logic, but is not wired up yet. A future step could add an auto mode chooser in `RobotContainer` that uses `AutonModes` for more complex routines.
+---
+
+## 8. Adding a New Named Command
+
+1. **Write the command** in `commands/` (or use an existing subsystem method).
+2. **Register it** in `autonomous/named_commands.py`:
+   ```python
+   NamedCommands.registerCommand("MyNewCommand", my_subsystem.do_thing())
+   ```
+3. **Place it on a path** in PathPlanner GUI as an event marker.
+4. **Test it** with Mini Test path first.
+
+That's it. The command is now available in the PathPlanner event marker dropdown for all paths.
 
 ---
 
 **See also:**
-- [Commands & Controls](commands-and-controls.md) - Command composition patterns used in auto routines
-- [Vision](vision.md) - Using Limelight for vision-based alignment in auto
-- [Testing & Simulation](testing-and-simulation.md) - Testing auto routines with physics simulation
-- [Match Setup](match-setup.md) - Pre-match alliance/pose selection and how `auto_path` is configured
+- [Commands & Controls](commands-and-controls.md) - Command composition patterns
+- [Shooter System](shooter-system.md) - ShootWhenReady and CoordinateAim details
+- [Intake & Feeding](intake-and-feeding.md) - Intake arm and spinner details
+- [Match Setup](match-setup.md) - Pre-match alliance/pose selection
+- [Testing & Simulation](testing-and-simulation.md) - Testing auto routines with simulation

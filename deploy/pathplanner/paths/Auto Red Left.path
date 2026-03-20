@@ -134,28 +134,59 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
+      "name": "AimStart",
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "AimStart"
+        }
+      }
+    },
+    {
       "name": "IntakeStart",
       "waypointRelativePos": 2.1,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeStart"
+        }
+      }
     },
     {
       "name": "IntakeStop",
       "waypointRelativePos": 3.6,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeStop"
+        }
+      }
     },
     {
       "name": "ShooterStart",
       "waypointRelativePos": 5.06,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ShooterStart"
+        }
+      }
     },
     {
-      "name": "FeedersStart",
-      "waypointRelativePos": 6.0,
+      "name": "AimStop",
+      "waypointRelativePos": 5.8,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "AimStop"
+        }
+      }
     }
   ],
   "globalConstraints": {

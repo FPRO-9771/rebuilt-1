@@ -1,43 +1,41 @@
 """
-Movement compensation for auto-aim.
-Computes aiming corrections for robot motion while shooting.
+Angle compensation for auto-aim.
+Computes how far ahead to aim the turret when the robot is moving.
 
-Two independent corrections:
-  - Tracking: compensate for robot velocity so turret stays pointed at target
-  - Lead: aim ahead so the ball arrives at the target correctly
+Uses the velocity lead module to decompose robot velocity into
+tangential and radial components relative to the Hub. Only the
+tangential component causes lateral miss -- the radial component
+is handled by distance compensation (separate module).
 
+Returns a single value: lead angle in degrees, to be added to
+the turret error. This is the ONLY place that adjusts turret
+angle for robot movement.
+
+Constants live in constants/compensation.py (CON_COMPENSATION).
 Pure math -- no subsystem dependencies, easily testable.
 """
 
-import math
-
 from calculations.velocity_lead import compute_velocity_lead
+from constants.compensation import CON_COMPENSATION
 
 
-def compute_movement_correction(vx, vy, distance_m, bearing_rad, config):
-    """Compute aiming corrections for robot movement.
+def compute_angle_compensation(vx, vy, distance_m, bearing_rad):
+    """Compute the lead angle to add to turret error for robot movement.
 
     Args:
         vx: robot forward velocity (m/s, field-relative)
         vy: robot lateral velocity (m/s, field-relative)
         distance_m: distance to target (meters)
         bearing_rad: angle from shooter to hub (radians, field frame)
-        config: CON_SHOOTER dict with velocity_ff_gain and velocity_lead_enabled
 
     Returns:
-        (tracking_correction_deg, lead_correction_deg) tuple.
-        Both are in degrees, to be ADDED to the turret error.
+        lead_deg: correction in degrees to ADD to the turret error.
+        Zero when stationary, disabled, or at point-blank range.
     """
-    # Tracking correction: feedforward to keep turret pointed at target
-    # while the robot moves laterally. Uses vy (lateral component).
-    tracking_correction_deg = vy * config["turret_velocity_ff_gain"]
+    min_dist = CON_COMPENSATION["min_distance"]
+    if not CON_COMPENSATION["velocity_lead_enabled"] or distance_m <= min_dist:
+        return 0.0
 
-    # Lead correction: aim ahead so ball arrives on target.
-    # Uses full velocity decomposed into tangential component.
-    lead_correction_deg = 0.0
-    if config["velocity_lead_enabled"] and distance_m > 0.5:
-        lead_correction_deg, _ = compute_velocity_lead(
-            vx, vy, distance_m, bearing_rad,
-        )
-
-    return tracking_correction_deg, lead_correction_deg
+    lead_deg = compute_velocity_lead(vx, vy, distance_m, bearing_rad)
+    gain = CON_COMPENSATION["velocity_lead_gain"]
+    return lead_deg * gain

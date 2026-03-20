@@ -3,8 +3,7 @@ Central hub - creates all subsystems and wires them together.
 This is where controllers are bound to commands.
 """
 
-from constants import CON_ROBOT, CON_INTAKE_SPINNER, CON_H_FEED, CON_V_FEED
-from constants.debug import DEBUG
+from constants import CON_ROBOT
 from controls.game_controller import GameController
 from controls.operator_controls import _make_shoot_context_supplier
 from generated.tuner_constants import TunerConstants
@@ -22,9 +21,7 @@ from controls import configure_driver, configure_operator
 # from handlers import get_vision_providers  # COMMENTED OUT -- not using vision providers (2026-03-19)
 from match_setup import MatchSetup
 from telemetry import setup_telemetry
-from commands2 import InstantCommand, ParallelCommandGroup, SequentialCommandGroup
-from pathplannerlib.events import EventTrigger
-from commands.shoot_when_ready import ShootWhenReady
+from autonomous.named_commands import register_named_commands
 from autonomous.auton_modes import AutonModes
 from autonomous.auton_mode_selector import create_test_chooser
 from utils.logger import get_logger
@@ -71,62 +68,21 @@ class RobotContainer:
             self.drivetrain, self.match_setup.get_alliance, _get_robot_velocity
         )
 
-        # --- PathPlanner event trigger bindings ---
-        # Event markers in .path files with "command": null fire EventTrigger by name.
-        # Use EventTrigger("name").onTrue(...) to bind commands to them.
-        _auto_log = DEBUG["auto_sequence_logging"]
-
-        def _log_event(name):
-            """Return an InstantCommand that logs an event trigger firing."""
-            return InstantCommand(
-                lambda n=name: _log.info(f"AUTO EVENT: {n} triggered") if _auto_log else None
-            )
-
-        # Intake arm
-        EventTrigger("IntakeDown").onTrue(SequentialCommandGroup(
-            _log_event("IntakeDown"), self.intake.go_down()))
-        EventTrigger("IntakeUp").onTrue(SequentialCommandGroup(
-            _log_event("IntakeUp"), self.intake.go_up()))
-
-        # Intake spinner
-        EventTrigger("IntakeStart").onTrue(SequentialCommandGroup(
-            _log_event("IntakeStart"),
-            self.intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]),
-        ))
-        EventTrigger("IntakeStop").onTrue(SequentialCommandGroup(
-            _log_event("IntakeStop"),
-            self.intake_spinner.runOnce(lambda: self.intake_spinner._stop()),
-        ))
-
-        # Shooter -- ShootWhenReady spins launcher/hood and feeds when at speed.
-        # on_target_supplier=lambda: True since CoordinateAim handles aiming in auto.
-        # ShootWhenReady owns h_feed and v_feed, so FeedersStart/Stop are removed.
-        EventTrigger("ShooterStart").onTrue(SequentialCommandGroup(
-            _log_event("ShooterStart"),
-            ShootWhenReady(
-                self.launcher, self.hood, self.h_feed, self.v_feed,
-                context_supplier=_context_supplier,
-                on_target_supplier=lambda: True,
-            ),
-        ))
-        EventTrigger("ShooterStop").onTrue(SequentialCommandGroup(
-            _log_event("ShooterStop"),
-            ParallelCommandGroup(
-                self.launcher.runOnce(lambda: self.launcher._stop()),
-                self.hood.runOnce(lambda: self.hood._stop()),
-                self.h_feed.runOnce(lambda: self.h_feed._stop()),
-                self.v_feed.runOnce(lambda: self.v_feed._stop()),
-            ),
-        ))
-        self.auton_modes = AutonModes(
-            drivetrain=self.drivetrain,
-            turret=self.turret,
+        # --- PathPlanner named commands ---
+        # Register all named commands BEFORE loading .auto files.
+        # See autonomous/named_commands.py for the full list.
+        register_named_commands(
+            intake=self.intake,
+            intake_spinner=self.intake_spinner,
             launcher=self.launcher,
             hood=self.hood,
             h_feed=self.h_feed,
             v_feed=self.v_feed,
+            turret=self.turret,
             context_supplier=_context_supplier,
         )
+
+        self.auton_modes = AutonModes()
         self.test_chooser = create_test_chooser(self.auton_modes)
 
         # --- Configure button bindings ---

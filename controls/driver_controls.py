@@ -11,7 +11,7 @@ Controls:
     Right bumper    -- Toggle field-centric / robot-centric
     Y button        -- Toggle intake deploy (down/up)
     Left trigger    -- Run intake: spin wheels + hold arm (hold)
-    Right trigger   -- Slow mode (hold to reduce speed)
+    Right trigger   -- Slow mode (squeeze to cap speed, linear stick)
     Back + Y/X      -- SysId dynamic forward/reverse
     Start + Y/X     -- SysId quasistatic forward/reverse
 
@@ -53,21 +53,26 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
     """
     max_speed = TunerConstants.speed_at_12_volts
     max_angular_rate = rotationsToRadians(0.75)
-    slow_factor = CON_ROBOT["slow_mode_factor"]
+    deadband = CON_ROBOT["stick_deadband"]
+    slow_max = CON_ROBOT["slow_max_speed"]
+    slow_min = CON_ROBOT["slow_min_speed"]
 
     # --- Swerve requests ---
+    # Deadband is kept small -- the power curve and our own stick
+    # deadband handle drift protection.  Setting this near zero lets
+    # slow-mode commands reach the modules without being swallowed.
     drive_fc = (
         swerve.requests.FieldCentric()
-        .with_deadband(max_speed * 0.1)
-        .with_rotational_deadband(max_angular_rate * 0.1)
+        .with_deadband(0.01)
+        .with_rotational_deadband(0.01)
         .with_drive_request_type(
             swerve.SwerveModule.DriveRequestType.VELOCITY
         )
     )
     drive_rc = (
         swerve.requests.RobotCentric()
-        .with_deadband(max_speed * 0.1)
-        .with_rotational_deadband(max_angular_rate * 0.1)
+        .with_deadband(0.01)
+        .with_rotational_deadband(0.01)
         .with_drive_request_type(
             swerve.SwerveModule.DriveRequestType.VELOCITY
         )
@@ -85,6 +90,12 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
     drive_exp = CON_ROBOT["drive_exponent"]
     rot_exp = CON_ROBOT["rotation_exponent"]
 
+    def _apply_deadband(value):
+        """Zero out stick values below the deadband threshold."""
+        if abs(value) < deadband:
+            return 0.0
+        return value
+
     def get_drive_request():
         req = drive_rc if state["robot_centric"] else drive_fc
         if DEBUG["debug_telemetry"]:
@@ -92,21 +103,31 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
                 "Drive/Robot Centric", state["robot_centric"]
             )
 
-        raw_ly = driver.getLeftY()
-        raw_lx = driver.getLeftX()
-        raw_rx = driver.getRightX()
+        raw_ly = _apply_deadband(driver.getLeftY())
+        raw_lx = _apply_deadband(driver.getLeftX())
+        raw_rx = _apply_deadband(driver.getRightX())
 
-        # Right trigger: blend from full speed down to slow_factor
         trigger = driver.getRightTriggerAxis()
-        speed_scale = 1.0 - trigger * (1.0 - slow_factor)
 
-        curved_ly = _apply_curve(raw_ly, drive_exp)
-        curved_lx = _apply_curve(raw_lx, drive_exp)
-        curved_rx = _apply_curve(raw_rx, rot_exp)
-
-        vel_x = -curved_ly * max_speed * speed_scale
-        vel_y = -curved_lx * max_speed * speed_scale
-        rot = -curved_rx * max_angular_rate * speed_scale
+        if trigger > 0.05:
+            # --- Slow mode: linear stick, trigger controls max speed ---
+            # Trigger maps linearly: light squeeze = slow_max,
+            # full squeeze = slow_min.
+            ceiling = slow_max - trigger * (slow_max - slow_min)
+            vel_x = -raw_ly * ceiling
+            vel_y = -raw_lx * ceiling
+            rot = -raw_rx * max_angular_rate * (ceiling / max_speed)
+            speed_scale = ceiling / max_speed
+            curved_ly, curved_lx, curved_rx = raw_ly, raw_lx, raw_rx
+        else:
+            # --- Normal mode: exponential curve, full speed ---
+            curved_ly = _apply_curve(raw_ly, drive_exp)
+            curved_lx = _apply_curve(raw_lx, drive_exp)
+            curved_rx = _apply_curve(raw_rx, rot_exp)
+            vel_x = -curved_ly * max_speed
+            vel_y = -curved_lx * max_speed
+            rot = -curved_rx * max_angular_rate
+            speed_scale = 1.0
 
         # --- Drive input logging ---
         log_drive_inputs(

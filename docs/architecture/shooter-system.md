@@ -238,13 +238,13 @@ Distances outside the table range clamp to the nearest entry. This prevents extr
 
 ### CoordinateAim (`commands/coordinate_aim.py`)
 
-Odometry-based turret angle calculation. Toggled on/off with **left bumper**. The robot's pose is used to compute the angle to the Hub, then movement compensation, turret routing, EMA filtering, and a PD controller with deadband compensation drive the turret motor. Manual turret override (left stick X) interrupts CoordinateAim via WPILib requirements; it resumes on release.
+Odometry-based turret angle calculation. In teleop, toggled on/off with **left bumper**. In auto, registered as the `AimStart` named command and triggered by PathPlanner event markers. The robot's pose is used to compute the angle to the Hub, then movement compensation, turret routing, EMA filtering, and a PD controller with deadband compensation drive the turret motor. Manual turret override (left stick X) interrupts CoordinateAim via WPILib requirements; it resumes on release.
 
 > **Full deep dive:** [Auto-Aim System](auto-aim.md) -- data flow, pose-based aiming, PD controller math, movement compensation, and debugging guide.
 
 ### ShootWhenReady (`commands/shoot_when_ready.py`)
 
-The fully integrated shooter command. Bound to **left trigger whileTrue** -- hold to engage. Spins up the launcher immediately, then feeds Fuel once the launcher is at speed AND the turret is on target.
+The fully integrated shooter command. In teleop, bound to **left trigger whileTrue** -- hold to engage. In auto, registered as the `ShooterStart` named command and triggered by PathPlanner event markers. Spins up the launcher immediately, then feeds Fuel once the launcher is at speed AND the turret is on target.
 
 Each `execute()` cycle:
 1. Call `context_supplier()` to get corrected distance

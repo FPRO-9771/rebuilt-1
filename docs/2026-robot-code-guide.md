@@ -33,7 +33,7 @@ The codebase is organized by responsibility, not by file type:
 - **`hardware/`** — Abstraction layer between subsystem code and real motors/sensors. Subsystems program against the `MotorController` ABC; the factory decides whether to return a real TalonFX or a mock. This is the big improvement over 2025.
 - **`subsystems/`** — One file per mechanism. Each subsystem owns its hardware, exposes Commands, and enforces safety limits. Also contains pure-logic helpers like `shooter_lookup.py`.
 - **`commands/`** — Small, single-concern command modules that coordinate subsystems (e.g., `CoordinateAim` points the turret at the Hub, `ShootWhenReady` spins up and feeds when on target, `ManualShoot` runs launcher + feeds manually). Composed in `controls/operator_controls.py`.
-- **`autonomous/`** — Auto routine composition, field-position constants, and dashboard chooser. See [Autonomous](architecture/autonomous.md).
+- **`autonomous/`** — Named command registration (`named_commands.py`), auto routine factory (`auton_modes.py`), and test override chooser (`auton_mode_selector.py`). Actions are triggered by PathPlanner event markers on `.path` files. See [Autonomous](architecture/autonomous.md).
 - **`handlers/`** — External system integrations (vision/Limelight). Same abstraction pattern as hardware.
 - **`controls/`** — Controller bindings (driver and operator). Keeps button-wiring logic out of `robot_container.py`.
 - **`telemetry/`** — Dashboard publishers for motors, commands, and vision. Pushes data to SmartDashboard every cycle.
@@ -165,7 +165,7 @@ Always branch from `main` for new work. PR to `develop` first, then to `main` be
 
 1. **Configuration centralization works** - Do it from day one
 2. **Command composition is powerful** - Draw diagrams before coding complex sequences
-3. **Factory pattern for autos** - Always use lambdas in the chooser
+3. **Factory pattern for autos** - Always use lambdas in the chooser. Named commands + PathPlanner event markers keep auto logic visual and editable in the GUI.
 4. **Hardware abstraction enables testing** - New for 2026, should have done it earlier
 5. **Vision abstraction enables testing** - Mock Limelight data to test alignment logic
 6. **Physics simulation catches real bugs** - Test that autos reach expected positions, not just motor signals

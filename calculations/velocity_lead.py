@@ -13,15 +13,16 @@ radial component is handled by distance compensation.
 How far ahead depends on:
   - Tangential velocity (m/s) -- perpendicular to the shooter-to-hub line
   - Distance to target (m)
-  - Ball speed at that distance (m/s, from the distance table)
+  - Flight time at that distance (seconds, from the distance table)
 
 The correction is purely additive -- it does not replace or interfere
-with the PD controller, feedforward, or any other aiming logic.
+with the PD controller or any other aiming logic.
 """
 
 import math
 
-from subsystems.shooter_lookup import get_ball_speed
+from subsystems.shooter_lookup import get_flight_time
+from constants.compensation import CON_COMPENSATION
 
 
 def compute_velocity_lead(vx, vy, distance, bearing_rad):
@@ -38,12 +39,10 @@ def compute_velocity_lead(vx, vy, distance, bearing_rad):
         bearing_rad: angle from shooter to hub (radians, field frame)
 
     Returns:
-        (lead_deg, ball_speed) tuple:
-          lead_deg: correction in degrees to ADD to turret error
-          ball_speed: ball speed used (m/s), for logging
+        lead_deg: correction in degrees to ADD to turret error
     """
-    if distance <= 0.5:
-        return 0.0, 0.0
+    if distance <= CON_COMPENSATION["min_distance"]:
+        return 0.0
 
     # Unit vector from shooter toward hub
     ux = math.cos(bearing_rad)
@@ -54,8 +53,7 @@ def compute_velocity_lead(vx, vy, distance, bearing_rad):
     # Positive = robot moving to the left of the hub line.
     v_tangential = -vx * uy + vy * ux
 
-    ball_speed = get_ball_speed(distance)
-    flight_time = distance / ball_speed
+    flight_time = get_flight_time(distance)
     lead_m = v_tangential * flight_time
     lead_deg = math.degrees(math.atan2(lead_m, distance))
-    return lead_deg, ball_speed
+    return lead_deg

@@ -15,7 +15,7 @@ The intake and feed system has two jobs:
 1. **Intake** -- deploy an arm over the bumper, spin rollers to pull Fuel in
 2. **Feed** -- move collected Fuel horizontally then vertically up to the launcher
 
-Four subsystems handle this, each owning one motor (except the intake arm which has two):
+Four subsystems handle this, each owning one motor (except the intake arm which has two). In auto, intake actions are controlled by PathPlanner event markers using named commands: `IntakeDown`, `IntakeUp`, `IntakeStart`, `IntakeStop` (see [Autonomous](autonomous.md)).
 
 | Subsystem | File | Motor(s) | CAN ID(s) | Type | Bus |
 |-----------|------|----------|-----------|------|-----|
@@ -43,6 +43,22 @@ Key positions from `CON_INTAKE`:
 - `gear_ratio: 15.0` -- 1:15 gearbox
 
 The arm also has a **hold mode** using soft P-control (`hold_kP: 2.0`, `hold_max_voltage: 1.0V`) with a deadband of `0.05` rotations. When the spinner is active, hold voltage is allowed up to `spin_hold_max_voltage: 6.0V` to counteract the reaction force.
+
+### Position Guard (default command)
+
+The intake has a **position guard** set as its default command (`_PositionGuardCommand`). This prevents the arm from flopping open when the robot hits a wall or stops suddenly with the intake stowed.
+
+How it works:
+
+- Runs automatically whenever no other intake command is active (deploy, stow, run intake, etc.)
+- **Only active near `up_position`** -- within `guard_zone: 1.0` rotations. When the arm is deployed down, the guard applies 0V and lets gravity/brake hold it.
+- Uses the same soft P-control as hold mode (`hold_kP`, `hold_max_voltage`, `hold_deadband`).
+- Inside the deadband (0.05 rotations of drift): 0V, zero power draw.
+- Outside the deadband: small correction up to `hold_max_voltage` (1.0V).
+
+**Power draw:** Essentially zero during normal operation. The guard only applies voltage for the brief moment after an impact pushes the arm past the deadband.
+
+**No interference with other commands:** `go_down()`, `go_up()`, and `RunIntake` all require the intake subsystem, so they automatically interrupt the guard. When they finish, the guard restarts.
 
 ## Intake Spinner
 

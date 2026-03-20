@@ -92,20 +92,26 @@ When you add a new control:
 | Right bumper | `onTrue` | Toggle field-centric / robot-centric |
 | Y button | `onTrue` | Toggle intake deploy (down/up) |
 | Left trigger | `whileTrue` | Run intake (spin rollers + hold arm) |
-| Right trigger | axis (default cmd) | Slow mode -- hold to reduce drive speed to 10% |
+| Right trigger | axis (default cmd) | Slow mode -- squeeze to cap speed (linear stick, trigger sets ceiling) |
 | Back + Y | `whileTrue` | SysId dynamic forward |
 | Back + X | `whileTrue` | SysId dynamic reverse |
 | Start + Y | `whileTrue` | SysId quasistatic forward |
 | Start + X | `whileTrue` | SysId quasistatic reverse |
 
-### Drive Response Curve
+### Drive Response: Normal vs Slow Mode
 
-Joystick inputs pass through a power curve (`_apply_curve` in `driver_controls.py`) before becoming velocity commands. The exponent is configurable in `constants/controls.py`:
+The driver has two distinct speed modes, selected by the right trigger:
+
+**Normal mode** (no trigger): Joystick inputs pass through a power curve (`_apply_curve` in `driver_controls.py`) before becoming velocity commands. The exponent is configurable in `constants/controls.py`:
 
 - `drive_exponent` (currently 4.0) -- translation (left stick)
 - `rotation_exponent` (currently 5.0) -- rotation (right stick X)
 
 Higher exponents give more fine control at low/mid stick. See `docs/drive-team-guide.md` for a tuning reference table.
+
+**Slow mode** (any trigger squeeze): Stick response is linear (no curve). The trigger controls the speed ceiling -- light squeeze caps at `slow_max_speed` (2.0 m/s), full squeeze caps at `slow_min_speed` (0.5 m/s). Stick position is a simple percentage of that ceiling.
+
+A 3% stick deadband (`stick_deadband`) is applied in both modes to prevent drift.
 
 ### Source
 

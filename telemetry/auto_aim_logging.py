@@ -55,12 +55,12 @@ def log_hold(cycle, pose_x, pose_y, heading_deg,
 def log_drive(cycle, pose_x, pose_y, heading_deg,
               shooter_x, shooter_y, target_x, target_y,
               turret_pos, error_deg, distance_m, closing_mps,
-              tracking_deg, lead_deg, routed_error, filtered_error,
-              p_term, d_term, ff_term, raw_voltage, voltage,
+              lead_deg, routed_error, filtered_error,
+              p_term, d_term, raw_voltage, voltage,
               turret_vel, vx, vy):
     """Log PD control output when actively driving. Every other cycle.
 
-    Shows the full pipeline: inputs -> corrections -> PD terms -> voltage.
+    Shows the full pipeline: inputs -> lead -> PD terms -> voltage.
     """
     if not _enabled() or cycle % 2 != 0:
         return
@@ -72,9 +72,9 @@ def log_drive(cycle, pose_x, pose_y, heading_deg,
         f"tgt=({target_x:.1f},{target_y:.1f}) "
         f"tpos={turret_pos:.3f} "
         f"| err={error_deg:.2f} dist={distance_m:.2f} cls={closing_mps:.2f} "
-        f"| trk={tracking_deg:.2f} ld={lead_deg:.2f} "
+        f"| lead={lead_deg:.2f} "
         f"rte={routed_error:.2f} flt={filtered_error:.2f} "
-        f"| P={p_term:.3f} D={d_term:.3f} FF={ff_term:.3f} "
+        f"| P={p_term:.3f} D={d_term:.3f} "
         f"rv={raw_voltage:.3f} v={voltage:.3f} [{sat}] "
         f"tvel={turret_vel:.3f} "
         f"| vel=({vx:.2f},{vy:.2f})"
