@@ -17,19 +17,13 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 5.0
+                  "waitTime": 10.0
                 }
               },
               {
                 "type": "named",
                 "data": {
-                  "name": "AimStart"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "ShooterStart"
+                  "name": "ManualShootStart"
                 }
               }
             ]
@@ -39,12 +33,6 @@
           "type": "named",
           "data": {
             "name": "ShooterStop"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "AimStop"
           }
         }
       ]

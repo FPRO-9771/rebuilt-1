@@ -4,7 +4,8 @@ Manual shoot command -- spins launcher from joystick, auto-feeds when at speed.
 Maps the joystick Y axis to a virtual distance using the shooter distance
 table. The distance table provides both launcher RPS and hood position.
 Once the flywheel reaches speed for the first time, both H feed and V feed
-activate and stay on until the command ends (trigger released).
+activate and stay on until the command ends (trigger released). If the H feed
+stalls (velocity near zero), reverses feeds briefly to un-jam, then resumes.
 """
 
 from typing import Callable
@@ -16,8 +17,12 @@ from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
 from subsystems.shooter_lookup import get_shooter_settings
+from commands.reverse_feeds import reverse_all_feeds, stop_all_feeds
 from constants import CON_H_FEED, CON_V_FEED
 from constants.shooter import CON_SHOOTER
+from utils.logger import get_logger
+
+_log = get_logger("manual_shoot")
 
 
 def _stick_to_distance(stick: float) -> float:
@@ -51,10 +56,14 @@ class ManualShoot(Command):
         self.v_feed = v_feed
         self._stick_supplier = stick_supplier
         self._reached_speed = False
+        self._unjamming = False
+        self._unjam_counter = 0
         self.addRequirements(launcher, hood, h_feed, v_feed)
 
     def initialize(self):
         self._reached_speed = False
+        self._unjamming = False
+        self._unjam_counter = 0
 
     def execute(self):
         stick = self._stick_supplier()
@@ -67,9 +76,25 @@ class ManualShoot(Command):
         if not self._reached_speed and self.launcher.is_at_speed(target_rps):
             self._reached_speed = True
 
-        if self._reached_speed:
-            self.h_feed._set_voltage(CON_H_FEED["feed_voltage"])
-            self.v_feed._set_voltage(CON_V_FEED["feed_voltage"])
+        # --- Un-jam state machine ---
+        # While feeding, if H feed velocity drops near zero, reverse all
+        # feeds briefly to clear the jam, then resume.
+        if self._unjamming:
+            self._unjam_counter -= 1
+            reverse_all_feeds(self.h_feed, self.v_feed)
+            if self._unjam_counter <= 0:
+                self._unjamming = False
+                _log.info("Un-jam complete -- resuming feed")
+        elif self._reached_speed:
+            h_vel = self.h_feed.get_velocity()
+            if abs(h_vel) < CON_H_FEED["unjam_velocity_threshold"]:
+                self._unjamming = True
+                self._unjam_counter = CON_H_FEED["unjam_duration_cycles"]
+                _log.warning("H feed stalled -- un-jamming")
+                reverse_all_feeds(self.h_feed, self.v_feed)
+            else:
+                self.h_feed._set_voltage(CON_H_FEED["feed_voltage"])
+                self.v_feed._set_voltage(CON_V_FEED["feed_voltage"])
 
     def isFinished(self) -> bool:
         return False
@@ -77,5 +102,4 @@ class ManualShoot(Command):
     def end(self, interrupted: bool):
         self.launcher._stop()
         self.hood._stop()
-        self.h_feed._stop()
-        self.v_feed._stop()
+        stop_all_feeds(self.h_feed, self.v_feed)

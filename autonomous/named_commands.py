@@ -12,14 +12,16 @@ Named commands registered here:
   IntakeStop   -- stop intake wheels
   AimStart     -- start pose-based turret auto-aim
   AimStop      -- stop turret auto-aim
-  ShooterStart -- spin up launcher, feed when at speed (ShootWhenReady)
-  ShooterStop  -- stop launcher, hood, and feeders
+  ShooterStart      -- spin up launcher, feed when at speed (ShootWhenReady)
+  ManualShootStart  -- manual shoot at center distance (for center autons)
+  ShooterStop       -- stop launcher, hood, and feeders
 """
 
 from pathplannerlib.auto import NamedCommands
 from commands2 import Command, ParallelCommandGroup
 
 from commands.coordinate_aim import CoordinateAim
+from commands.manual_shoot import ManualShoot
 from commands.shoot_when_ready import ShootWhenReady
 from constants import CON_INTAKE_SPINNER
 from constants.shooter import CON_TURRET_MINION
@@ -106,6 +108,12 @@ def register_named_commands(intake, intake_spinner, launcher, hood,
         ShootWhenReady(launcher, hood, h_feed, v_feed,
                        context_supplier=context_supplier,
                        on_target_supplier=lambda: True))
+
+    # --- Manual shoot (fixed stick=0.0 = center distance, for center autons) ---
+    _logged("ManualShootStart",
+        ManualShoot(launcher, hood, h_feed, v_feed,
+                    stick_supplier=lambda: 0.0))
+
     _logged("ShooterStop",
         ParallelCommandGroup(
             launcher.runOnce(lambda: launcher._stop()),

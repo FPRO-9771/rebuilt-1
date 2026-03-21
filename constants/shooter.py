@@ -24,11 +24,11 @@ CON_TURRET = {
 # robot_container.py.  All voltages and limits need re-tuning on real hardware.
 # =============================================================================
 CON_TURRET_MINION = {
-    "max_voltage": 4.0,         # Safety cap -- tune down once moving
-    "manual_speed_factor": 0.50, # Manual mode: 1.0 * 0.50 = 0.50V
+    "max_voltage": 8.0,         # Safety cap -- tune down once moving
+    "manual_speed_factor": 0.80, # Manual mode: 1.0 * 0.50 = 0.50V
     "manual_exponent": 2.0,     # Joystick response curve (1.0=linear, 2.0=squared, 3.0=cubed)
     "min_position": 0,       # Soft limit: leftmost rotation (rotations)
-    "max_position": 9,        # Soft limit: rightmost rotation (rotations)
+    "max_position": 8.6,        # Soft limit: rightmost rotation (rotations)
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
     "inverted": False,           # Positive = left (unconfirmed -- flip if reversed)
     "brake": True,               # Brake on neutral -- holds turret steady
@@ -39,8 +39,8 @@ CON_TURRET_MINION = {
 
     # Slot 0 gains for closed-loop position hold (HoldPosition command).
     # NEEDS TUNING -- start conservative to avoid oscillation.
-    "slot0_kP": 1.0,
-    "slot0_kI": 0.0,
+    "slot0_kP": 1.5,
+    "slot0_kI": 0.1,
     "slot0_kD": 0.01,
     "slot0_kS": 0.1,            # Static friction (volts to start moving)
     "slot0_kV": 0.0,
@@ -94,16 +94,21 @@ CON_HOOD = {
 # =============================================================================
 # SHOOTER SYSTEM CONFIGURATION
 # =============================================================================
+#4 seconds setting time at kp=0.5/ki=0.1
+#2 seconds setting time at kp=0.5/ki=0.05
+#next test kp=0.5 / ki=0.02
+
+
 CON_SHOOTER = {
-    "turret_p_gain": 0.30,               # Proportional gain (volts per degree) -- drives toward target
-    "turret_i_gain": 0.02,               # Integral gain -- accumulates error to push through friction
+    "turret_p_gain": 0.5,                # Proportional gain (volts per degree) -- drives toward target
+    "turret_i_gain": 0.05,               # Integral gain -- accumulates error to push through friction
     "turret_i_max": 1.5,                 # Max integral voltage -- caps windup to prevent overshoot
     "turret_d_velocity_gain": 0.05,      # Velocity damping -- counterbalances P to prevent oscillation
     "turret_aim_inverted": True,         # Motor direction is opposite to angle convention (positive error = CCW, but motor negative = turret left)
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
     "feed_off_target_debounce": 20,      # Cycles off-target before stopping feed (~400ms at 50Hz)
 
-    "turret_max_auto_voltage": 2.0,     # Max voltage during auto-aim (sqrt P handles decel now)
+    "turret_max_auto_voltage": 4.0,     # Max voltage during auto-aim (sqrt P handles decel now)
     "turret_max_brake_voltage": 2.5,    # Brake limit -- higher than drive to stop quickly
     "turret_min_move_voltage": 1.10,    # Deadband comp -- minimum voltage to overcome static friction
     "turret_tx_filter_alpha": 0.95,      # EMA smoothing for tx (0=max smooth, 1=no filter)

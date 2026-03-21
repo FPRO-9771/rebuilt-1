@@ -8,7 +8,7 @@ Intake lever arm configuration.
 CON_INTAKE = {
     "up_position": 0.0,         # Fully raised position (rotations)
     "gear_ratio": 15.0,         # 1:15 gearbox (motor turns 15x per arm turn)
-    "down_position": -4.20,     # measured on robot -- arm settles here with brake voltage (re-measure with 1:15 gearbox)
+    "down_position": -3.8,     # measured on robot -- arm settles here with brake voltage (re-measure with 1:15 gearbox)
     "position_tolerance": 0.06, # "Close enough" tolerance (rotations)
     "hold_kP": 2.0,             # Soft hold gain (volts per rotation of drift)
     "hold_max_voltage": 1.0,    # Max voltage during soft hold (low to protect gears)
@@ -23,7 +23,7 @@ CON_INTAKE = {
     # DOWN: fraction where gravity takes over and arm needs braking
     "down_transition_fraction": 0.60,   # TUNE on robot
     # UP: fraction (from up_position) where arm has enough momentum and needs easing
-    "up_transition_fraction": 0.3,     # TUNE on robot (higher = switch to ease sooner)
+    "up_transition_fraction": 0.25,     # TUNE on robot (higher = switch to ease sooner)
     # Going down phase 1: pushing arm down, gravity not helping yet
     "down_push_voltage": -1.5,          # TUNE on robot (negative = toward down position)
     # Going down phase 2: gravity pulling hard, motors slow it down
@@ -31,7 +31,7 @@ CON_INTAKE = {
     # Going up phase 1: fighting gravity at its worst (arm horizontal)
     "up_fight_voltage": 2.8,            # TUNE on robot (positive = toward up position)
     # Going up phase 2: slow down before hitting the up stop
-    "up_ease_voltage": -0.7,            # TUNE on robot (negative = brakes against momentum)
+    "up_ease_voltage": -0.5,            # TUNE on robot (negative = brakes against momentum)
 
     # Slot 0 gains for closed-loop position control
     # NEEDS TUNING on the real robot

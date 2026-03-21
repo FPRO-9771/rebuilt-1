@@ -70,21 +70,25 @@ class Robot(wpilib.TimedRobot):
 
         _log.info(f"autonomousInit: scheduling {type(self.auto_command).__name__}")
         self.auto_command.schedule()
+        _log.info(f"autonomousInit: scheduled={self.auto_command.isScheduled()} finished={self.auto_command.isFinished()}")
         _log.info("autonomousInit: done")
 
     def autonomousPeriodic(self):
         """Called every 20ms during autonomous."""
         if DEBUG["auto_sequence_logging"] and self.auto_command:
             self._auto_periodic_count += 1
-            if self.auto_command.isFinished():
-                _log.info(f"AUTO PERIODIC [{self._auto_periodic_count}]: auto command FINISHED")
-            elif self._auto_periodic_count % 20 == 0:
-                _log.info(f"AUTO PERIODIC [{self._auto_periodic_count}]: auto command running")
+            scheduled = self.auto_command.isScheduled()
+            finished = self.auto_command.isFinished()
+            _log.info(f"AUTO PERIODIC [{self._auto_periodic_count}]: scheduled={scheduled} finished={finished}")
+            if not scheduled and self._auto_periodic_count <= 5:
+                _log.warning(f"AUTO PERIODIC [{self._auto_periodic_count}]: command NOT scheduled after {self._auto_periodic_count} cycles!")
 
     def autonomousExit(self):
         """Called when autonomous mode ends."""
         if DEBUG["auto_sequence_logging"]:
-            _log.info(f"AUTO EXIT: auto ended after {self._auto_periodic_count} cycles")
+            scheduled = self.auto_command.isScheduled() if self.auto_command else None
+            finished = self.auto_command.isFinished() if self.auto_command else None
+            _log.info(f"AUTO EXIT: after {self._auto_periodic_count} cycles, scheduled={scheduled} finished={finished}")
         if self.auto_command:
             self.auto_command.cancel()
         self._auto_periodic_count = 0
