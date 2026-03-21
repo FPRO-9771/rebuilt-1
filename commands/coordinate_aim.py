@@ -53,6 +53,7 @@ class CoordinateAim(Command):
         self._aim_sign = -1.0 if CON_SHOOTER["turret_aim_inverted"] else 1.0
 
         self._filtered_error = 0.0
+        self._i_accumulator = 0.0
         self._cycle_count = 0
         self._active = False
 
@@ -84,6 +85,7 @@ class CoordinateAim(Command):
 
     def initialize(self):
         self._filtered_error = 0.0
+        self._i_accumulator = 0.0
         self._cycle_count = 0
         self._active = True
         self._last_state = None
@@ -166,10 +168,11 @@ class CoordinateAim(Command):
             )
         else:
             turret_vel = self.turret.get_velocity()
-            voltage, p_term, d_term, raw_voltage = (
+            voltage, p_term, i_term, d_term, raw_voltage, self._i_accumulator = (
                 compute_turret_voltage(
                     self._filtered_error, turret_vel,
                     self._aim_sign, CON_SHOOTER,
+                    self._i_accumulator,
                 )
             )
             self.turret._set_voltage(voltage)
@@ -182,7 +185,7 @@ class CoordinateAim(Command):
                 state.closing_speed_mps,
                 lead_deg, routed_aim,
                 self._filtered_error,
-                p_term, d_term, raw_voltage, voltage,
+                p_term, i_term, d_term, raw_voltage, voltage,
                 turret_vel, ctx.vx, ctx.vy,
             )
 

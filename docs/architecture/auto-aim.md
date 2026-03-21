@@ -6,9 +6,9 @@
 > (left trigger hold) are wired in `controls/operator_controls.py`. The system
 > uses drivetrain odometry -- no Limelight aiming.
 
-The auto-aim system uses drivetrain odometry to compute the turret angle needed to point at the alliance Hub. Every 20ms cycle, it reads a shared `ShootContext` (pose, shooter field position, target, velocity), calculates the angle from the shooter's actual field position to the Hub, applies movement compensation, routes through soft limits, filters, and feeds a PD controller that drives the turret motor.
+The auto-aim system uses drivetrain odometry to compute the turret angle needed to point at the alliance Hub. Every 20ms cycle, it reads a shared `ShootContext` (pose, shooter field position, target, velocity), calculates the angle from the shooter's actual field position to the Hub, applies movement compensation, routes through soft limits, filters, and feeds a PID controller that drives the turret motor.
 
-> **When to read this:** You are debugging auto-aim behavior, tuning PD gains, or trying to understand why the turret is (or isn't) moving.
+> **When to read this:** You are debugging auto-aim behavior, tuning PID gains, or trying to understand why the turret is (or isn't) moving.
 
 ---
 
@@ -21,7 +21,7 @@ The auto-aim system uses drivetrain odometry to compute the turret angle needed 
 5. [Movement Compensation](#5-movement-compensation)
 6. [Turret Routing](#6-turret-routing)
 7. [EMA Filter](#7-ema-filter)
-8. [PD Controller](#8-pd-controller)
+8. [PID Controller](#8-pid-controller)
 9. [Turret States](#9-turret-states)
 10. [Constants Reference](#10-constants-reference)
 11. [File Map](#11-file-map)
@@ -39,7 +39,7 @@ CoordinateAim is a WPILib `Command` toggled on/off with the **left bumper**. Whi
 3. Applies movement compensation (lead angle correction)
 4. Routes the desired turret angle through soft limits (shortest path)
 5. Filters the error through an EMA
-6. Computes a voltage via PD control
+6. Computes a voltage via PID control
 7. Sends that voltage to the turret motor
 
 CoordinateAim only controls the **turret**. It does NOT set flywheel speed, hood angle, or lock status -- those are ShootWhenReady's job. Both commands run simultaneously because they require different subsystems.
@@ -122,7 +122,7 @@ ShootContext (from shared supplier)
   EMA filter                          smooths cycle-to-cycle noise
        |
        v
-  filtered_error                      this is what the PD controller sees
+  filtered_error                      this is what the PID controller sees
        |
   +----+----+
   |         |
@@ -162,7 +162,7 @@ CoordinateAim reads `shooter_xy` and `target_xy` from the ShootContext and passe
 
 ### Error (degrees)
 
-The angle between where the turret is currently pointing and where it needs to point to face the Hub. This is the primary input to the PD controller.
+The angle between where the turret is currently pointing and where it needs to point to face the Hub. This is the primary input to the PID controller.
 
 ```
 1. Read shooter_xy and target_xy from ShootContext
@@ -306,7 +306,7 @@ The turret has soft limits (e.g., 0 to 9 rotations). The routing logic:
 1. Computes the shortest angular path to the target (clockwise vs counter-clockwise)
 2. Checks if that path stays within soft limits
 3. If the shortest path would hit a limit, takes the longer path instead
-4. Returns the signed error for the PD controller
+4. Returns the signed error for the PID controller
 
 This prevents the turret from trying to spin through a hard stop when going the other way would work.
 
@@ -326,11 +326,13 @@ The filter uses the `auto_aim_` naming convention in telemetry keys for consiste
 
 ---
 
-## 8. PD Controller
+## 8. PID Controller
 
-The PD controller lives in `calculations/turret_pd.py`. It converts filtered_error into a motor voltage. It is pure P+D control with no feedforward -- all velocity compensation is handled upstream by `compute_angle_compensation()`.
+The PID controller lives in `calculations/turret_pd.py`. It converts filtered_error into a motor voltage. It is P+I+D control with no feedforward -- all velocity compensation is handled upstream by `compute_angle_compensation()`.
 
-`compute_turret_voltage()` returns `(voltage, p_term, d_term, raw_voltage)`.
+`compute_turret_voltage()` returns `(voltage, p_term, i_term, d_term, raw_voltage, i_accumulator)`.
+
+The caller (`CoordinateAim`) owns the integral accumulator state. It passes `i_accumulator` in each cycle and stores the returned value for the next call. The accumulator resets when the command initializes or when error crosses zero.
 
 ### P term (sqrt compression)
 
@@ -340,6 +342,25 @@ p_term = sqrt(|filtered_error|) * sign(filtered_error) * turret_p_gain
 
 Why sqrt? A linear P gain would saturate at the voltage clamp for large errors, making the turret slam to max speed regardless of distance. Sqrt compresses large errors so the turret ramps gradually and decelerates as it approaches the target.
 
+### I term (friction compensation)
+
+```python
+i_accumulator += filtered_error          # grows each cycle error persists
+i_term = i_accumulator * turret_i_gain   # small gain, slow ramp
+```
+
+The integral term handles **intermittent friction** (e.g. from the energy chain). When the turret stalls, error stays nonzero and the accumulator grows, gradually increasing voltage until the turret breaks through.
+
+**Windup protection** prevents the I term from causing overshoot:
+- **Accumulator cap:** `i_accumulator` is clamped to `turret_i_max / turret_i_gain`. This limits the maximum voltage the I term can contribute to `turret_i_max` (default 1.5V).
+- **Zero-crossing reset:** When the error flips sign (turret passed the target), the accumulator resets to 0. This prevents stale buildup from pushing the turret past the target.
+
+**Tuning tips:**
+- Start with `turret_i_gain = 0.02` (current default). Increase if the turret still stalls on friction spikes; decrease if you see overshoot after breaking free.
+- `turret_i_max` caps the maximum extra voltage from I. Keep it lower than `turret_max_auto_voltage` so I can never dominate the output. Default is 1.5V.
+- If the turret overshoots after pushing through friction, lower `turret_i_max` first, then `turret_i_gain`.
+- To disable I entirely, set `turret_i_gain` to 0.
+
 ### D term (velocity damping)
 
 ```python
@@ -348,13 +369,13 @@ d_term = -turret_velocity * turret_d_velocity_gain
 
 This damps the turret's actual velocity (not the error derivative). It acts as a brake -- the faster the turret is spinning, the more it resists. This prevents overshoot. Too high and it causes sluggish response or oscillation; the current value (0.05) is intentionally light.
 
-### Voltage = P + D
+### Voltage = P + I + D
 
 ```python
-raw_voltage = p_term * aim_sign + d_term
+raw_voltage = p_term * aim_sign + i_term + d_term
 ```
 
-`aim_sign` is +1 or -1 depending on `turret_aim_inverted`. It flips the P term direction if the turret's wiring runs opposite to the expected convention. Currently `turret_aim_inverted = True`.
+`aim_sign` is +1 or -1 depending on `turret_aim_inverted`. It flips the P and I term direction if the turret's wiring runs opposite to the expected convention. Currently `turret_aim_inverted = True`.
 
 ### Asymmetric clamping
 
@@ -367,7 +388,7 @@ braking:  |voltage| <= turret_max_brake_voltage (2.5V)
 
 ### Deadband compensation
 
-If the turret is nearly stopped (`|velocity| < 0.05`) and the computed voltage is nonzero but below `turret_min_move_voltage` (1.10V), the voltage is bumped up to that minimum. This overcomes static friction so the turret actually starts moving on small corrections instead of sitting stuck.
+If the turret is nearly stopped (`|velocity| < 0.4`) and the computed voltage is nonzero but below `turret_min_move_voltage` (1.10V), the voltage is bumped up to that minimum. This overcomes static friction so the turret actually starts moving on small corrections instead of sitting stuck.
 
 ---
 
@@ -392,11 +413,13 @@ The tolerance is `turret_alignment_tolerance` (default 1.5 degrees).
 
 Auto-aim tuning constants live in three files:
 
-### `constants/shooter.py` -- PD gains and voltage limits (`CON_SHOOTER`)
+### `constants/shooter.py` -- PID gains and voltage limits (`CON_SHOOTER`)
 
 | Constant | Value | What It Does |
 |----------|-------|--------------|
 | `turret_p_gain` | 0.30 | P gain (volts per sqrt-degree) -- higher = more aggressive aim |
+| `turret_i_gain` | 0.02 | I gain -- accumulates error to push through intermittent friction |
+| `turret_i_max` | 1.5 | Max voltage the I term can contribute (windup cap) |
 | `turret_d_velocity_gain` | 0.05 | Velocity damping -- higher = more braking, risk of oscillation |
 | `turret_aim_inverted` | True | Flip turret direction vs error convention |
 | `turret_alignment_tolerance` | 1.5 | Degrees of error within which turret holds still |
@@ -404,7 +427,6 @@ Auto-aim tuning constants live in three files:
 | `turret_max_brake_voltage` | 2.5 | Max braking voltage (opposing turret direction) |
 | `turret_min_move_voltage` | 1.10 | Deadband compensation -- minimum voltage to overcome static friction |
 | `turret_tx_filter_alpha` | 0.85 | EMA smoothing (0 = max smooth, 1 = no filter) |
-| `velocity_lead_enabled` | True | Enable aim-ahead compensation while strafing |
 
 ### `constants/match.py` -- Hub positions
 
@@ -434,7 +456,7 @@ calculations/
   movement_compensation.py       # Lead angle correction (compute_angle_compensation)
   velocity_lead.py               # Lead angle from tangential velocity + flight time
   turret_routing.py              # Shortest path within soft limits
-  turret_pd.py                   # PD + deadband voltage calculation
+  turret_pd.py                   # PID + deadband voltage calculation
 
 commands/
   coordinate_aim.py              # Turret aiming command -- reads ShootContext
@@ -444,7 +466,7 @@ controls/
   operator_controls.py           # _make_shoot_context_supplier() + button bindings
 
 constants/
-  shooter.py                     # CON_SHOOTER: PD gains, voltage limits, feature flags
+  shooter.py                     # CON_SHOOTER: PID gains, voltage limits
   match.py                       # Per-alliance Hub positions
   pose.py                        # Turret geometry + shooter_offset_x/y
 
@@ -499,7 +521,7 @@ The `AutoAim/` prefix is kept for consistency with dashboard layouts and logging
 Auto-aim logs are controlled by `DEBUG["auto_aim_logging"]` in `constants/debug.py` (independent of `DEBUG["verbose"]`). Three log functions in `telemetry/auto_aim_logging.py`:
 
 - **`log_hold()`** -- `[AIM HOLD] pose=(X,Y) hdg=H shooter=(X,Y) tgt=(X,Y) err=E dist=D cls=C -- HOLD` -- on target, turret holding
-- **`log_drive()`** -- `[AIM DRIVE] pose=(X,Y) ... | err=E ... | P=p D=d rv=r v=V [ok/SAT] ...` -- full PD output with all terms
+- **`log_drive()`** -- `[AIM DRIVE] pose=(X,Y) ... | err=E ... | P=p I=i D=d rv=r v=V [ok/SAT] ...` -- full PID output with all terms
 - **`log_shoot()`** -- `[SHOOT] pose=(X,Y) ... | rawDist=R corrDist=C ... | rps=R hood=H | AT_SPEED ON_TARGET FEEDING` -- auto-shoot pipeline
 
 All three show full pose context (robot pose, shooter field position, target position, velocity).
@@ -542,8 +564,14 @@ If the turret aims correctly when the robot is near the Hub but misses at long r
 - Shooter offset (`shooter_offset_x`, `shooter_offset_y` in constants/pose.py) is wrong -- more visible at long range
 - Velocity lead enabled but ball speeds in distance table are wrong
 
+### Turret stalls intermittently (energy chain friction)
+- `turret_i_gain` too low -- increase so the I term builds faster
+- `turret_i_max` too low -- cap may be reached before enough voltage to break through
+- If it overshoots after breaking free, lower `turret_i_max` first, then `turret_i_gain`
+
 ### Turret moves right direction but overshoots
 - `turret_p_gain` too high -- try reducing
+- `turret_i_max` too high -- I term builds too much voltage before releasing
 - `turret_d_velocity_gain` too low -- not enough braking
 - `turret_max_brake_voltage` too low -- cannot stop fast enough
 
