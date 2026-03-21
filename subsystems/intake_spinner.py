@@ -32,6 +32,7 @@ class IntakeSpinner(Subsystem):
         """Apply voltage with safety clamping."""
         max_v = CON_INTAKE_SPINNER["max_voltage"]
         clamped = max(-max_v, min(volts, max_v))
+        _log.debug(f"_set_voltage: requested={volts:.2f} clamped={clamped:.2f}")
         self.motor.set_voltage(clamped)
 
     def _stop(self) -> None:
@@ -54,10 +55,22 @@ class IntakeSpinner(Subsystem):
             super().__init__()
             self.spinner = spinner
             self.voltage = voltage
+            self._exec_count = 0
             self.addRequirements(spinner)
 
+        def initialize(self):
+            self._exec_count = 0
+            _log.info(f"_RunAtVoltageCommand ENABLED: voltage={self.voltage:.2f}V")
+
         def execute(self):
+            self._exec_count += 1
+            if self._exec_count == 1:
+                _log.info(f"_RunAtVoltageCommand execute #1: sending {self.voltage:.2f}V")
             self.spinner._set_voltage(self.voltage)
 
         def end(self, interrupted: bool):
             self.spinner._stop()
+            _log.info(
+                f"_RunAtVoltageCommand DISABLED (interrupted={interrupted})"
+                f" -- ran {self._exec_count} cycles"
+            )

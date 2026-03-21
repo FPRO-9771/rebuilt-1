@@ -92,8 +92,8 @@ The interface has two methods beyond the basic six that are worth noting:
 
 Each real controller (`TalonFXController` in `motor_controller_talon.py`, `TalonFXSController` in `motor_controller_fxs.py`) and `MockMotorController` all implement this same ABC. The implementations live in separate files -- the doc won't reproduce them in full, but the key differences are:
 
-- **TalonFXController** -- wraps a Phoenix 6 `TalonFX`. Accepts optional `slot0` gains dict and `bus` string.
-- **TalonFXSController** -- wraps a Phoenix 6 `TalonFXS`. Also accepts `brake` mode and configures `MotorArrangementValue.MINION_JST`.
+- **TalonFXController** -- wraps a Phoenix 6 `TalonFX`. Accepts optional `slot0` gains dict, `bus` string, and `current_limit` dict.
+- **TalonFXSController** -- wraps a Phoenix 6 `TalonFXS`. Also accepts `brake` mode, `current_limit` dict, and configures `MotorArrangementValue.MINION_JST`.
 - **MockMotorController** -- tracks commands in `command_history` and provides test helpers like `simulate_position()`, `simulate_velocity()`, `get_last_voltage()`, and `clear_history()`.
 
 ### Factory for Creating Motors
@@ -136,10 +136,14 @@ def create_motor(
 
     Args:
         config: Entry from MOTOR_IDS, e.g.
-                {"can_id": 30, "type": "talon_fx", "wired": True}
+                {"can_id": 30, "type": "talon_fx", "wired": True,
+                 "current_limit": {"stator": 40, "supply": 30}}
         inverted: Whether to invert motor direction
         brake: Whether to use brake mode (TalonFXS/Minion only)
         slot0: Optional PID/FF gains, e.g. {"kP": 12.0, "kV": 0.12}
+
+    The factory reads "current_limit" from the config dict and passes it
+    to the controller constructor. No extra parameter needed.
 
     Returns mock in three cases:
       - mock mode is enabled (testing)
@@ -156,6 +160,68 @@ def create_motor(
 Some motors (like WCP) connect through a TalonFXS controller instead of a TalonFX. The `TalonFXSController` class implements the same `MotorController` ABC, so subsystems don't need to know the difference. The `"type"` field in the motor config dict controls which class gets created -- `"talon_fx"` or `"talon_fxs"`.
 
 In mock/test mode, `create_motor()` always returns a `MockMotorController` regardless of type -- the mock doesn't care which real controller it's standing in for.
+
+### Current Limits
+
+Every motor has current limits configured to prevent brownouts and protect mechanisms. There are two types:
+
+- **Stator current limit** -- limits torque output. Protects mechanisms from excessive force.
+- **Supply current limit** -- limits draw from the battery. Prevents brownouts under load.
+
+#### Where to change current limits
+
+Current limits live in two places depending on the motor:
+
+**Mechanism motors** -- `constants/ids.py`. Each motor config dict has a `"current_limit"` field:
+
+```python
+MOTOR_IDS = {
+    "intake_spinner": {
+        "can_id": 40, "type": "talon_fx", "bus": "op_sys", "wired": True,
+        "current_limit": {"stator": 30, "supply": 10},  # amps
+    },
+    ...
+}
+```
+
+The factory reads `"current_limit"` from the config and passes it to the controller. Both `TalonFXController` and `TalonFXSController` apply it via Phoenix 6 `CurrentLimitsConfigs`. Either `"stator"` or `"supply"` can be omitted if you only want one type.
+
+**Drivetrain motors** -- `generated/tuner_constants.py`. Drive and steer limits are set in `_drive_initial_configs` and `_steer_initial_configs`:
+
+```python
+_drive_initial_configs = configs.TalonFXConfiguration().with_current_limits(
+    configs.CurrentLimitsConfigs()
+    .with_stator_current_limit(80.0)
+    .with_stator_current_limit_enable(True)
+    .with_supply_current_limit(50.0)
+    .with_supply_current_limit_enable(True)
+)
+```
+
+**Note:** Re-exporting from Phoenix Tuner X will overwrite `generated/tuner_constants.py`. If you re-export, you must re-add the drive motor current limits manually.
+
+#### Current limit summary
+
+| Motor | Stator (A) | Supply (A) | Config file |
+|-------|-----------|-----------|-------------|
+| Drive (x4) | 80 | 50 | `generated/tuner_constants.py` |
+| Steer (x4) | 60 | 35 | `generated/tuner_constants.py` |
+| Conveyor | 30 | 15 | `constants/ids.py` |
+| H-feed | 30 | 15 | `constants/ids.py` |
+| V-feed | 30 | 15 | `constants/ids.py` |
+| Intake spinner | 30 | 10 | `constants/ids.py` |
+| Intake left/right | 30 | 10 | `constants/ids.py` |
+| Turret | 30 | 15 | `constants/ids.py` |
+| Turret minion | 30 | 15 | `constants/ids.py` |
+| Launcher | 60 | 40 | `constants/ids.py` |
+| Hood | 30 | 15 | `constants/ids.py` |
+
+#### Tuning tips
+
+- If a motor **stalls or smokes** -- lower the stator limit.
+- If you're getting **brownouts** -- lower supply limits (especially on intake and drive).
+- If a mechanism feels **sluggish** -- raise limits, but watch battery voltage.
+- Start conservative, raise only after testing on a charged battery.
 
 ### Updated Subsystem (uses abstraction)
 

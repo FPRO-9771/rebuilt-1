@@ -18,6 +18,6 @@ CON_H_FEED = {
 # =============================================================================
 CON_V_FEED = {
     "max_voltage": 10.0,      # Maximum voltage to apply
-    "feed_voltage": -7.0,     # Voltage when feeding forward
-    "reverse_voltage": 6.0,   # Voltage when reversing to un-jam
+    "feed_voltage": 7.0,     # Voltage when feeding forward
+    "reverse_voltage": -6.0,   # Voltage when reversing to un-jam
 }

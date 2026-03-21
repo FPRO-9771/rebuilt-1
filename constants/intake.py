@@ -23,15 +23,15 @@ CON_INTAKE = {
     # DOWN: fraction where gravity takes over and arm needs braking
     "down_transition_fraction": 0.60,   # TUNE on robot
     # UP: fraction (from up_position) where arm has enough momentum and needs easing
-    "up_transition_fraction": 0.35,     # TUNE on robot (higher = switch to ease sooner)
+    "up_transition_fraction": 0.3,     # TUNE on robot (higher = switch to ease sooner)
     # Going down phase 1: pushing arm down, gravity not helping yet
     "down_push_voltage": -1.5,          # TUNE on robot (negative = toward down position)
     # Going down phase 2: gravity pulling hard, motors slow it down
     "down_brake_voltage": 0.1,          # TUNE on robot (positive = resists gravity)
     # Going up phase 1: fighting gravity at its worst (arm horizontal)
-    "up_fight_voltage": 2.5,            # TUNE on robot (positive = toward up position)
+    "up_fight_voltage": 2.8,            # TUNE on robot (positive = toward up position)
     # Going up phase 2: slow down before hitting the up stop
-    "up_ease_voltage": -0.5,            # TUNE on robot (negative = brakes against momentum)
+    "up_ease_voltage": -0.7,            # TUNE on robot (negative = brakes against momentum)
 
     # Slot 0 gains for closed-loop position control
     # NEEDS TUNING on the real robot

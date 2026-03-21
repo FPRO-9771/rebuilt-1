@@ -60,6 +60,7 @@ def create_motor(
     motor_type = config["type"]
     wired = config.get("wired", True)
     bus = config.get("bus", "")
+    current_limit = config.get("current_limit")
 
     if _use_mock_hardware:
         motor = MockMotorController(can_id, inverted)
@@ -71,9 +72,11 @@ def create_motor(
         if cls is None:
             raise ValueError(f"Unknown motor type '{motor_type}' for CAN {can_id}")
         if motor_type == "talon_fxs":
-            motor = cls(can_id, inverted, brake=brake, slot0=slot0, bus=bus)
+            motor = cls(can_id, inverted, brake=brake, slot0=slot0, bus=bus,
+                        current_limit=current_limit)
         else:
-            motor = cls(can_id, inverted, slot0=slot0, bus=bus)
+            motor = cls(can_id, inverted, slot0=slot0, bus=bus,
+                        current_limit=current_limit)
 
     motor.zero_position()
     _log.info(f"Motor CAN {can_id} ({motor_type}) position zeroed")

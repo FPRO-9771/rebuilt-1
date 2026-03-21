@@ -4,14 +4,18 @@ Real hardware using Phoenix 6.
 """
 
 from .motor_controller import MotorController
+from utils.logger import get_logger
+
+_log = get_logger("TalonFX")
 
 
 class TalonFXController(MotorController):
     """Real TalonFX/KrakenX60 implementation using Phoenix 6."""
 
-    def __init__(self, can_id: int, inverted: bool = False, slot0: dict | None = None, bus: str = ""):
+    def __init__(self, can_id: int, inverted: bool = False, slot0: dict | None = None,
+                 bus: str = "", current_limit: dict | None = None):
         from phoenix6.hardware import TalonFX
-        from phoenix6.configs import TalonFXConfiguration
+        from phoenix6.configs import TalonFXConfiguration, CurrentLimitsConfigs
         from phoenix6.signals import InvertedValue
 
         self.motor = TalonFX(can_id, bus)
@@ -33,6 +37,18 @@ class TalonFXController(MotorController):
             config.slot0.k_a = slot0.get("kA", 0)
             config.slot0.k_g = slot0.get("kG", 0)
             needs_apply = True
+
+        if current_limit:
+            limits = CurrentLimitsConfigs()
+            if "stator" in current_limit:
+                limits.stator_current_limit = current_limit["stator"]
+                limits.stator_current_limit_enable = True
+            if "supply" in current_limit:
+                limits.supply_current_limit = current_limit["supply"]
+                limits.supply_current_limit_enable = True
+            config.current_limits = limits
+            needs_apply = True
+            _log.info(f"CAN {can_id}: Current limits -- stator={current_limit.get('stator', 'off')}A, supply={current_limit.get('supply', 'off')}A")
 
         if needs_apply:
             self.motor.configurator.apply(config)

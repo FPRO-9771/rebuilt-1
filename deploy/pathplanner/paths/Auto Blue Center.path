@@ -33,17 +33,6 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "AimStart",
-      "waypointRelativePos": 0.0,
-      "endWaypointRelativePos": null,
-      "command": {
-        "type": "named",
-        "data": {
-          "name": "AimStart"
-        }
-      }
-    },
-    {
       "name": "ShooterStart",
       "waypointRelativePos": 0.10423588039867118,
       "endWaypointRelativePos": null,
@@ -53,22 +42,11 @@
           "name": "ShooterStart"
         }
       }
-    },
-    {
-      "name": "AimStop",
-      "waypointRelativePos": 1.5,
-      "endWaypointRelativePos": null,
-      "command": {
-        "type": "named",
-        "data": {
-          "name": "AimStop"
-        }
-      }
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 1.0,
-    "maxAcceleration": 1.0,
+    "maxVelocity": 2.5,
+    "maxAcceleration": 2.5,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,

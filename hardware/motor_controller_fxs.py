@@ -15,9 +15,10 @@ class TalonFXSController(MotorController):
     Used for motors like WCP that connect through a TalonFXS.
     """
 
-    def __init__(self, can_id: int, inverted: bool = False, brake: bool = False, slot0: dict | None = None, bus: str = ""):
+    def __init__(self, can_id: int, inverted: bool = False, brake: bool = False,
+                 slot0: dict | None = None, bus: str = "", current_limit: dict | None = None):
         from phoenix6.hardware import TalonFXS
-        from phoenix6.configs import TalonFXSConfiguration
+        from phoenix6.configs import TalonFXSConfiguration, CurrentLimitsConfigs
         from phoenix6.signals import InvertedValue, MotorArrangementValue, NeutralModeValue
 
         self._can_id = can_id
@@ -52,6 +53,18 @@ class TalonFXSController(MotorController):
                 f"kS={config.slot0.k_s} kV={config.slot0.k_v} "
                 f"kA={config.slot0.k_a} kG={config.slot0.k_g}"
             )
+
+        if current_limit:
+            limits = CurrentLimitsConfigs()
+            if "stator" in current_limit:
+                limits.stator_current_limit = current_limit["stator"]
+                limits.stator_current_limit_enable = True
+            if "supply" in current_limit:
+                limits.supply_current_limit = current_limit["supply"]
+                limits.supply_current_limit_enable = True
+            config.current_limits = limits
+            needs_apply = True
+            _log.info(f"CAN {can_id}: Current limits -- stator={current_limit.get('stator', 'off')}A, supply={current_limit.get('supply', 'off')}A")
 
         if needs_apply:
             self.motor.configurator.apply(config)

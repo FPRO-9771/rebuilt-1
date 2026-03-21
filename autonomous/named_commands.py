@@ -17,7 +17,7 @@ Named commands registered here:
 """
 
 from pathplannerlib.auto import NamedCommands
-from commands2 import ParallelCommandGroup
+from commands2 import Command, ParallelCommandGroup
 
 from commands.coordinate_aim import CoordinateAim
 from commands.shoot_when_ready import ShootWhenReady
@@ -26,6 +26,46 @@ from constants.shooter import CON_TURRET_MINION
 from utils.logger import get_logger
 
 _log = get_logger("named_commands")
+
+
+class _LoggedCommand(Command):
+    """Wrapper that logs when a named command starts and ends."""
+
+    def __init__(self, name: str, inner: Command):
+        super().__init__()
+        self._name = name
+        self._inner = inner
+        # Forward subsystem requirements so the scheduler sees them
+        self.addRequirements(*inner.getRequirements())
+
+    def initialize(self):
+        _log.warning(f"NAMED CMD '{self._name}' -> initialize")
+        self._inner.initialize()
+
+    def execute(self):
+        self._inner.execute()
+
+    def isFinished(self) -> bool:
+        finished = self._inner.isFinished()
+        if finished:
+            _log.warning(f"NAMED CMD '{self._name}' -> isFinished=True")
+        return finished
+
+    def end(self, interrupted: bool):
+        _log.warning(
+            f"NAMED CMD '{self._name}' -> end(interrupted={interrupted})"
+        )
+        self._inner.end(interrupted)
+
+    def runsWhenDisabled(self) -> bool:
+        return self._inner.runsWhenDisabled()
+
+
+def _logged(name: str, cmd: Command) -> Command:
+    """Register a named command with logging wrapper."""
+    wrapped = _LoggedCommand(name, cmd)
+    NamedCommands.registerCommand(name, wrapped)
+    return wrapped
 
 
 def register_named_commands(intake, intake_spinner, launcher, hood,
@@ -46,27 +86,27 @@ def register_named_commands(intake, intake_spinner, launcher, hood,
         context_supplier: shoot context supplier (pose, distance, velocity)
     """
     # --- Intake ---
-    NamedCommands.registerCommand("IntakeDown", intake.go_down())
-    NamedCommands.registerCommand("IntakeUp", intake.go_up())
-    NamedCommands.registerCommand("IntakeStart",
+    _logged("IntakeDown", intake.go_down())
+    _logged("IntakeUp", intake.go_up())
+    _logged("IntakeStart",
         intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]))
-    NamedCommands.registerCommand("IntakeStop",
+    _logged("IntakeStop",
         intake_spinner.runOnce(lambda: intake_spinner._stop()))
 
     # --- Turret auto-aim ---
-    NamedCommands.registerCommand("AimStart",
+    _logged("AimStart",
         CoordinateAim(turret,
                       context_supplier=context_supplier,
                       turret_config=CON_TURRET_MINION))
-    NamedCommands.registerCommand("AimStop",
+    _logged("AimStop",
         turret.runOnce(lambda: turret._stop()))
 
     # --- Shooter (ShootWhenReady handles launcher + hood + feeders + unjam) ---
-    NamedCommands.registerCommand("ShooterStart",
+    _logged("ShooterStart",
         ShootWhenReady(launcher, hood, h_feed, v_feed,
                        context_supplier=context_supplier,
                        on_target_supplier=lambda: True))
-    NamedCommands.registerCommand("ShooterStop",
+    _logged("ShooterStop",
         ParallelCommandGroup(
             launcher.runOnce(lambda: launcher._stop()),
             hood.runOnce(lambda: hood._stop()),

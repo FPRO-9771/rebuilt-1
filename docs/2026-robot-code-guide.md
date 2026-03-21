@@ -39,7 +39,7 @@ The codebase is organized by responsibility, not by file type:
 - **`telemetry/`** — Dashboard publishers for motors, commands, and vision. Pushes data to SmartDashboard every cycle.
 - **`testing/`** — Physics simulation models and sim runner. Calibrated from real robot measurements.
 - **`tests/`** — Automated pytest tests. Convention: one `test_<topic>.py` per subsystem or concern.
-- **`generated/`** — Phoenix Tuner X output. Don't edit by hand.
+- **`generated/`** — Phoenix Tuner X output. Generally don't edit by hand, except for drive/steer current limits in `tuner_constants.py` (re-exporting from Tuner X will overwrite these -- re-add them after export).
 - **`cli/`** — Team CLI menu and setup scripts. Run `./team` from the project root for an interactive menu covering environment checks, git, testing, and deploy. Add new menus in `cli/menus/`, new commands in `cli/commands/`.
 
 ---
@@ -59,7 +59,7 @@ constants/
 ├── conveyor.py        # CON_CONVEYOR
 ├── debug.py           # DEBUG flags (verbose logging, telemetry toggles)
 ├── feed.py            # CON_H_FEED, CON_V_FEED (horizontal/vertical feed motors)
-├── ids.py             # MOTOR_IDS, SENSOR_IDS
+├── ids.py             # MOTOR_IDS (CAN IDs, types, current limits), SENSOR_IDS
 ├── intake.py          # CON_INTAKE (lever arm positions, voltages, PID gains)
 ├── intake_spinner.py  # CON_INTAKE_SPINNER
 ├── match.py           # ALLIANCES, DEFAULT_ALLIANCE, HUB_RESET_POSES

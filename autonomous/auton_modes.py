@@ -37,14 +37,15 @@ class AutonModes:
     """
 
     def __init__(self, **kwargs):
-        # Pre-load all .auto files at construction (during robotInit).
-        self._cached_autos = {}
+        # Validate all .auto files at construction (during robotInit).
+        # This catches missing/broken files early, before the match starts.
+        # We do NOT cache the command objects -- they are single-use.
         for name in _ALL_AUTO_NAMES:
             try:
-                self._cached_autos[name] = AutoBuilder.buildAuto(name)
-                _log.info(f"pre-loaded auto '{name}' OK")
+                AutoBuilder.buildAuto(name)
+                _log.info(f"validated auto '{name}' OK")
             except Exception as e:
-                _log.warning(f"could not pre-load auto '{name}': {e}")
+                _log.warning(f"could not validate auto '{name}': {e}")
 
     def do_nothing(self) -> Command:
         """Auto that does nothing -- safe default."""
@@ -59,7 +60,8 @@ class AutonModes:
             alliance_name: "Blue" or "Red"
             pose_name: "Left", "Center", or "Right"
         """
-        auto_name = f"Auto {alliance_name} {pose_name}"
+        # Always load Blue paths -- PathPlanner flips them for Red.
+        auto_name = f"Auto Blue {pose_name}"
         return self._load_auto(auto_name)
 
     def mini_test(self) -> Command:
@@ -67,18 +69,18 @@ class AutonModes:
         return self._load_auto("Mini Test")
 
     def _load_auto(self, auto_name: str) -> Command:
-        """Return a cached auto command, or try loading on the fly."""
-        cached = self._cached_autos.get(auto_name)
-        if cached is not None:
-            _log.info(f"auto '{auto_name}' selected (cached)")
-            if DEBUG["auto_sequence_logging"]:
-                _log.info(f"AUTO SEQ: loaded '{auto_name}' from cache")
-            return cached
-        _log.warning(f"auto '{auto_name}' not cached -- loading now")
+        """Build a fresh auto command each time.
+
+        WPILib commands are single-use -- a finished command immediately
+        exits if re-scheduled.  So we must call buildAuto() every time,
+        not return a cached instance.  The .auto files were already read
+        from disk during __init__; buildAuto() is fast on repeat calls.
+        """
+        _log.info(f"auto '{auto_name}' selected")
+        if DEBUG["auto_sequence_logging"]:
+            _log.info(f"AUTO SEQ: building '{auto_name}'")
         try:
-            auto = AutoBuilder.buildAuto(auto_name)
-            self._cached_autos[auto_name] = auto
-            return auto
+            return AutoBuilder.buildAuto(auto_name)
         except Exception as e:
             _log.error(f"FAILED to load auto '{auto_name}': {e}")
             return WaitCommand(15.0)
