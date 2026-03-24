@@ -31,6 +31,7 @@ from wpimath.units import rotationsToRadians
 
 from constants.controls import CON_ROBOT
 from constants.debug import DEBUG
+from constants import CON_INTAKE_SPINNER
 from commands.run_intake import RunIntake
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
 from telemetry.drive_input_logging import log_drive_inputs
@@ -202,9 +203,13 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
 
         driver.y().onTrue(InstantCommand(_toggle_intake))
 
-    # --- Left trigger: spin intake + hold arm in place ---
-    if intake is not None and intake_spinner is not None:
-        driver.leftTrigger().whileTrue(RunIntake(intake, intake_spinner))
+    # --- Left trigger: spin intake rollers (arm can still be moving) ---
+    # Uses spinner-only command so go_down/go_up are not interrupted.
+    # RunIntake (which also holds the arm) is reserved for auto.
+    if intake_spinner is not None:
+        driver.leftTrigger().whileTrue(
+            intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"])
+        )
 
     # --- Register swerve telemetry ---
     drivetrain.register_telemetry(
