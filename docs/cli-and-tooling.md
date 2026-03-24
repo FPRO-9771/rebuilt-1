@@ -6,13 +6,25 @@ The team CLI is an interactive menu that wraps common tasks -- environment setup
 
 ## Running the CLI
 
-From the project root:
+**Mac / Linux** -- from the project root:
 
 ```bash
-./cli/team.sh
+./team
 ```
 
-This sources the shared library (`cli/lib.sh`), loads all menu files from `cli/menus/`, and launches the main menu.
+**Windows (PowerShell)** -- from the project root:
+
+```powershell
+.\team.ps1
+```
+
+If you get a "running scripts is disabled" error on Windows, run this once first:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+The Mac version sources `cli/lib.sh`, loads all menu files from `cli/menus/`, and launches the main menu. The Windows version (`team.ps1`) is a self-contained PowerShell script with equivalent menus.
 
 ---
 
