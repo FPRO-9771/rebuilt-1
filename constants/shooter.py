@@ -28,7 +28,7 @@ CON_TURRET_MINION = {
     "manual_speed_factor": 0.50, # Manual mode: 1.0 * 0.50 = 0.50V
     "manual_exponent": 2.0,     # Joystick response curve (1.0=linear, 2.0=squared, 3.0=cubed)
     "min_position": 0,       # Soft limit: leftmost rotation (rotations)
-    "max_position": 9,        # Soft limit: rightmost rotation (rotations)
+    "max_position": 10.3,        # Soft limit: rightmost rotation (rotations)
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
     "inverted": False,           # Positive = left (unconfirmed -- flip if reversed)
     "brake": True,               # Brake on neutral -- holds turret steady
@@ -100,18 +100,19 @@ CON_HOOD = {
 
 
 CON_SHOOTER = {
-    "turret_p_gain": 0.8,                # Proportional gain (volts per degree) -- drives toward target
-    "turret_i_gain": 0.01,               # Integral gain -- accumulates error to push through friction
+    "turret_p_gain": 0.40,               # Proportional gain (volts per degree) -- drives toward target
+    "turret_i_gain": 0.015,              # Integral gain -- accumulates error to push through friction
     "turret_i_max": 1.0,                 # Max integral voltage -- caps windup to prevent overshoot
-    "turret_d_velocity_gain": 0.05,      # Velocity damping -- counterbalances P to prevent oscillation
+    "turret_d_velocity_gain": 0.08,      # Velocity damping -- counterbalances P to prevent oscillation
     "turret_aim_inverted": True,         # Motor direction is opposite to angle convention (positive error = CCW, but motor negative = turret left)
     "turret_alignment_tolerance": 1.5,   # Degrees of tx offset considered "aligned"
+    "turret_on_target_max_vel": 2.0,    # Max turret velocity (rot/s) to be considered on-target -- prevents feeding during swing-through
     "feed_off_target_debounce": 20,      # Cycles off-target before stopping feed (~400ms at 50Hz)
 
     "turret_max_auto_voltage": 2,     # Max voltage during auto-aim (sqrt P handles decel now)
-    "turret_max_brake_voltage": 1.5,    # Brake limit -- higher than drive to stop quickly
-    "turret_min_move_voltage": 0.70,    # Deadband comp -- minimum voltage to overcome static friction
-    "turret_tx_filter_alpha": 0.95,      # EMA smoothing for tx (0=max smooth, 1=no filter)
+    "turret_max_brake_voltage": 2.5,     # Brake limit -- higher than drive to stop quickly
+    "turret_min_move_voltage": 0.60,    # Deadband comp -- minimum voltage to overcome static friction
+    "turret_tx_filter_alpha": 0.85,      # EMA smoothing for tx (0=max smooth, 1=no filter)
 
     # Distance lookup table: (distance_m, launcher_rps, hood_position, flight_time_s)
     # flight_time_s: how long the ball is in the air (seconds) at this distance.
@@ -119,11 +120,12 @@ CON_SHOOTER = {
     # Measure with a stopwatch: time from launch to landing in the Hub.
     # Sorted by distance -- interpolated at runtime
     "distance_table": [
-        (1.5, 35.0, 0, 0.85),
-        (2.0, 37.0, 0, 0.95),
-        (3.0, 45.0, 0, 1.1),
-        (4.0, 54.0, 0, 1.4),
-        (5.0, 67.0, 0, 2),
+        (1.5, 33.0, 0, 0.95),
+        (2.0, 37.0, 0, 1),
+        (3.0, 42.0, 0, 1),
+        (4.0, 49.0, 0, 1.2),
+        (4.5, 52, 0, 1.3),
+        (5.0, 56.0, 0, 2),
     ],
 
     # Manual shoot stick mapping -- maps joystick Y to virtual distance,

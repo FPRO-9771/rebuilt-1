@@ -206,6 +206,13 @@ class CoordinateAim(Command):
     # --- Internal ---
 
     def _is_on_target(self) -> bool:
-        """True if filtered error is within alignment tolerance."""
+        """True if filtered error is within tolerance AND turret is settled.
+
+        The velocity check prevents the turret from being considered
+        on-target while swinging through the target at high speed,
+        which would cause shots to fire during oscillation.
+        """
         tolerance = CON_SHOOTER["turret_alignment_tolerance"]
-        return abs(self._filtered_error) <= tolerance
+        max_vel = CON_SHOOTER.get("turret_on_target_max_vel", 2.0)
+        return (abs(self._filtered_error) <= tolerance
+                and abs(self.turret.get_velocity()) <= max_vel)
