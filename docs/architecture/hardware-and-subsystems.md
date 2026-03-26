@@ -214,7 +214,6 @@ _drive_initial_configs = configs.TalonFXConfiguration().with_current_limits(
 | Turret | 30 | 15 | `constants/ids.py` |
 | Turret minion | 30 | 15 | `constants/ids.py` |
 | Launcher | 60 | 40 | `constants/ids.py` |
-| Hood | 30 | 15 | `constants/ids.py` |
 
 #### Tuning tips
 

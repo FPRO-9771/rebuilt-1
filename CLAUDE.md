@@ -84,7 +84,7 @@ All logging goes through `utils.logger.get_logger()`. **Never use `print()` or r
 ```python
 from utils.logger import get_logger
 
-_log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
+_log = get_logger("subsystem_name")   # e.g. "turret", "launcher", "hardware"
 ```
 
 **Log levels and where they go:**
@@ -98,7 +98,7 @@ _log = get_logger("subsystem_name")   # e.g. "hood", "turret", "hardware"
 
 **Rules:**
 - **ASCII only in log strings.** Non-ASCII characters (em dashes `--`, en dashes, smart quotes, etc.) crash the roboRIO. Use only plain ASCII in all `_log` messages, string constants, and comments. Write `--` not `--`, `"` not `"`, `'` not `'`.
-- Logger name should match the module/subsystem (e.g. `get_logger("hood")` in `subsystems/hood.py`)
+- Logger name should match the module/subsystem (e.g. `get_logger("turret")` in `subsystems/turret.py`)
 - Use f-strings with relevant values: `_log.debug(f"_set_position: requested={position:.4f} clamped={clamped:.4f}")`
 - Verbosity is controlled by `DEBUG["verbose"]` in `constants/debug.py` -- don't add your own level toggling
 - WARNING and ERROR appear on the Driver Station during matches, so keep those messages concise and actionable

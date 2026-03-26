@@ -2,7 +2,7 @@
 
 **Team 9771 FPRO - 2026**
 
-This doc covers the shooter system: a turret, flywheel launcher, and adjustable hood. The system is built from small, independent command modules that can be used individually or composed together.
+This doc covers the shooter system: a turret and flywheel launcher. The system is built from small, independent command modules that can be used individually or composed together.
 
 > **When to read this:** You're tuning the shooter, adding a new mechanism to the system, or trying to understand how the command modules compose.
 
@@ -20,7 +20,7 @@ This doc covers the shooter system: a turret, flywheel launcher, and adjustable 
 
 ## 1. System Overview
 
-The shooter has three mechanisms. CoordinateAim, ShootWhenReady, and ManualShoot are all active and wired to controls.
+The shooter has two mechanisms. CoordinateAim, ShootWhenReady, and ManualShoot are all active and wired to controls.
 
 ```
 Active bindings:
@@ -31,7 +31,7 @@ Active bindings:
 |                 |  |                 |  |                 |
 | stick -> volts  |  | turret -> hub   |  | launcher + feed |
 | req: turret     |  | req: turret     |  | req: launcher,  |
-|                 |  |                 |  |   hood, feeds   |
+|                 |  |                 |  |   feeds         |
 +-----------------+  +-----------------+  +-----------------+
 
 +-----------------+  +-----------------+
@@ -51,9 +51,8 @@ Active bindings:
 | Turret (active) | Minion | TalonFXS | Closed-loop position hold (default command), voltage (manual/auto-aim) |
 | Turret (alternate) | Kraken X60 | TalonFX | Same interface, different motor |
 | Launcher | Kraken X60 | TalonFX | Closed-loop velocity |
-| Hood | WCP | TalonFXS | Closed-loop position |
 
-All three are "dumb" subsystems -- they don't know about each other or about vision. Small command modules coordinate them, and the operator chooses which to enable.
+Both are "dumb" subsystems -- they don't know about each other or about vision. Small command modules coordinate them, and the operator chooses which to enable.
 
 ### Turret Motor Swap: Kraken vs Minion
 
@@ -176,49 +175,32 @@ def is_at_speed(self, target_rps: float) -> bool:
 
 The `spin_up()` command never finishes -- it holds speed until canceled. This is the correct pattern for a flywheel that should keep spinning.
 
-### Hood: Closed-Loop Position with Clamping
-
-The hood adjusts shot angle. Position is clamped before commanding the motor, so it's impossible to request an out-of-range position:
-
-```python
-# subsystems/hood.py (key pattern)
-
-def _set_position(self, position: float) -> None:
-    """Move hood to position, clamped to min/max limits."""
-    clamped = max(CON_HOOD["min_position"], min(position, CON_HOOD["max_position"]))
-    self.motor.set_position(clamped)
-```
-
-The hood uses `create_motor()` with TalonFXS configuration (brake mode + slot0 PID gains) because the WCP motor connects through a TalonFXS controller. From the subsystem's perspective, the interface is identical.
-
-**Enabled flag:** `CON_HOOD["enabled"]` (default `True`) controls whether the hood motor is initialized. When `False`, the Hood subsystem becomes a safe no-op -- all methods return without touching hardware, `get_position()` returns 0.0, and `is_at_position()` returns `True`. This allows the rest of the shooter system to run without a hood motor connected.
-
 ---
 
 ## 3. Distance Lookup Table
 
-Instead of a formula, we use a table of measured (distance, launcher_rps, hood_position, ball_speed) tuples. This is easier to tune at competition -- just edit numbers in `constants/shooter.py`.
+Instead of a formula, we use a table of measured (distance, launcher_rps, ball_speed) tuples. This is easier to tune at competition -- just edit numbers in `constants/shooter.py`.
 
 ```python
 # constants/shooter.py (current values)
 CON_SHOOTER = {
     "distance_table": [
-        # (distance_m, launcher_rps, hood_position, ball_speed_mps)
-        (1.5, 33.0, 0, 5.0),
-        (2.0, 37.0, 0, 7.0),
-        (3.0, 47.0, 0, 9.0),
+        # (distance_m, launcher_rps, ball_speed_mps)
+        (1.5, 33.0, 5.0),
+        (2.0, 37.0, 7.0),
+        (3.0, 47.0, 9.0),
     ],
 }
 ```
 
-The `ball_speed_mps` column is used for velocity compensation -- estimating ball flight time so we can adjust for robot movement. `get_shooter_settings()` returns only `(rps, hood)`.
+The `ball_speed_mps` column is used for velocity compensation -- estimating ball flight time so we can adjust for robot movement. `get_shooter_settings()` returns launcher_rps (a float).
 
 The lookup function in `subsystems/shooter_lookup.py` linearly interpolates between entries:
 
 ```python
-# At 1.75m --> halfway between (1.5, 33, 0) and (2.0, 37, 0)
-rps, hood = get_shooter_settings(1.75)
-# rps = 35.0, hood = 0.0
+# At 1.75m --> halfway between (1.5, 33) and (2.0, 37)
+rps = get_shooter_settings(1.75)
+# rps = 35.0
 ```
 
 Distances outside the table range clamp to the nearest entry. This prevents extrapolation errors -- if you're closer than 1.5m or farther than 3m, you get the closest known-good settings.
@@ -227,7 +209,7 @@ Distances outside the table range clamp to the nearest entry. This prevents extr
 
 1. Set up at a known distance from the target
 2. Hold **right trigger** to run the launcher, adjust speed with **right stick Y**
-3. Record the RPS and hood angle that score
+3. Record the RPS that scores
 4. Update the distance table in `constants/shooter.py`
 5. Repeat at 3-5 distances
 6. The interpolation handles everything in between
@@ -248,7 +230,7 @@ The fully integrated shooter command. In teleop, bound to **left trigger whileTr
 
 Each `execute()` cycle:
 1. Call `context_supplier()` to get corrected distance
-2. Look up RPS + hood position and command launcher/hood
+2. Look up RPS and command the launcher
 3. One-time speed gate: once the launcher first reaches target RPS, feeding is unlocked
 4. Check `on_target_supplier()` (from CoordinateAim) to decide whether to feed
 
@@ -256,7 +238,7 @@ Each `execute()` cycle:
 
 **Un-jam:** While feeding, if the horizontal feed motor velocity drops near zero (stall detected), the feed reverses briefly to clear a jam, then resumes.
 
-Requires: launcher, hood, h_feed, v_feed.
+Requires: launcher, h_feed, v_feed.
 
 ### ManualShoot (`commands/manual_shoot.py`)
 
@@ -281,7 +263,7 @@ Each command requires different subsystems, so they can run simultaneously witho
 ```
 commands/
 +-- coordinate_aim.py    # Requires: turret           (LB toggle)
-+-- shoot_when_ready.py  # Requires: launcher, hood,  (LT hold)
++-- shoot_when_ready.py  # Requires: launcher,        (LT hold)
 |                        #   h_feed, v_feed
 +-- manual_shoot.py      # Requires: launcher,        (RT hold)
 |                        #   h_feed, v_feed
@@ -294,7 +276,7 @@ Currently active bindings:
 | Control | Command | Subsystem |
 |---------|---------|-----------|
 | Left bumper (toggle) | CoordinateAim | turret |
-| Left trigger (hold) | ShootWhenReady | launcher, hood, h_feed, v_feed |
+| Left trigger (hold) | ShootWhenReady | launcher, h_feed, v_feed |
 | Right trigger (hold) | ManualShoot | launcher, h_feed, v_feed |
 | Right bumper (hold) | ReverseFeeds | h_feed |
 | Left stick X | Manual turret (via deadband trigger) | turret |

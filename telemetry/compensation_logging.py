@@ -14,7 +14,7 @@ Example output:
 import math
 
 from subsystems.shooter_lookup import get_flight_time
-from constants.compensation import CON_COMPENSATION
+from constants.shoot_auto_shoot import CON_AUTO_SHOOT
 from constants.debug import DEBUG
 from utils.logger import get_logger
 
@@ -45,9 +45,9 @@ def log_compensation(cycle, vx, vy, raw_distance, bearing_rad,
     if cycle % 10 != 0:
         return
 
-    min_dist = CON_COMPENSATION["min_distance"]
-    gain = CON_COMPENSATION["velocity_lead_gain"]
-    enabled = CON_COMPENSATION["velocity_lead_enabled"]
+    min_dist = CON_AUTO_SHOOT["min_distance"]
+    gain = CON_AUTO_SHOOT["velocity_lead_gain"]
+    enabled = CON_AUTO_SHOOT["velocity_lead_enabled"]
 
     # Recompute intermediates for display
     if raw_distance > min_dist and enabled:

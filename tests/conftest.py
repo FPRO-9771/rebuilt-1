@@ -64,43 +64,30 @@ TEST_CON_LAUNCHER = {
     "slot0_kG": 0.0,
 }
 
-TEST_CON_HOOD = {
-    "enabled": True,
-    "max_voltage": 10.0,
-    "min_position": 0.0,
-    "max_position": 1.0,
-    "position_tolerance": 0.1,
-    "inverted": False,
-    "brake": False,
-    "slot0_kP": 10.0,
-    "slot0_kI": 0.0,
-    "slot0_kD": 0.0,
-    "slot0_kS": 0.0,
-    "slot0_kV": 0.0,
-    "slot0_kA": 0.0,
-    "slot0_kG": 0.0,
-}
-
 TEST_CON_CONVEYOR = {
     "max_voltage": 10.0,
     "intake_voltage": 5.0,
     "outtake_voltage": -5.0,
 }
 
-TEST_CON_SHOOTER = {
+TEST_CON_AUTO_AIM = {
     "turret_p_gain": 0.5,
     "turret_d_velocity_gain": 0.0,
     "turret_aim_inverted": False,
     "turret_alignment_tolerance": 2.0,
+    "turret_on_target_max_vel": 2.0,
     "turret_max_auto_voltage": 5.0,
     "turret_max_brake_voltage": 5.0,
     "turret_min_move_voltage": 0.0,
     "turret_tx_filter_alpha": 1.0,
+}
+
+TEST_CON_DISTANCE_TABLE = {
     "distance_table": [
-        (1.0, 20.0, 0.10, 0.25),
-        (2.0, 40.0, 0.20, 0.33),
-        (3.0, 60.0, 0.30, 0.38),
-        (4.0, 80.0, 0.40, 0.40),
+        (1.0, 20.0, 0.25),
+        (2.0, 40.0, 0.33),
+        (3.0, 60.0, 0.38),
+        (4.0, 80.0, 0.40),
     ],
     "manual_min_distance": 1.0,
     "manual_center_distance": 2.0,
@@ -108,8 +95,6 @@ TEST_CON_SHOOTER = {
 }
 
 TEST_CON_MANUAL = {
-    "hood_default_position": 0.5,
-    "hood_position_step": 0.1,
 }
 
 TEST_CON_INTAKE = {
@@ -150,9 +135,11 @@ TEST_CON_POSE = {
     "shooter_offset_y": 0.0,
 }
 
-TEST_CON_COMPENSATION = {
+TEST_CON_AUTO_SHOOT = {
     "velocity_lead_enabled": True,
     "velocity_lead_gain": 1.0,
+    "distance_correction_gain": 1.0,
+    "feed_off_target_debounce": 20,
     "min_distance": 0.5,
 }
 
@@ -185,24 +172,24 @@ def _patch_constants(monkeypatch):
     monkeypatch.setattr("subsystems.turret.CON_TURRET", TEST_CON_TURRET)
     monkeypatch.setattr("subsystems.turret_minion.CON_TURRET_MINION", TEST_CON_TURRET_MINION)
     monkeypatch.setattr("subsystems.launcher.CON_LAUNCHER", TEST_CON_LAUNCHER)
-    monkeypatch.setattr("subsystems.hood.CON_HOOD", TEST_CON_HOOD)
     monkeypatch.setattr("subsystems.conveyor.CON_CONVEYOR", TEST_CON_CONVEYOR)
 
-    # Shooter lookup
-    monkeypatch.setattr("subsystems.shooter_lookup.CON_SHOOTER", TEST_CON_SHOOTER)
+    # Shooter lookup (distance table)
+    monkeypatch.setattr("subsystems.shooter_lookup.CON_DISTANCE_TABLE",
+                        TEST_CON_DISTANCE_TABLE)
 
-    # Coordinate aim command
-    monkeypatch.setattr("commands.coordinate_aim.CON_SHOOTER", TEST_CON_SHOOTER)
+    # Coordinate aim command (auto-aim gains)
+    monkeypatch.setattr("commands.coordinate_aim.CON_AUTO_AIM", TEST_CON_AUTO_AIM)
     monkeypatch.setattr("commands.coordinate_aim.CON_POSE", TEST_CON_POSE)
 
-    # Compensation constants (used by movement_compensation, distance_compensation,
+    # Auto-shoot constants (used by movement_compensation, distance_compensation,
     # velocity_lead)
-    monkeypatch.setattr("calculations.movement_compensation.CON_COMPENSATION",
-                        TEST_CON_COMPENSATION)
-    monkeypatch.setattr("calculations.distance_compensation.CON_COMPENSATION",
-                        TEST_CON_COMPENSATION)
-    monkeypatch.setattr("calculations.velocity_lead.CON_COMPENSATION",
-                        TEST_CON_COMPENSATION)
+    monkeypatch.setattr("calculations.movement_compensation.CON_AUTO_SHOOT",
+                        TEST_CON_AUTO_SHOOT)
+    monkeypatch.setattr("calculations.distance_compensation.CON_AUTO_SHOOT",
+                        TEST_CON_AUTO_SHOOT)
+    monkeypatch.setattr("calculations.velocity_lead.CON_AUTO_SHOOT",
+                        TEST_CON_AUTO_SHOOT)
 
     # Operator controls -- CON_POSE removed (shoot context supplier commented out)
 
@@ -212,12 +199,9 @@ def _patch_constants(monkeypatch):
     monkeypatch.setattr("commands.run_intake.CON_INTAKE", TEST_CON_INTAKE)
     monkeypatch.setattr("commands.run_intake.CON_INTAKE_SPINNER", TEST_CON_INTAKE_SPINNER)
 
-    # Manual shoot / launcher -- stick-to-distance mapping uses CON_SHOOTER
-    monkeypatch.setattr("commands.manual_shoot.CON_SHOOTER", TEST_CON_SHOOTER)
-
-    # Other commands
-    monkeypatch.setattr("commands.manual_hood.CON_MANUAL", TEST_CON_MANUAL)
-    monkeypatch.setattr("commands.manual_hood.CON_HOOD", TEST_CON_HOOD)
+    # Manual shoot / launcher -- stick-to-distance mapping
+    monkeypatch.setattr("commands.manual_shoot.CON_DISTANCE_TABLE",
+                        TEST_CON_DISTANCE_TABLE)
 
     # Auto-aim telemetry and logging modules
     _test_debug = {"debug_telemetry": False, "verbose": False,

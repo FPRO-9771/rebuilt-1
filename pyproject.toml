@@ -17,7 +17,7 @@ robotpy_excludes = [
     "calibration",
     "ctre_sim",
     "testing",
-    "logs",
+    ".logs",
     "hardware/mock_motor_controller.py",
     "constants/simulation.py",
 ]

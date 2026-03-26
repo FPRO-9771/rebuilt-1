@@ -6,8 +6,6 @@ Controller and robot-wide settings.
 # MANUAL OVERRIDE CONTROLS
 # =============================================================================
 CON_MANUAL = {
-    "hood_default_position": 0.0,    # Start at zero (where motor initializes)
-    "hood_position_step": 0.0125,    # Per-press nudge (~5% of range)
 }
 
 # =============================================================================

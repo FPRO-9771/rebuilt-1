@@ -26,18 +26,18 @@ def test_lateral_velocity_produces_lead():
 
 
 def test_lead_direction_matches_velocity():
-    """Positive vy -> positive lead, negative -> negative."""
+    """Positive vy (moving left) -> negative lead (aim right to compensate)."""
     pos_lead = compute_angle_compensation(0.0, 1.0, 3.0, BEARING_FORWARD)
     neg_lead = compute_angle_compensation(0.0, -1.0, 3.0, BEARING_FORWARD)
-    assert pos_lead > 0
-    assert neg_lead < 0
+    assert pos_lead < 0
+    assert neg_lead > 0
 
 
 def test_lead_disabled(monkeypatch):
     """Lead correction is zero when velocity_lead_enabled is False."""
     disabled = {"velocity_lead_enabled": False, "min_distance": 0.5}
     monkeypatch.setattr(
-        "calculations.movement_compensation.CON_COMPENSATION", disabled)
+        "calculations.movement_compensation.CON_AUTO_SHOOT", disabled)
     lead = compute_angle_compensation(0.0, 2.0, 3.0, BEARING_FORWARD)
     assert lead == 0.0
 

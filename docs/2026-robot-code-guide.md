@@ -14,7 +14,7 @@ Detailed guides live in `docs/architecture/`. Jump to the one you need:
 |----------|-------------------|
 | [Hardware & Subsystems](architecture/hardware-and-subsystems.md) | Adding a new mechanism |
 | [Commands & Controls](architecture/commands-and-controls.md) | Wiring buttons/joysticks to actions |
-| [Shooter System](architecture/shooter-system.md) | Turret, launcher, hood, orchestrator, distance table |
+| [Shooter System](architecture/shooter-system.md) | Turret, launcher, orchestrator, distance table |
 | [Controls & Manual Overrides](architecture/controls.md) | Binding extraction pattern, operator control map, emergency overrides |
 | [Autonomous](architecture/autonomous.md) | Building/editing auto routines |
 | [Drivetrain](architecture/drivetrain.md) | Drivetrain config/tuning |
@@ -64,7 +64,7 @@ constants/
 ├── intake_spinner.py  # CON_INTAKE_SPINNER
 ├── match.py           # ALLIANCES, DEFAULT_ALLIANCE, HUB_RESET_POSES
 ├── pose.py            # CON_POSE (turret geometry, shooter offset)
-├── shooter.py         # CON_TURRET, CON_LAUNCHER, CON_HOOD, CON_SHOOTER
+├── shooter.py         # CON_TURRET, CON_LAUNCHER, CON_SHOOTER
 ├── simulation.py      # SIM_CALIBRATION, SIM_DT
 ├── telemetry.py       # CON_TELEMETRY
 └── vision.py          # CON_VISION (camera list, hosts)

@@ -92,12 +92,12 @@ The distance table is in `constants/shooter.py`:
 
 ```python
 "distance_table": [
-    # (distance_m, launcher_rps, hood_position, flight_time_s)
-    (1.5, 35.0, 0, 0.30),
-    (2.0, 37.0, 0, 0.29),
-    (3.0, 45.0, 0, 0.33),
-    (4.0, 54.0, 0, 0.33),
-    (5.0, 70.0, 0, 0.33),
+    # (distance_m, launcher_rps, flight_time_s)
+    (1.5, 35.0, 0.30),
+    (2.0, 37.0, 0.29),
+    (3.0, 45.0, 0.33),
+    (4.0, 54.0, 0.33),
+    (5.0, 70.0, 0.33),
 ],
 ```
 
@@ -220,7 +220,6 @@ The velocity decomposition handles all directions automatically. If Steps 2-5 ar
 |--------|-----------|-------------|
 | `distance_m` | Distance to Hub (meters) | Tape measure |
 | `launcher_rps` | Launcher speed at this distance | Tune stationary first |
-| `hood_position` | Hood angle at this distance | Tune stationary first |
 | `flight_time_s` | Ball flight time (seconds) | **Stopwatch: launch to landing** |
 
 ### Turret PD constants (`constants/shooter.py`)
@@ -254,5 +253,5 @@ If nothing seems to work:
 
 **See also:**
 - [Auto-Aim System](../architecture/auto-aim.md) -- Full auto-aim architecture and debugging
-- [Shooter System](../architecture/shooter-system.md) -- Turret, launcher, hood details
+- [Shooter System](../architecture/shooter-system.md) -- Turret, launcher details
 - [Telemetry](../architecture/telemetry.md) -- Dashboard setup

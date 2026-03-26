@@ -46,7 +46,7 @@ All named commands are registered in one place: `autonomous/named_commands.py`.
 ```python
 # autonomous/named_commands.py
 
-def register_named_commands(intake, intake_spinner, launcher, hood,
+def register_named_commands(intake, intake_spinner, launcher,
                             h_feed, v_feed, turret, context_supplier):
     NamedCommands.registerCommand("IntakeDown", intake.go_down())
     NamedCommands.registerCommand("IntakeUp", intake.go_up())
@@ -59,7 +59,7 @@ def register_named_commands(intake, intake_spinner, launcher, hood,
     NamedCommands.registerCommand("AimStop",
         turret.runOnce(lambda: turret._stop()))
     NamedCommands.registerCommand("ShooterStart",
-        ShootWhenReady(launcher, hood, h_feed, v_feed, ...))
+        ShootWhenReady(launcher, h_feed, v_feed, ...))
     NamedCommands.registerCommand("ShooterStop", ...)
 ```
 
@@ -75,10 +75,10 @@ Called from `robot_container.py` **before** any .auto files are loaded.
 | `IntakeStop` | Stop intake wheels | Instant |
 | `AimStart` | Turret auto-aim at Hub (CoordinateAim) | Interrupted (by AimStop or path end) |
 | `AimStop` | Stop turret | Instant |
-| `ShooterStart` | Spin up launcher, set hood, feed when at speed (ShootWhenReady) | Interrupted (by ShooterStop or path end) |
-| `ShooterStop` | Stop launcher, hood, and feeders | Instant |
+| `ShooterStart` | Spin up launcher, feed when at speed (ShootWhenReady) | Interrupted (by ShooterStop or path end) |
+| `ShooterStop` | Stop launcher and feeders | Instant |
 
-> **ShooterStart = ShootWhenReady.** It handles launcher spin-up, hood positioning, feeding when at speed, and auto-unjam -- all in one command. No need for separate feeder commands.
+> **ShooterStart = ShootWhenReady.** It handles launcher spin-up, feeding when at speed, and auto-unjam -- all in one command. No need for separate feeder commands.
 
 ---
 

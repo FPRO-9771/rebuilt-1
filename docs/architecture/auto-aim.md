@@ -42,7 +42,7 @@ CoordinateAim is a WPILib `Command` toggled on/off with the **left bumper**. Whi
 6. Computes a voltage via PID control
 7. Sends that voltage to the turret motor
 
-CoordinateAim only controls the **turret**. It does NOT set flywheel speed, hood angle, or lock status -- those are ShootWhenReady's job. Both commands run simultaneously because they require different subsystems.
+CoordinateAim only controls the **turret**. It does NOT set flywheel speed or feed status -- those are ShootWhenReady's job. Both commands run simultaneously because they require different subsystems.
 
 Because the system uses odometry instead of AprilTags, there is no "Lost" state -- we always have a pose, so we always know where the Hub is. The turret is either actively driving toward the target or holding still because it is already on target.
 
@@ -460,7 +460,7 @@ calculations/
 
 commands/
   coordinate_aim.py              # Turret aiming command -- reads ShootContext
-  shoot_when_ready.py            # Launcher/hood/feed -- reads ShootContext
+  shoot_when_ready.py            # Launcher/feed -- reads ShootContext
 
 controls/
   operator_controls.py           # _make_shoot_context_supplier() + button bindings
@@ -522,7 +522,7 @@ Auto-aim logs are controlled by `DEBUG["auto_aim_logging"]` in `constants/debug.
 
 - **`log_hold()`** -- `[AIM HOLD] pose=(X,Y) hdg=H shooter=(X,Y) tgt=(X,Y) err=E dist=D cls=C -- HOLD` -- on target, turret holding
 - **`log_drive()`** -- `[AIM DRIVE] pose=(X,Y) ... | err=E ... | P=p I=i D=d rv=r v=V [ok/SAT] ...` -- full PID output with all terms
-- **`log_shoot()`** -- `[SHOOT] pose=(X,Y) ... | rawDist=R corrDist=C ... | rps=R hood=H | AT_SPEED ON_TARGET FEEDING` -- auto-shoot pipeline
+- **`log_shoot()`** -- `[SHOOT] pose=(X,Y) ... | rawDist=R corrDist=C ... | rps=R | AT_SPEED ON_TARGET FEEDING` -- auto-shoot pipeline
 
 All three show full pose context (robot pose, shooter field position, target position, velocity).
 
@@ -587,7 +587,7 @@ If the turret aims correctly when the robot is near the Hub but misses at long r
 ---
 
 **See also:**
-- [Shooter System](shooter-system.md) -- Turret/launcher/hood subsystems and how commands compose
+- [Shooter System](shooter-system.md) -- Turret/launcher subsystems and how commands compose
 - [Controls](controls.md) -- Button bindings and manual turret override
 - [Telemetry](telemetry.md) -- Dashboard setup and published keys
 - [Drivetrain](drivetrain.md) -- Odometry source for pose-based aiming

@@ -52,8 +52,8 @@ PathPlanner (during path execution)
 | IntakeStop | `intake_spinner._stop()` | intake_spinner |
 | AimStart | `CoordinateAim` | turret |
 | AimStop | `turret._stop()` | turret |
-| ShooterStart | `ShootWhenReady` | launcher, hood, h_feed, v_feed |
-| ShooterStop | stop all shooter subsystems | launcher, hood, h_feed, v_feed |
+| ShooterStart | `ShootWhenReady` | launcher, h_feed, v_feed |
+| ShooterStop | stop all shooter subsystems | launcher, h_feed, v_feed |
 
 ---
 

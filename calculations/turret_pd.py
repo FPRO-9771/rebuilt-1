@@ -22,7 +22,7 @@ def compute_turret_voltage(filtered_tx, turret_vel, aim_sign, config,
         filtered_tx: smoothed tx error (degrees, positive = target right)
         turret_vel: current turret velocity (rotations/sec)
         aim_sign: +1 or -1, flips voltage direction if turret is inverted
-        config: CON_SHOOTER dict with PID gains and limits
+        config: CON_AUTO_AIM dict with PID gains and limits
         i_accumulator: running sum of past errors (caller owns this state)
 
     Returns:

@@ -22,7 +22,7 @@ with the PD controller or any other aiming logic.
 import math
 
 from subsystems.shooter_lookup import get_flight_time
-from constants.compensation import CON_COMPENSATION
+from constants.shoot_auto_shoot import CON_AUTO_SHOOT
 
 
 def compute_velocity_lead(vx, vy, distance, bearing_rad):
@@ -41,7 +41,7 @@ def compute_velocity_lead(vx, vy, distance, bearing_rad):
     Returns:
         lead_deg: correction in degrees to ADD to turret error
     """
-    if distance <= CON_COMPENSATION["min_distance"]:
+    if distance <= CON_AUTO_SHOOT["min_distance"]:
         return 0.0
 
     # Unit vector from shooter toward hub
@@ -54,6 +54,6 @@ def compute_velocity_lead(vx, vy, distance, bearing_rad):
     v_tangential = -vx * uy + vy * ux
 
     flight_time = get_flight_time(distance)
-    lead_m = v_tangential * flight_time
+    lead_m = -v_tangential * flight_time
     lead_deg = math.degrees(math.atan2(lead_m, distance))
     return lead_deg

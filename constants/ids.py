@@ -38,8 +38,6 @@ MOTOR_IDS = {
                       "current_limit": {"stator": 30, "supply": 25}},#was 30/25
     "launcher": {"can_id": 31, "type": "talon_fx",  "bus": "rio", "wired": True, "sim_rps_per_volt": 8.0,
                  "current_limit": {"stator": 60, "supply": 40}},#no change
-    "hood":     {"can_id": 33, "type": "talon_fxs", "bus": "rio", "wired": False, "sim_rps_per_volt": 1.0,
-                 "current_limit": {"stator": 30, "supply": 25}}, #was 30/25
 }
 
 # =============================================================================

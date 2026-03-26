@@ -7,12 +7,12 @@ When closing, the ball needs less energy because the target will
 be closer by the time the ball arrives. When retreating, it needs
 more energy because the target will be farther away.
 
-Constants live in constants/compensation.py (CON_COMPENSATION).
+Constants live in constants/shoot_auto_shoot.py (CON_AUTO_SHOOT).
 Pure math -- no subsystem dependencies, easily testable.
 """
 
 from subsystems.shooter_lookup import get_flight_time
-from constants.compensation import CON_COMPENSATION
+from constants.shoot_auto_shoot import CON_AUTO_SHOOT
 
 
 def compute_corrected_distance(distance_m, closing_speed_mps):
@@ -28,11 +28,12 @@ def compute_corrected_distance(distance_m, closing_speed_mps):
     Returns:
         Corrected distance for lookup table (meters, clamped >= min_distance)
     """
-    min_dist = CON_COMPENSATION["min_distance"]
+    min_dist = CON_AUTO_SHOOT["min_distance"]
     if distance_m < min_dist:
         return distance_m
 
     flight_time = get_flight_time(distance_m)
-    corrected = distance_m - closing_speed_mps * flight_time
+    gain = CON_AUTO_SHOOT["distance_correction_gain"]
+    corrected = distance_m - closing_speed_mps * flight_time * gain
 
     return max(min_dist, corrected)

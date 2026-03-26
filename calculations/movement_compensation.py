@@ -11,12 +11,12 @@ Returns a single value: lead angle in degrees, to be added to
 the turret error. This is the ONLY place that adjusts turret
 angle for robot movement.
 
-Constants live in constants/compensation.py (CON_COMPENSATION).
+Constants live in constants/shoot_auto_shoot.py (CON_AUTO_SHOOT).
 Pure math -- no subsystem dependencies, easily testable.
 """
 
 from calculations.velocity_lead import compute_velocity_lead
-from constants.compensation import CON_COMPENSATION
+from constants.shoot_auto_shoot import CON_AUTO_SHOOT
 
 
 def compute_angle_compensation(vx, vy, distance_m, bearing_rad):
@@ -32,10 +32,10 @@ def compute_angle_compensation(vx, vy, distance_m, bearing_rad):
         lead_deg: correction in degrees to ADD to the turret error.
         Zero when stationary, disabled, or at point-blank range.
     """
-    min_dist = CON_COMPENSATION["min_distance"]
-    if not CON_COMPENSATION["velocity_lead_enabled"] or distance_m <= min_dist:
+    min_dist = CON_AUTO_SHOOT["min_distance"]
+    if not CON_AUTO_SHOOT["velocity_lead_enabled"] or distance_m <= min_dist:
         return 0.0
 
     lead_deg = compute_velocity_lead(vx, vy, distance_m, bearing_rad)
-    gain = CON_COMPENSATION["velocity_lead_gain"]
+    gain = CON_AUTO_SHOOT["velocity_lead_gain"]
     return lead_deg * gain

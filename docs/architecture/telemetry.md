@@ -28,7 +28,7 @@ Each publisher is a small class with an `update()` method that pushes data to `w
 1. `robot_container.py` calls `setup_telemetry()` at the end of `__init__()` -- creates all publishers, registers command callbacks, and sets up camera streams. The full signature is:
 
    ```python
-   setup_telemetry(conveyor, turret, launcher, hood, vision,
+   setup_telemetry(conveyor, turret, launcher, vision,
                    h_feed=None, v_feed=None, intake_spinner=None,
                    drivetrain=None, alliance_supplier=None)
    ```
@@ -62,7 +62,6 @@ Keys are staggered across a 10-cycle (500 ms) period so at most one SmartDashboa
 | `Motors/Turret Velocity` | `turret.get_velocity()` |
 | `Motors/Launcher Target RPS` | `launcher._target_rps` |
 | `Motors/Launcher Actual RPS` | `launcher.get_velocity()` |
-| `Motors/Hood Position` | `hood.get_position()` |
 
 ### Command Telemetry (`command_telemetry.py`)
 

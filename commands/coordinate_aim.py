@@ -23,7 +23,7 @@ from calculations.target_state import compute_target_state
 from calculations.movement_compensation import compute_angle_compensation
 from calculations.turret_routing import choose_rotation_direction
 from calculations.turret_pd import compute_turret_voltage
-from constants.shooter import CON_SHOOTER
+from constants.shoot_auto_aim import CON_AUTO_AIM
 from constants.pose import CON_POSE
 from telemetry.auto_aim_telemetry import (
     init_auto_aim_keys, publish_auto_aim, publish_velocity_debug,
@@ -50,7 +50,7 @@ class CoordinateAim(Command):
         self.turret = turret
         self._context_supplier = context_supplier
         self._turret_config = turret_config
-        self._aim_sign = -1.0 if CON_SHOOTER["turret_aim_inverted"] else 1.0
+        self._aim_sign = -1.0 if CON_AUTO_AIM["turret_aim_inverted"] else 1.0
 
         self._filtered_error = 0.0
         self._i_accumulator = 0.0
@@ -130,7 +130,7 @@ class CoordinateAim(Command):
         )
 
         # 6. EMA filter
-        alpha = CON_SHOOTER["turret_tx_filter_alpha"]
+        alpha = CON_AUTO_AIM["turret_tx_filter_alpha"]
         self._filtered_error = (
             alpha * routed_aim + (1 - alpha) * self._filtered_error
         )
@@ -171,7 +171,7 @@ class CoordinateAim(Command):
             voltage, p_term, i_term, d_term, raw_voltage, self._i_accumulator = (
                 compute_turret_voltage(
                     self._filtered_error, turret_vel,
-                    self._aim_sign, CON_SHOOTER,
+                    self._aim_sign, CON_AUTO_AIM,
                     self._i_accumulator,
                 )
             )
@@ -212,7 +212,7 @@ class CoordinateAim(Command):
         on-target while swinging through the target at high speed,
         which would cause shots to fire during oscillation.
         """
-        tolerance = CON_SHOOTER["turret_alignment_tolerance"]
-        max_vel = CON_SHOOTER.get("turret_on_target_max_vel", 2.0)
+        tolerance = CON_AUTO_AIM["turret_alignment_tolerance"]
+        max_vel = CON_AUTO_AIM.get("turret_on_target_max_vel", 2.0)
         return (abs(self._filtered_error) <= tolerance
                 and abs(self.turret.get_velocity()) <= max_vel)

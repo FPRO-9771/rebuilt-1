@@ -7,7 +7,7 @@ from unittest.mock import patch
 from subsystems.turret import Turret
 from commands.coordinate_aim import CoordinateAim
 from calculations.target_state import ShootContext
-from tests.conftest import TEST_CON_TURRET, TEST_CON_SHOOTER, TEST_CON_POSE
+from tests.conftest import TEST_CON_TURRET, TEST_CON_POSE
 
 
 _MID_POS = (TEST_CON_TURRET["min_position"] + TEST_CON_TURRET["max_position"]) / 2

@@ -121,14 +121,14 @@ Step-by-step checkout for the new pose-based turret aiming and auto-shoot system
 
 ## Phase 5: Auto-Shoot Distance Lookup (10 min)
 
-**Goal:** Launcher and hood set themselves based on distance to the target.
+**Goal:** Launcher sets itself based on distance to the target.
 
 **Debug settings:** Same SSH log. Now also watch for `[SHOOT]` lines (they appear on odd cycles, interleaved with aim logs).
 
 | Step | Action | What to Look For | Pass? |
 |------|--------|-----------------|-------|
 | 5.1 | Place robot 2m from target. Enable coordinate aim (left bumper). Hold left trigger (ShootWhenReady). | Launcher spins up. On the log: `[SHOOT] rawDist=~2.00` and `rps=` should match the 2m entry in the distance table. | |
-| 5.2 | Release left trigger. | Launcher and hood stop. | |
+| 5.2 | Release left trigger. | Launcher stops. | |
 | 5.3 | Move to 3m. Hold left trigger. | `rawDist=~3.00`, `rps=` should be higher (farther = more power). | |
 | 5.4 | Move to 1m. Hold left trigger. | `rawDist=~1.00`, `rps=` should be lower. | |
 | 5.5 | While holding left trigger, slowly drive away from target. | `rawDist` increases, `corrDist` should be slightly higher than raw (closing speed is negative = retreating). `rps` should gradually increase. | |
@@ -153,7 +153,7 @@ Step-by-step checkout for the new pose-based turret aiming and auto-shoot system
 | 6.2 | Wait for launcher to reach speed and turret to be on target. | Feeds start running. Log shows `AT_SPEED ON_TARGET FEEDING`. `AutoAim/OnTarget` = True on Elastic. | |
 | 6.3 | While holding left trigger, manually bump the turret with left stick X. | Feeds should stop (turret off target). Log shows `AT_SPEED` but not `ON_TARGET`. | |
 | 6.4 | Release left stick. Let turret re-aim. | Feeds resume when back on target. | |
-| 6.5 | Release left trigger. | Everything stops -- launcher, hood, feeds. | |
+| 6.5 | Release left trigger. | Everything stops -- launcher, feeds. | |
 
 ---
 
@@ -210,11 +210,11 @@ pose  shooter  tgt  tpos
 | vel=(vx,vy)                             <- robot velocity
 ```
 
-**[SHOOT]** -- launcher/hood settings from distance
+**[SHOOT]** -- launcher settings from distance
 ```
 pose  shooter  tgt
 | rawDist  corrDist  cls  vel             <- distance + velocity
-| rps  actual=current_speed  hood         <- motor commands
+| rps  actual=current_speed               <- motor commands
 | AT_SPEED ON_TARGET FEEDING / WAITING    <- status flags
 ```
 

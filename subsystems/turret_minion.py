@@ -12,7 +12,7 @@ from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS
-from constants.shooter import CON_TURRET_MINION
+from constants.shoot_hardware import CON_TURRET_MINION
 from utils.logger import get_logger
 
 _log = get_logger("turret_minion")

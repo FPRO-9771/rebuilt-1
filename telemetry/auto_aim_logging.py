@@ -81,7 +81,7 @@ def log_drive(cycle, pose_x, pose_y, heading_deg,
     )
 
 
-def log_shoot(cycle, ctx, rps, hood_pos,
+def log_shoot(cycle, ctx, rps,
               actual_rps=None, at_speed=False, reached_speed=False,
               on_target=False, feeding=False):
     """Log auto-shoot pipeline: pose -> distance -> lookup -> motor outputs.
@@ -89,7 +89,6 @@ def log_shoot(cycle, ctx, rps, hood_pos,
     Args:
         ctx: ShootContext namedtuple with pose, shooter, target, distance info
         rps: commanded launcher RPS from lookup table
-        hood_pos: commanded hood position from lookup table
         actual_rps: current launcher velocity (None if unknown)
         at_speed: True if launcher is within speed tolerance right now
         reached_speed: True if launcher has passed the one-time speed gate
@@ -119,6 +118,6 @@ def log_shoot(cycle, ctx, rps, hood_pos,
         f"| rawDist={ctx.raw_distance:.2f} corrDist={ctx.corrected_distance:.2f} "
         f"cls={ctx.closing_speed_mps:.2f} "
         f"vel=({ctx.vx:.2f},{ctx.vy:.2f}) "
-        f"| rps={rps:.1f} {speed_str} hood={hood_pos:.3f} "
+        f"| rps={rps:.1f} {speed_str} "
         f"| {flag_str}"
     )

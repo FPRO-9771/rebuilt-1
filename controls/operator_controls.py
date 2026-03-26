@@ -14,7 +14,7 @@ Controls:
 from commands2.button import Trigger
 
 from constants import CON_ROBOT
-from constants.shooter import CON_TURRET_MINION
+from constants.shoot_hardware import CON_TURRET_MINION
 from constants.pose import CON_POSE
 from calculations.shooter_position import get_shooter_field_position
 from calculations.target_state import compute_range_state, ShootContext
@@ -67,7 +67,7 @@ def _make_shoot_context_supplier(drivetrain, alliance_supplier,
     return _get_context
 
 
-def configure_operator(operator, conveyor, turret, launcher, hood, vision,
+def configure_operator(operator, conveyor, turret, launcher, vision,
                        match_setup, h_feed=None, v_feed=None,
                        drivetrain=None):
     """
@@ -83,10 +83,10 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
 
     # --- Manual shoot: right trigger hold, right stick Y controls speed ---
     # Stick Y maps to virtual distance via the shooter distance table,
-    # which sets both launcher RPS and hood position. Auto-feeds when at speed.
+    # which sets launcher RPS. Auto-feeds when at speed.
     if h_feed is not None and v_feed is not None:
         operator.rightTrigger().whileTrue(
-            ManualShoot(launcher, hood, h_feed, v_feed,
+            ManualShoot(launcher, h_feed, v_feed,
                         lambda: -operator.getRightY())
         )
     else:
@@ -124,7 +124,7 @@ def configure_operator(operator, conveyor, turret, launcher, hood, vision,
     if h_feed is not None and v_feed is not None and context_supplier is not None:
         operator.leftTrigger().whileTrue(
             ShootWhenReady(
-                launcher, hood, h_feed, v_feed,
+                launcher, h_feed, v_feed,
                 context_supplier=context_supplier,
                 on_target_supplier=coord_aim.is_on_target,
             )

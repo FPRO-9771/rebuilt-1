@@ -2,10 +2,10 @@
 Shooter lookup table.
 Converts distance to shooter settings via linear interpolation.
 
-Table format: (distance_m, launcher_rps, hood_position, flight_time_s)
+Table format: (distance_m, launcher_rps, flight_time_s)
 """
 
-from constants import CON_SHOOTER
+from constants.shoot_distance_table import CON_DISTANCE_TABLE
 
 
 def _lerp(table, distance, col):
@@ -24,13 +24,13 @@ def _lerp(table, distance, col):
 
 
 def get_shooter_settings(distance):
-    """Look up launcher RPS and hood position for a given distance.
+    """Look up launcher RPS for a given distance.
 
     Returns:
-        (launcher_rps, hood_position) tuple
+        launcher_rps (float)
     """
-    table = CON_SHOOTER["distance_table"]
-    return (_lerp(table, distance, 1), _lerp(table, distance, 2))
+    table = CON_DISTANCE_TABLE["distance_table"]
+    return _lerp(table, distance, 1)
 
 
 def get_flight_time(distance):
@@ -46,5 +46,5 @@ def get_flight_time(distance):
     Returns:
         flight_time_s (float)
     """
-    table = CON_SHOOTER["distance_table"]
-    return _lerp(table, distance, 3)
+    table = CON_DISTANCE_TABLE["distance_table"]
+    return _lerp(table, distance, 2)

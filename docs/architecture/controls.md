@@ -46,7 +46,7 @@ class RobotContainer:
                          intake_spinner=self.intake_spinner)
         configure_operator(
             self.operator, None, self.turret,
-            self.launcher, self.hood, self.vision["shooter"],
+            self.launcher, self.vision["shooter"],
             self.match_setup, self.h_feed, self.v_feed,
             drivetrain=self.drivetrain,
         )
@@ -134,7 +134,7 @@ A 3% stick deadband (`stick_deadband`) is applied in both modes to prevent drift
 | X button | | *unassigned* |
 | Y button | | *unassigned* |
 | Left bumper | `toggleOnTrue` | Coordinate aim (turret aims at Hub via odometry) |
-| Left trigger | `whileTrue` | Shoot when ready (launcher + hood + auto-feed when aligned and at speed) |
+| Left trigger | `whileTrue` | Shoot when ready (launcher + auto-feed when aligned and at speed) |
 | Right bumper | `whileTrue` | Reverse all feeds (unjam H feed + V feed + conveyor, interrupts right trigger) |
 | Right trigger | `whileTrue` | Manual shoot (launcher + auto-feed when at speed, speed from right stick Y) |
 
@@ -145,7 +145,7 @@ A 3% stick deadband (`stick_deadband`) is applied in both modes to prevent drift
 - `commands/manual_launcher.py` -- stick-to-RPS mapping (fallback when feeds not wired)
 - `commands/reverse_feeds.py` -- reverse all feeds to clear jams (shared by manual and auto)
 - `commands/coordinate_aim.py` -- odometry-based turret aiming
-- `commands/shoot_when_ready.py` -- launcher + hood + auto-feed combo (uses shared unjam logic from reverse_feeds)
+- `commands/shoot_when_ready.py` -- launcher + auto-feed combo (uses shared unjam logic from reverse_feeds)
 
 ---
 
@@ -160,7 +160,7 @@ The operator can mix manual and automatic controls freely. Each command is indep
 
 ### Auto Aim
 - **Left bumper toggle** -- coordinate aim (turret aims at Hub using odometry)
-- **Left trigger hold** -- shoot when ready (launcher + hood + auto-feed when aligned and at speed)
+- **Left trigger hold** -- shoot when ready (launcher + auto-feed when aligned and at speed)
 
 ### Typical Workflows
 

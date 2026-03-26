@@ -11,13 +11,12 @@ from typing import Callable
 from commands2 import Command
 
 from subsystems.launcher import Launcher
-from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
 from subsystems.shooter_lookup import get_shooter_settings
 from commands.reverse_feeds import reverse_all_feeds, stop_all_feeds
 from constants import CON_H_FEED, CON_V_FEED
-from constants.shooter import CON_SHOOTER
+from constants.shoot_auto_shoot import CON_AUTO_SHOOT
 from constants.debug import DEBUG
 from telemetry.auto_aim_logging import log_shoot
 from utils.logger import get_logger
@@ -31,7 +30,6 @@ class ShootWhenReady(Command):
     def __init__(
         self,
         launcher: Launcher,
-        hood: Hood,
         h_feed: HFeed,
         v_feed: VFeed,
         context_supplier: Callable,
@@ -40,7 +38,6 @@ class ShootWhenReady(Command):
     ):
         super().__init__()
         self.launcher = launcher
-        self.hood = hood
         self.h_feed = h_feed
         self.v_feed = v_feed
         self.conveyor = conveyor
@@ -52,7 +49,7 @@ class ShootWhenReady(Command):
         self._unjamming = False
         self._unjam_counter = 0
         self._cycle_count = 0
-        requirements = [launcher, hood, h_feed, v_feed]
+        requirements = [launcher, h_feed, v_feed]
         if conveyor is not None:
             requirements.append(conveyor)
         self.addRequirements(*requirements)
@@ -69,11 +66,10 @@ class ShootWhenReady(Command):
             _log.info("AUTO SEQ: ShootWhenReady initialize -- spinning up launcher")
 
     def execute(self):
-        # Always spin up launcher and set hood
+        # Always spin up launcher
         ctx = self._context_supplier()
-        rps, hood_pos = get_shooter_settings(ctx.corrected_distance)
+        rps = get_shooter_settings(ctx.corrected_distance)
         self.launcher._set_velocity(rps)
-        self.hood._set_position(hood_pos)
 
         # One-time gate: once launcher reaches speed, it stays unlocked
         at_speed = self.launcher.is_at_speed(rps)
@@ -88,7 +84,7 @@ class ShootWhenReady(Command):
         # N consecutive off-target cycles before stopping (prevents stutter).
         on_target = self._on_target_supplier()
         ready = self._reached_speed and on_target
-        debounce = CON_SHOOTER["feed_off_target_debounce"]
+        debounce = CON_AUTO_SHOOT["feed_off_target_debounce"]
 
         if ready:
             self._off_target_count = 0
@@ -128,7 +124,6 @@ class ShootWhenReady(Command):
             self._cycle_count,
             ctx=ctx,
             rps=rps,
-            hood_pos=hood_pos,
             actual_rps=self.launcher.get_velocity(),
             at_speed=at_speed,
             reached_speed=self._reached_speed,
@@ -142,7 +137,6 @@ class ShootWhenReady(Command):
 
     def end(self, interrupted: bool):
         self.launcher._stop()
-        self.hood._stop()
         stop_all_feeds(self.h_feed, self.v_feed, self.conveyor)
         _log.info(f"ShootWhenReady DISABLED (interrupted={interrupted})")
         if DEBUG["auto_sequence_logging"]:

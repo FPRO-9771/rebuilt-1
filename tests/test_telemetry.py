@@ -9,7 +9,6 @@ from handlers.mock_vision import MockVisionProvider
 from subsystems.conveyor import Conveyor
 from subsystems.turret import Turret
 from subsystems.launcher import Launcher
-from subsystems.hood import Hood
 from telemetry.motor_telemetry import MotorTelemetry
 from telemetry.command_telemetry import CommandTelemetry
 from telemetry.vision_telemetry import VisionTelemetry
@@ -25,9 +24,8 @@ def test_motor_telemetry_publishes_all_keys(mock_wpilib):
     conveyor = Conveyor()
     turret = Turret()
     launcher = Launcher()
-    hood = Hood()
 
-    publisher = MotorTelemetry(conveyor, turret, launcher, hood)
+    publisher = MotorTelemetry(conveyor, turret, launcher)
     # Call with each stagger offset so all keys get published
     for cycle in range(MotorTelemetry._PERIOD):
         publisher.update(cycle)
@@ -38,7 +36,6 @@ def test_motor_telemetry_publishes_all_keys(mock_wpilib):
         "Motors/Turret Velocity",
         "Motors/Launcher Target RPS",
         "Motors/Launcher Actual RPS",
-        "Motors/Hood Position",
     ]
     published_number_keys = [call.args[0] for call in sd.putNumber.call_args_list]
     for key in expected_number_keys:

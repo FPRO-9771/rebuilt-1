@@ -12,7 +12,6 @@ from generated.tuner_constants import TunerConstants
 # from subsystems.turret import Turret          # Kraken X60 (TalonFX)
 from subsystems.turret_minion import TurretMinion as Turret  # Minion (TalonFXS)
 from subsystems.launcher import Launcher
-from subsystems.hood import Hood
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
 from subsystems.intake import Intake
@@ -43,7 +42,6 @@ class RobotContainer:
         # self.conveyor = Conveyor()  # NOT WIRED YET
         self.turret = Turret()
         self.launcher = Launcher()
-        self.hood = Hood()
         self.h_feed = HFeed()
         self.v_feed = VFeed()
         self.intake = Intake()
@@ -75,7 +73,6 @@ class RobotContainer:
             intake=self.intake,
             intake_spinner=self.intake_spinner,
             launcher=self.launcher,
-            hood=self.hood,
             h_feed=self.h_feed,
             v_feed=self.v_feed,
             turret=self.turret,
@@ -90,7 +87,7 @@ class RobotContainer:
 
         # --- Telemetry ---
         setup_telemetry(None, self.turret, self.launcher,
-                        self.hood, {},  # vision providers disabled
+                        {},  # vision providers disabled
                         self.h_feed, self.v_feed,
                         self.intake_spinner,
                         drivetrain=self.drivetrain,
@@ -107,7 +104,7 @@ class RobotContainer:
         # --- Operator Controls ---
         configure_operator(
             self.operator, None, self.turret,
-            self.launcher, self.hood, None,  # vision provider disabled
+            self.launcher, None,  # vision provider disabled
             self.match_setup, self.h_feed, self.v_feed,
             drivetrain=self.drivetrain,
         )

@@ -14,7 +14,7 @@ Named commands registered here:
   AimStop      -- stop turret auto-aim
   ShooterStart      -- spin up launcher, feed when at speed (ShootWhenReady)
   ManualShootStart  -- manual shoot at center distance (for center autons)
-  ShooterStop       -- stop launcher, hood, and feeders
+  ShooterStop       -- stop launcher and feeders
 """
 
 from pathplannerlib.auto import NamedCommands
@@ -24,7 +24,7 @@ from commands.coordinate_aim import CoordinateAim
 from commands.manual_shoot import ManualShoot
 from commands.shoot_when_ready import ShootWhenReady
 from constants import CON_INTAKE_SPINNER
-from constants.shooter import CON_TURRET_MINION
+from constants.shoot_hardware import CON_TURRET_MINION
 from utils.logger import get_logger
 
 _log = get_logger("named_commands")
@@ -70,7 +70,7 @@ def _logged(name: str, cmd: Command) -> Command:
     return wrapped
 
 
-def register_named_commands(intake, intake_spinner, launcher, hood,
+def register_named_commands(intake, intake_spinner, launcher,
                             h_feed, v_feed, turret, context_supplier):
     """Register all named commands for PathPlanner.
 
@@ -81,7 +81,6 @@ def register_named_commands(intake, intake_spinner, launcher, hood,
         intake:           Intake subsystem (arm)
         intake_spinner:   IntakeSpinner subsystem (wheels)
         launcher:         Launcher subsystem
-        hood:             Hood subsystem
         h_feed:           HFeed subsystem
         v_feed:           VFeed subsystem
         turret:           Turret subsystem
@@ -103,21 +102,20 @@ def register_named_commands(intake, intake_spinner, launcher, hood,
     _logged("AimStop",
         turret.runOnce(lambda: turret._stop()))
 
-    # --- Shooter (ShootWhenReady handles launcher + hood + feeders + unjam) ---
+    # --- Shooter (ShootWhenReady handles launcher + feeders + unjam) ---
     _logged("ShooterStart",
-        ShootWhenReady(launcher, hood, h_feed, v_feed,
+        ShootWhenReady(launcher, h_feed, v_feed,
                        context_supplier=context_supplier,
                        on_target_supplier=lambda: True))
 
     # --- Manual shoot (fixed stick=0.0 = center distance, for center autons) ---
     _logged("ManualShootStart",
-        ManualShoot(launcher, hood, h_feed, v_feed,
+        ManualShoot(launcher, h_feed, v_feed,
                     stick_supplier=lambda: 0.0))
 
     _logged("ShooterStop",
         ParallelCommandGroup(
             launcher.runOnce(lambda: launcher._stop()),
-            hood.runOnce(lambda: hood._stop()),
             h_feed.runOnce(lambda: h_feed._stop()),
             v_feed.runOnce(lambda: v_feed._stop())))
 

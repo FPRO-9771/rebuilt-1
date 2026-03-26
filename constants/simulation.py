@@ -25,9 +25,6 @@ SIM_CALIBRATION = {
     "launcher": {
         "voltage_to_speed": 8.0,  # rotations/s per volt
     },
-    "hood": {
-        "voltage_to_speed": 0.3,  # rotations/s per volt
-    },
 }
 
 # Simulation time step (matches robot periodic rate)

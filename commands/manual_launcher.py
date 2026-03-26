@@ -1,6 +1,6 @@
 """
 Manual launcher command -- maps joystick axis to RPS via distance table.
-Fallback for when feed subsystems are not wired. Does not control hood or feeds.
+Fallback for when feed subsystems are not wired. Does not control feeds.
 Stick full forward (1) = max distance RPS, stick full back (-1) = min distance RPS.
 """
 
@@ -25,7 +25,7 @@ class ManualLauncher(Command):
     def execute(self):
         stick = self._stick_supplier()
         distance = _stick_to_distance(stick)
-        rps, _hood = get_shooter_settings(distance)
+        rps = get_shooter_settings(distance)
         self.launcher._set_velocity(rps)
 
     def isFinished(self) -> bool:

@@ -23,10 +23,9 @@ def test_configure_operator_runs_without_error():
     operator = _make_mock_operator()
     turret = MagicMock()
     launcher = MagicMock()
-    hood = MagicMock()
     vision = MagicMock()
     match_setup = MagicMock()
 
     configure_operator(
-        operator, None, turret, launcher, hood, vision, match_setup
+        operator, None, turret, launcher, vision, match_setup
     )

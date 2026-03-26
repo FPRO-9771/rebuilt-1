@@ -6,7 +6,7 @@ Publishes position and velocity for each motor to SmartDashboard.
 import wpilib
 
 from constants.debug import DEBUG
-from constants.shooter import CON_TURRET
+from constants.shoot_hardware import CON_TURRET
 
 
 class MotorTelemetry:
@@ -22,12 +22,11 @@ class MotorTelemetry:
     _OFF_TURRET_CLEAR = 6
     _OFF_DEBUG = 8
 
-    def __init__(self, conveyor, turret, launcher, hood, h_feed=None,
+    def __init__(self, conveyor, turret, launcher, h_feed=None,
                  v_feed=None, intake_spinner=None):
         self._conveyor = conveyor
         self._turret = turret
         self._launcher = launcher
-        self._hood = hood
         self._h_feed = h_feed
         self._v_feed = v_feed
         self._intake_spinner = intake_spinner
@@ -70,5 +69,3 @@ class MotorTelemetry:
             sd.putNumber("Motors/Turret Velocity", self._turret.get_velocity())
             sd.putNumber("Motors/Launcher Target RPS", self._launcher._target_rps)
             sd.putNumber("Motors/Launcher Actual RPS", self._launcher.get_velocity())
-            if self._hood._enabled:
-                sd.putNumber("Motors/Hood Position", self._hood.get_position())
