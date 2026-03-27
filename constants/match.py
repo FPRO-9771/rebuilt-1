@@ -4,9 +4,14 @@ Alliance color, starting pose, and Hub target positions.
 
 Alliance color comes from the Driver Station (FMS or manual setting).
 The kids select the starting pose on Elastic before each match.
-That selection determines which Hub the auto-aimer targets.
+That selection determines which auto routine runs and which Hub the
+auto-aimer targets.
 
-To add a pose, just add a dict to the "poses" list below.
+Starting coordinates (x, y, heading) are set by PathPlanner -- each
+.auto file has resetOdom: true, so the first waypoint of the first
+path becomes the odometry origin. No need to duplicate those here.
+
+To add a pose, just add a dict to _POSES below.
 """
 
 # =============================================================================
@@ -20,66 +25,29 @@ To add a pose, just add a dict to the "poses" list below.
 #   (used by ShootWhenReady, not by turret aiming).
 #
 # TODO: Replace with measured 2026 Hub coordinates from the game manual.
+
+# Shared pose list -- both alliances use the same names.
+# PathPlanner handles starting coordinates via the path's first waypoint.
+_POSES = [
+    {"name": "Center", "default": True},
+    {"name": "Left"},
+    {"name": "Right"},
+]
+
 ALLIANCES = {
     "Red": {
         "name": "Red",
         "target_x": 12.0,
         "target_y": 4.0,
         "tag_priority": [8, 10, 11],
-        "poses": [
-            {
-                "name": "Center",
-                "default": True,
-                "start_x": 13.0,
-                "start_y": 4.0,
-                "start_heading": 180.0,
-                "auto_path": "Auto Red Center",
-            },
-            {
-                "name": "Left",
-                "start_x": 13.0,
-                "start_y": 0.55,
-                "start_heading": 180.0,
-                "auto_path": "Auto Red Left",
-            },
-            {
-                "name": "Right",
-                "start_x": 13.0,
-                "start_y": 7.5,
-                "start_heading": 180.0,
-                "auto_path": "Auto Red Right",
-            },
-        ],
+        "poses": _POSES,
     },
     "Blue": {
         "name": "Blue",
         "target_x": 4.6,
         "target_y": 4.0,
         "tag_priority": [25, 26, 24, 27],
-        "poses": [
-            {
-                "name": "Center",
-                "default": True,
-                "start_x": 3.5,
-                "start_y": 4.0,
-                "start_heading": 0.0,
-                "auto_path": "Auto Blue Center",
-            },
-            {
-                "name": "Left",
-                "start_x": 3.526,
-                "start_y": 7.537,
-                "start_heading": 0.0,
-                "auto_path": "Auto Blue Left",
-            },
-            {
-                "name": "Right",
-                "start_x": 3.505,
-                "start_y": 0.545,
-                "start_heading": 0.0,
-                "auto_path": "Auto Blue Right",
-            },
-        ],
+        "poses": _POSES,
     },
 }
 

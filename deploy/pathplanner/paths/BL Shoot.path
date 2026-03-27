@@ -3,77 +3,76 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.4837772714120376,
-        "y": 4.024502314814814
+        "x": 6.76574732349537,
+        "y": 7.382532790611531
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.1313831018518523,
-        "y": 4.054355107060186
+        "x": 6.531189670138889,
+        "y": 7.484276909722222
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "BL Midpoint"
     },
     {
       "anchor": {
-        "x": 2.081067795168933,
-        "y": 4.024502314814814
+        "x": 3.2187107204861114,
+        "y": 7.382532790611531
       },
       "prevControl": {
-        "x": 2.5549726707476363,
-        "y": 4.017678819444445
+        "x": 3.4008839502016994,
+        "y": 7.58991079739431
       },
       "nextControl": {
-        "x": 1.6071629195902295,
-        "y": 4.031325810185184
+        "x": 2.9882565534452827,
+        "y": 7.120193884448836
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 1.9375893332466858,
-        "y": 2.4281597493267224
+        "x": 2.9129000289351854,
+        "y": 6.474596426504629
       },
       "prevControl": {
-        "x": 1.6856845232489421,
-        "y": 2.4451130286656912
+        "x": 2.9111056374346465,
+        "y": 6.746007685596764
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1.0,
+      "rotationDegrees": 0.0
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "",
-      "waypointRelativePos": 0,
+      "name": "AimStart",
+      "waypointRelativePos": 0.0,
       "endWaypointRelativePos": null,
       "command": null
     },
     {
-      "name": "IntakeDown",
-      "waypointRelativePos": 0.3076536945093468,
+      "name": "ShooterStart",
+      "waypointRelativePos": 0.5,
       "endWaypointRelativePos": null,
       "command": null
     },
     {
-      "name": "IntakeStart",
-      "waypointRelativePos": 0.6171509929906555,
+      "name": "ShooterStop",
+      "waypointRelativePos": 2.0,
       "endWaypointRelativePos": null,
       "command": null
     },
     {
-      "name": "IntakeStop",
-      "waypointRelativePos": 0.8368775554906582,
-      "endWaypointRelativePos": null,
-      "command": null
-    },
-    {
-      "name": "IntakeUp",
+      "name": "AimStop",
       "waypointRelativePos": 2.0,
       "endWaypointRelativePos": null,
       "command": null
@@ -89,7 +88,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": -2.082158569009902
   },
   "reversed": false,
   "folder": null,

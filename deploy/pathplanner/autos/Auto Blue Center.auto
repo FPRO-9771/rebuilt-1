@@ -7,38 +7,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Auto Blue Center"
+            "pathName": "BC Drive"
           }
         },
         {
-          "type": "deadline",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 10.0
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "ManualShootStart"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ShooterStop"
+            "pathName": "BC Shoot"
           }
         }
       ]
     }
   },
-  "resetOdom": false,
+  "resetOdom": true,
   "folder": null,
   "choreoAuto": false
 }

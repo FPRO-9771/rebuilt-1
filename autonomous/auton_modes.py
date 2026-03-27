@@ -25,7 +25,6 @@ _log = get_logger("auton_modes")
 # 20-second auto period.
 _ALL_AUTO_NAMES = [
     "Auto Blue Left", "Auto Blue Center", "Auto Blue Right",
-    "Auto Red Left", "Auto Red Center", "Auto Red Right",
     "Mini Test",
 ]
 
