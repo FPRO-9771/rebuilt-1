@@ -95,10 +95,10 @@ def register_named_commands(intake, intake_spinner, launcher,
         intake_spinner.runOnce(lambda: intake_spinner._stop()))
 
     # --- Turret auto-aim ---
-    _logged("AimStart",
-        CoordinateAim(turret,
-                      context_supplier=context_supplier,
-                      turret_config=CON_TURRET_MINION))
+    aim_cmd = CoordinateAim(turret,
+                            context_supplier=context_supplier,
+                            turret_config=CON_TURRET_MINION)
+    _logged("AimStart", aim_cmd)
     _logged("AimStop",
         turret.runOnce(lambda: turret._stop()))
 
@@ -106,7 +106,7 @@ def register_named_commands(intake, intake_spinner, launcher,
     _logged("ShooterStart",
         ShootWhenReady(launcher, h_feed, v_feed,
                        context_supplier=context_supplier,
-                       on_target_supplier=lambda: True))
+                       on_target_supplier=aim_cmd.is_on_target))
 
     # --- Manual shoot (fixed stick=0.0 = center distance, for center autons) ---
     _logged("ManualShootStart",

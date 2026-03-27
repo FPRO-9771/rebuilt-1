@@ -9,12 +9,6 @@
           "data": {
             "pathName": "BR Pickup"
           }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "BR Shoot"
-          }
         }
       ]
     }

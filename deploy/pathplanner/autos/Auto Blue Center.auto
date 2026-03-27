@@ -9,12 +9,6 @@
           "data": {
             "pathName": "BC Drive"
           }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "BC Shoot"
-          }
         }
       ]
     }
