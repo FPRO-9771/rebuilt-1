@@ -36,7 +36,7 @@ CON_AUTO_SHOOT = {
     # physics + drag on foam balls). Increase until shots at 2-3m while
     # retreating no longer fall short.
     # Start at 2.0 and tune down if shots overshoot while retreating.
-    "distance_correction_gain": 2.0,
+    "distance_correction_gain": 1.5,
 
     # Minimum distance (meters) for compensation to activate.
     # Below this range, flight time is negligible and lead/distance

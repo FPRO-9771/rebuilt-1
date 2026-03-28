@@ -147,11 +147,44 @@
     {
       "name": "IntakeStart",
       "waypointRelativePos": 0.75,
-      "endWaypointRelativePos": 2.2,
+      "endWaypointRelativePos": 2.333731312292361,
       "command": {
         "type": "named",
         "data": {
           "name": "IntakeStart"
+        }
+      }
+    },
+    {
+      "name": "CorrectOdometry",
+      "waypointRelativePos": 3.2433035714285783,
+      "endWaypointRelativePos": 3.34,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "CorrectOdometry"
+        }
+      }
+    },
+    {
+      "name": "AimStart",
+      "waypointRelativePos": 3.280523255813956,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "AimStart"
+        }
+      }
+    },
+    {
+      "name": "ShooterStart",
+      "waypointRelativePos": 3.449231727574763,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ShooterStart"
         }
       }
     }
