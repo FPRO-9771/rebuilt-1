@@ -155,7 +155,15 @@ def register_named_commands(intake, intake_spinner, launcher,
         else:
             _log.debug("CorrectOdometry: no tags visible, skipped")
 
-    # Point marker: feeds one measurement (runOnce finishes immediately).
+    # Point marker (named command): feeds one measurement, finishes immediately.
     _logged("CorrectOdometry", drivetrain.runOnce(_correct_odom_from_vision))
+
+    # Zone trigger: feeds a measurement every loop while inside the zone.
+    # In PathPlanner GUI set the zone's command to null (no named command) --
+    # the EventTrigger binding picks it up and runs whileTrue automatically.
+    # This gives continuous corrections while the Limelight can see a tag.
+    EventTrigger("CorrectOdometry").whileTrue(
+        drivetrain.run(_correct_odom_from_vision)
+    )
 
     _log.info("all named commands registered")

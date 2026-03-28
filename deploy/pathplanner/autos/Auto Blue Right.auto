@@ -9,6 +9,37 @@
           "data": {
             "pathName": "BR Pickup"
           }
+        },
+        {
+          "type": "deadline",
+          "data": {
+            "commands": [
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 5.5
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "AimStart"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ShooterStart"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "BR Pickup 2"
+          }
         }
       ]
     }
