@@ -19,7 +19,6 @@ Named commands registered here:
 """
 
 from pathplannerlib.auto import NamedCommands
-from pathplannerlib.events import EventTrigger
 from commands2 import Command, ParallelCommandGroup
 
 from commands.coordinate_aim import CoordinateAim
@@ -99,24 +98,6 @@ def register_named_commands(intake, intake_spinner, launcher,
     _logged("IntakeStop",
         intake_spinner.runOnce(lambda: intake_spinner._stop()))
 
-    # Trigger bindings for all intake event markers.
-    # PathPlanner fires EventTrigger("<name>") for any marker with command=null.
-    # Using trigger bindings means the GUI can freely edit paths without
-    # re-linking commands -- the binding lives here in code, not in the path file.
-    #
-    # onTrue  -- fires once on the rising edge; command runs to completion.
-    #            Correct for point events (arm moves, instant stops).
-    # whileTrue -- holds True while in a zone, cancels on exit.
-    #              Correct for zoned IntakeStart (spinner runs only in the zone).
-    EventTrigger("IntakeDown").onTrue(intake.go_down())
-    EventTrigger("IntakeUp").onTrue(intake.go_up())
-    EventTrigger("IntakeStop").onTrue(
-        intake_spinner.runOnce(lambda: intake_spinner._stop())
-    )
-    EventTrigger("IntakeStart").whileTrue(
-        intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"])
-    )
-
     # --- Turret auto-aim ---
     aim_cmd = CoordinateAim(turret,
                             context_supplier=context_supplier,
@@ -176,11 +157,5 @@ def register_named_commands(intake, intake_spinner, launcher,
 
     # Point marker: feeds one measurement (runOnce finishes immediately).
     _logged("CorrectOdometry", drivetrain.runOnce(_correct_odom_from_vision))
-
-    # Zone marker: feeds measurements every loop while inside the zone.
-    # PathPlanner cancels it automatically when the robot exits the zone.
-    EventTrigger("CorrectOdometry").whileTrue(
-        drivetrain.run(_correct_odom_from_vision)
-    )
 
     _log.info("all named commands registered")

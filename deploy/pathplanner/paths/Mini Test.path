@@ -57,13 +57,23 @@
       "name": "IntakeDown",
       "waypointRelativePos": 0.25881644275700766,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeDown"
+        }
+      }
     },
     {
       "name": "IntakeStart",
       "waypointRelativePos": 0.8948780665887852,
       "endWaypointRelativePos": 2.0,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeStart"
+        }
+      }
     }
   ],
   "globalConstraints": {
