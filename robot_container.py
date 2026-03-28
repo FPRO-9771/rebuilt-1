@@ -77,6 +77,7 @@ class RobotContainer:
             v_feed=self.v_feed,
             turret=self.turret,
             context_supplier=_context_supplier,
+            drivetrain=self.drivetrain,
         )
 
         self.auton_modes = AutonModes()

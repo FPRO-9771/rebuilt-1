@@ -36,8 +36,40 @@
         "y": 4.521
       },
       "prevControl": {
-        "x": 7.669450221728753,
-        "y": 4.770999395486974
+        "x": 7.8375672477807266,
+        "y": 4.706529559561792
+      },
+      "nextControl": {
+        "x": 7.502432752219275,
+        "y": 4.335470440438209
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.06471798780488,
+        "y": 7.311814024390244
+      },
+      "prevControl": {
+        "x": 6.438025914634148,
+        "y": 7.187378048780488
+      },
+      "nextControl": {
+        "x": 5.707905075432576,
+        "y": 7.430751661847678
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.776,
+        "y": 7.418
+      },
+      "prevControl": {
+        "x": 4.190786585365855,
+        "y": 7.412728658536587
       },
       "nextControl": null,
       "isLocked": false,
@@ -62,7 +94,7 @@
     {
       "name": "Constraints Zone",
       "minWaypointRelativePos": 1.05,
-      "maxWaypointRelativePos": 1.6,
+      "maxWaypointRelativePos": 2.1752808988764003,
       "constraints": {
         "maxVelocity": 1.0,
         "maxAcceleration": 1.5,
@@ -84,7 +116,7 @@
     {
       "name": "IntakeStart",
       "waypointRelativePos": 0.75,
-      "endWaypointRelativePos": 2.0,
+      "endWaypointRelativePos": 2.2,
       "command": null
     }
   ],
@@ -98,7 +130,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -87.88
+    "rotation": 0.0
   },
   "reversed": false,
   "folder": null,
