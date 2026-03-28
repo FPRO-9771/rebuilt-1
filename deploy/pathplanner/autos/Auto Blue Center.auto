@@ -5,15 +5,22 @@
     "data": {
       "commands": [
         {
-          "type": "named",
+          "type": "deadline",
           "data": {
-            "name": "AimStart"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "BC Drive"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "BC Drive"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "AimStart"
+                }
+              }
+            ]
           }
         },
         {
@@ -30,6 +37,12 @@
                 "type": "named",
                 "data": {
                   "name": "ShooterStart"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "AimStart"
                 }
               }
             ]
