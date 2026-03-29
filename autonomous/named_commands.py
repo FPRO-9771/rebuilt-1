@@ -19,6 +19,7 @@ Named commands registered here:
 """
 
 from pathplannerlib.auto import NamedCommands
+from pathplannerlib.events import EventTrigger
 from commands2 import Command, ParallelCommandGroup
 
 from commands.coordinate_aim import CoordinateAim
