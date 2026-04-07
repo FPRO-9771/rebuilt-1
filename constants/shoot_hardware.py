@@ -27,25 +27,31 @@ CON_TURRET = {
 # robot_container.py.  All voltages and limits need re-tuning on real hardware.
 # =============================================================================
 CON_TURRET_MINION = {
-    "max_voltage": 4.0,         # Safety cap -- tune down once moving
-    "manual_speed_factor": 0.50, # Manual mode: 1.0 * 0.50 = 0.50V
+    # Gear ratio: 5:1 planetary * (200t / 46t) = 21.739:1 total
+    # 1 motor rotation = 1/21.739 turret rotations = ~16.6 degrees
+    # max_position 22.0 motor rot ~= 364 degrees -- tune on robot to just before hard stop
+    "gear_ratio": 21.739,
+
+    "max_voltage": 2.5,         # Safety cap -- reduced for low-friction mechanism
+    "manual_speed_factor": 0.40, # Manual mode: 1.0 * 0.40 = 1.0V max
     "manual_exponent": 2.0,     # Joystick response curve (1.0=linear, 2.0=squared, 3.0=cubed)
     "min_position": 0,       # Soft limit: leftmost rotation (rotations)
-    "max_position": 10.3,        # Soft limit: rightmost rotation (rotations)
+    "max_position": 25.7,        # Soft limit: (360 deg = 21.739 motor rot) -- tune to just before hard stop
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
     "inverted": False,           # Positive = left (unconfirmed -- flip if reversed)
     "brake": True,               # Brake on neutral -- holds turret steady
-    "search_voltage": 0.10,     # Voltage during FindTarget sweep
-    "search_brake_voltage": 0.30, # Brake voltage when sweep hits a soft limit
+    "search_voltage": 0.06,     # Voltage during FindTarget sweep -- reduced for low-friction
+    "search_brake_voltage": 0.15, # Brake voltage when sweep hits a soft limit
     "search_brake_cycles": 5,   # How many cycles to brake before reversing
     "soft_limit_ramp": 0.5,     # Rotations from soft limit where voltage starts ramping down
 
     # Slot 0 gains for closed-loop position hold (HoldPosition command).
-    # NEEDS TUNING -- start conservative to avoid oscillation.
-    "slot0_kP": 1.0,
+    # Reduced kP and increased kD -- low-friction mechanism oscillates easily.
+    # kP: volts per motor rotation of error. kD: damping to stop overshoot.
+    "slot0_kP": 0.4,
     "slot0_kI": 0.0,
-    "slot0_kD": 0.01,
-    "slot0_kS": 0.1,            # Static friction (volts to start moving)
+    "slot0_kD": 0.06,
+    "slot0_kS": 0.05,           # Static friction -- reduced, mechanism is easier to turn
     "slot0_kV": 0.0,
     "slot0_kA": 0.0,
     "slot0_kG": 0.0,
