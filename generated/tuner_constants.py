@@ -18,7 +18,7 @@ class TunerConstants:
     # output type specified by SwerveModuleConstants.SteerMotorClosedLoopOutput
     _steer_gains = (
         configs.Slot0Configs()
-        .with_k_p(50)
+        .with_k_p(100)
         .with_k_i(0)
         .with_k_d(0.5)
         .with_k_s(0.1)
@@ -65,7 +65,7 @@ class TunerConstants:
         configs.CurrentLimitsConfigs()
         .with_stator_current_limit(80.0)
         .with_stator_current_limit_enable(True)
-        .with_supply_current_limit(50.0) #was 60
+        .with_supply_current_limit(50.0)
         .with_supply_current_limit_enable(True)
     )
     _steer_initial_configs = configs.TalonFXConfiguration().with_current_limits(
@@ -74,7 +74,7 @@ class TunerConstants:
         # stator current limit to help avoid brownouts without impacting performance.
         .with_stator_current_limit(60.0)
         .with_stator_current_limit_enable(True)
-        .with_supply_current_limit(35.0) #was 40
+        .with_supply_current_limit(35.0)
         .with_supply_current_limit_enable(True)
     )
     _encoder_initial_configs = configs.CANcoderConfiguration()
@@ -83,11 +83,11 @@ class TunerConstants:
 
     # CAN bus that the devices are located on;
     # All swerve devices must share the same CAN bus
-    canbus = CANBus("", "./.logs/example.hoot")
+    canbus = CANBus("", "./logs/example.hoot")
 
     # Theoretical free speed (m/s) at 12 V applied output;
     # This needs to be tuned to your individual robot
-    speed_at_12_volts: units.meters_per_second = 5.59
+    speed_at_12_volts: units.meters_per_second = 5.72
 
     # Every 1 rotation of the azimuth results in _couple_ratio drive motor turns;
     # This may need to be tuned to your individual robot
@@ -95,7 +95,7 @@ class TunerConstants:
 
     _drive_gear_ratio = 5.4
     _steer_gear_ratio = 12.1
-    _wheel_radius: units.meter = inchesToMeters(1.851)
+    _wheel_radius: units.meter = inchesToMeters(2)
 
     _invert_left_side = False
     _invert_right_side = True
@@ -149,9 +149,9 @@ class TunerConstants:
     _front_left_drive_motor_id = 7
     _front_left_steer_motor_id = 8
     _front_left_encoder_id = 14
-    _front_left_encoder_offset: units.rotation = 0.291990
-    _front_left_steer_motor_inverted = True
-    _front_left_encoder_inverted = False
+    _front_left_encoder_offset: units.rotation = -0.2919921875
+    _front_left_steer_motor_inverted = False
+    _front_left_encoder_inverted = True
 
     _front_left_x_pos: units.meter = inchesToMeters(10)
     _front_left_y_pos: units.meter = inchesToMeters(13)
@@ -160,9 +160,9 @@ class TunerConstants:
     _front_right_drive_motor_id = 1
     _front_right_steer_motor_id = 2
     _front_right_encoder_id = 11
-    _front_right_encoder_offset: units.rotation = -0.285176
-    _front_right_steer_motor_inverted = True
-    _front_right_encoder_inverted = False
+    _front_right_encoder_offset: units.rotation = 0.29248046875
+    _front_right_steer_motor_inverted = False
+    _front_right_encoder_inverted = True
 
     _front_right_x_pos: units.meter = inchesToMeters(10)
     _front_right_y_pos: units.meter = inchesToMeters(-13)
@@ -171,9 +171,9 @@ class TunerConstants:
     _back_left_drive_motor_id = 5
     _back_left_steer_motor_id = 6
     _back_left_encoder_id = 13
-    _back_left_encoder_offset: units.rotation = 0.382388
-    _back_left_steer_motor_inverted = True
-    _back_left_encoder_inverted = False
+    _back_left_encoder_offset: units.rotation = -0.381103515625
+    _back_left_steer_motor_inverted = False
+    _back_left_encoder_inverted = True
 
     _back_left_x_pos: units.meter = inchesToMeters(-10)
     _back_left_y_pos: units.meter = inchesToMeters(13)
@@ -182,9 +182,9 @@ class TunerConstants:
     _back_right_drive_motor_id = 3
     _back_right_steer_motor_id = 4
     _back_right_encoder_id = 12
-    _back_right_encoder_offset: units.rotation = -0.039229
-    _back_right_steer_motor_inverted = True
-    _back_right_encoder_inverted = False
+    _back_right_encoder_offset: units.rotation = 0.030029296875
+    _back_right_steer_motor_inverted = False
+    _back_right_encoder_inverted = True
 
     _back_right_x_pos: units.meter = inchesToMeters(-10)
     _back_right_y_pos: units.meter = inchesToMeters(-13)
