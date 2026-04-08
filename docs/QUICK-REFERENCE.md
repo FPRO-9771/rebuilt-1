@@ -71,7 +71,7 @@ deactivate                      <-- turn it off (when you're done)
 | Open Claude Code        | `claude`                         |
 | Check Python version    | `python3 --version` (need 3.13) |
 | SSH into the robot      | `ssh admin@10.97.71.2`          |
-| Watch robot log live    | `tail -f /var/local/natinst/log/FRC_UserProgram.log` (on robot via SSH) |
+    | Watch robot log live    | `tail -f /var/local/natinst/log/FRC_UserProgram.log` (on robot via SSH) |
 
 ---
 

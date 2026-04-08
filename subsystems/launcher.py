@@ -7,6 +7,9 @@ from commands2 import Subsystem, Command
 
 from hardware import create_motor
 from constants import MOTOR_IDS, CON_LAUNCHER
+from utils.logger import get_logger
+
+_log = get_logger("launcher")
 
 
 class Launcher(Subsystem):
@@ -31,6 +34,12 @@ class Launcher(Subsystem):
             },
         )
         self._target_rps = 0.0
+        self._was_at_speed = False
+        _log.info(
+            f"Launcher init: kP={CON_LAUNCHER['slot0_kP']} kI={CON_LAUNCHER['slot0_kI']}"
+            f" kD={CON_LAUNCHER['slot0_kD']} kS={CON_LAUNCHER['slot0_kS']}"
+            f" kV={CON_LAUNCHER['slot0_kV']} kA={CON_LAUNCHER['slot0_kA']}"
+        )
 
     # --- Sensor reads (public) ---
 
@@ -40,7 +49,12 @@ class Launcher(Subsystem):
 
     def is_at_speed(self, target_rps: float) -> bool:
         """Check if flywheel is within tolerance of target speed."""
-        return abs(self.get_velocity() - target_rps) <= CON_LAUNCHER["velocity_tolerance"]
+        actual = self.get_velocity()
+        at_speed = abs(actual - target_rps) <= CON_LAUNCHER["velocity_tolerance"]
+        if at_speed != self._was_at_speed:
+            _log.info(f"is_at_speed: {'TRUE' if at_speed else 'FALSE'} -- actual={actual:.1f} target={target_rps:.1f}")
+            self._was_at_speed = at_speed
+        return at_speed
 
     # --- Motor control (internal) ---
 
@@ -48,6 +62,8 @@ class Launcher(Subsystem):
         """Set flywheel to target velocity using closed-loop control."""
         self._target_rps = rps
         self.motor.set_velocity(rps)
+        actual = self.get_velocity()
+        _log.debug(f"_set_velocity: target={rps:.1f} actual={actual:.1f} err={actual - rps:.1f}")
 
     def _set_voltage(self, volts: float) -> None:
         """Apply voltage with safety clamping (open-loop)."""

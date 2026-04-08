@@ -35,7 +35,7 @@ MOTOR_IDS = {
     "turret":   {"can_id": 30, "type": "talon_fx",  "bus": "rio", "wired": False, "sim_rps_per_volt": 2.0,
                  "current_limit": {"stator": 60, "supply": 40}},#was 30/25
     "turret_minion": {"can_id": 32, "type": "talon_fxs", "bus": "rio", "wired": True, "sim_rps_per_volt": 2.5,
-                      "current_limit": {"stator": 30, "supply": 25}},#was 30/25
+                      "current_limit": {"stator":45, "supply": 40}},#was 30/25
     "launcher": {"can_id": 31, "type": "talon_fx",  "bus": "rio", "wired": True, "sim_rps_per_volt": 8.0,
                  "current_limit": {"stator": 60, "supply": 40}},#no change
 }
