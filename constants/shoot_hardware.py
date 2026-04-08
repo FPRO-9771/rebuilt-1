@@ -30,20 +30,20 @@ CON_TURRET_MINION = {
     # Gear ratio: 9:1 planetary * (200t / 48t) = 37.5:1 total
     # 1 motor rotation = 1/37.5 turret rotations = ~16.6 degrees
     # max_position 22.0 motor rot ~= 364 degrees -- tune on robot to just before hard stop
-    "gear_ratio": 36,
+    "gear_ratio": 33.3333,
 
     "max_voltage": 5,         # Safety cap -- reduced for low-friction mechanism
-    "manual_speed_factor": 1, # Manual mode: 1.0 * 0.40 = 1.0V max
+    "manual_speed_factor": 0.5, # Manual mode: 1.0 * 0.40 = 1.0V max
     "manual_exponent": 2.0,     # Joystick response curve (1.0=linear, 2.0=squared, 3.0=cubed)
     "min_position": 0,       # Soft limit: leftmost rotation (rotations)
-    "max_position": 41.5,        # Soft limit: (360 deg = 36 motor rot) -- tune to just before hard stop
+    "max_position": 39.8,        # Soft limit: measured on robot -- just before hard stop
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
     "inverted": False,           # Positive = left (unconfirmed -- flip if reversed)
     "brake": True,               # Brake on neutral -- holds turret steady
     "search_voltage": 0.06,     # Voltage during FindTarget sweep -- reduced for low-friction
     "search_brake_voltage": 0.15, # Brake voltage when sweep hits a soft limit
     "search_brake_cycles": 5,   # How many cycles to brake before reversing
-    "soft_limit_ramp": 0.5,     # Rotations from soft limit where voltage starts ramping down
+    "soft_limit_ramp": 3,     # Rotations from soft limit where voltage starts ramping down
 
     # Slot 0 gains for closed-loop position hold (HoldPosition command).
     # Reduced kP and increased kD -- low-friction mechanism oscillates easily.
@@ -62,7 +62,7 @@ CON_TURRET_MINION = {
 # =============================================================================
 CON_LAUNCHER = {
     "max_voltage": 12.0,        # Maximum voltage to apply
-    "velocity_tolerance": 5.0,  # "At speed" tolerance (rotations per second)
+    "velocity_tolerance": 8.0,  # "At speed" tolerance (rotations per second)
     "inverted": True,
 
     # Slot 0 gains for closed-loop velocity control.
