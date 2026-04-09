@@ -9,6 +9,7 @@ reverses it briefly to un-jam, then resumes. Release to stop everything.
 from typing import Callable
 
 from commands2 import Command
+from wpilib import RobotBase
 
 from subsystems.launcher import Launcher
 from subsystems.h_feed import HFeed
@@ -49,6 +50,8 @@ class ShootWhenReady(Command):
         self._unjamming = False
         self._unjam_counter = 0
         self._cycle_count = 0
+        self._feed_cycle_count = 0
+        self._is_sim = RobotBase.isSimulation()
         requirements = [launcher, h_feed, v_feed]
         if conveyor is not None:
             requirements.append(conveyor)
@@ -61,6 +64,7 @@ class ShootWhenReady(Command):
         self._unjamming = False
         self._unjam_counter = 0
         self._cycle_count = 0
+        self._feed_cycle_count = 0
         _log.info("ShootWhenReady ENABLED")
         if DEBUG["auto_sequence_logging"]:
             _log.info("AUTO SEQ: ShootWhenReady initialize -- spinning up launcher")
@@ -97,6 +101,7 @@ class ShootWhenReady(Command):
                 _log.debug("Off target %d cycles -- stopping feed",
                            self._off_target_count)
                 self._feeding = False
+                self._feed_cycle_count = 0
 
         # --- Un-jam state machine ---
         # While feeding, if H feed velocity drops near zero, reverse all
@@ -108,8 +113,12 @@ class ShootWhenReady(Command):
                 self._unjamming = False
                 _log.info("Un-jam complete -- resuming feed")
         elif self._feeding:
+            self._feed_cycle_count += 1
             h_vel = self.h_feed.get_velocity()
-            if abs(h_vel) < CON_H_FEED["unjam_velocity_threshold"]:
+            # In sim, skip stall check for first 5 cycles to let physics
+            # engine spin up the motor -- avoids false unjam triggers
+            sim_spinup = self._is_sim and self._feed_cycle_count <= 5
+            if not sim_spinup and abs(h_vel) < CON_H_FEED["unjam_velocity_threshold"]:
                 self._unjamming = True
                 self._unjam_counter = CON_H_FEED["unjam_duration_cycles"]
                 _log.warning("H feed stalled -- un-jamming")
