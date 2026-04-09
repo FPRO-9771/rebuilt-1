@@ -156,7 +156,7 @@ class CoordinateAim(Command):
 
         # 8. Control turret
         turret_pos = self.turret.get_position()
-        if self._is_on_target():
+        if self._in_hold_state():
             self.turret._set_voltage(0.0)
             log_hold(
                 self._cycle_count,
@@ -205,14 +205,22 @@ class CoordinateAim(Command):
 
     # --- Internal ---
 
-    def _is_on_target(self) -> bool:
-        """True if filtered error is within tolerance AND turret is settled.
+    def _in_hold_state(self) -> bool:
+        """True if error is within tolerance -- sets motor to 0V so turret coasts.
 
-        The velocity check prevents the turret from being considered
-        on-target while swinging through the target at high speed,
-        which would cause shots to fire during oscillation.
+        No velocity check here: if we kept applying PD voltage whenever
+        tvel > max_vel, the D term would sustain oscillation indefinitely
+        for small initial errors. Cutting voltage lets the turret coast
+        to a stop naturally. Firing clearance uses is_on_target() instead.
         """
         tolerance = CON_AUTO_AIM["turret_alignment_tolerance"]
+        return abs(self._filtered_error) <= tolerance
+
+    def _is_on_target(self) -> bool:
+        """True if turret is in hold AND velocity is settled (safe to fire).
+
+        Stricter than _in_hold_state(): requires low velocity so shots are
+        not fired while the turret is still coasting through the target.
+        """
         max_vel = CON_AUTO_AIM.get("turret_on_target_max_vel", 2.0)
-        return (abs(self._filtered_error) <= tolerance
-                and abs(self.turret.get_velocity()) <= max_vel)
+        return self._in_hold_state() and abs(self.turret.get_velocity()) <= max_vel

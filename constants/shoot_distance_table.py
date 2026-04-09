@@ -19,13 +19,13 @@ Sorted by distance -- interpolated at runtime by shooter_lookup.py.
 CON_DISTANCE_TABLE = {
     "distance_table": [
         # (distance_m, launcher_rps, flight_time_s)
-        (1.5, 33.0, 0.95),
-        (2.0, 37.0, 1),
+        (1.5, 38.0, 0.95),
+        (2.0, 40.0, 1),
         (3.0, 46.0, 1),
         (3.5, 51.5, 1.1),
         (4.0, 54.5, 1.2),
-        (4.5, 56.0, 1.3),
-        (5.0, 59.0, 2),
+        (4.5, 59.0, 1.3),
+        (5.0, 63.0, 2),
     ],
 
     # Manual shoot stick mapping -- maps joystick Y to virtual distance,
