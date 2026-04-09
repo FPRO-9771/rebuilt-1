@@ -20,7 +20,7 @@ Named commands registered here:
 
 from pathplannerlib.auto import NamedCommands
 from pathplannerlib.events import EventTrigger
-from commands2 import Command, ParallelCommandGroup
+from commands2 import Command, ParallelCommandGroup, RunCommand
 
 from commands.coordinate_aim import CoordinateAim
 from commands.manual_shoot import ManualShoot
@@ -163,8 +163,11 @@ def register_named_commands(intake, intake_spinner, launcher,
     # In PathPlanner GUI set the zone's command to null (no named command) --
     # the EventTrigger binding picks it up and runs whileTrue automatically.
     # This gives continuous corrections while the Limelight can see a tag.
+    # IMPORTANT: Use RunCommand (no subsystem requirements) instead of
+    # drivetrain.run() -- drivetrain.run() would require the drivetrain
+    # subsystem and cancel the path follower mid-path.
     EventTrigger("CorrectOdometry").whileTrue(
-        drivetrain.run(_correct_odom_from_vision)
+        RunCommand(_correct_odom_from_vision)
     )
 
     _log.info("all named commands registered")
