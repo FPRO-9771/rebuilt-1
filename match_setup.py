@@ -70,25 +70,6 @@ class MatchSetup:
         """Return the currently selected pose name."""
         return self._pose_chooser.getSelected()
 
-    def get_pose(self) -> dict:
-        """Return the full pose dict for the selected alliance + pose."""
-        alliance = self.get_alliance()
-        pose_name = self.get_pose_name()
-        _log.info(f"get_pose: alliance='{alliance['name']}' pose='{pose_name}'")
-        for pose in alliance["poses"]:
-            if pose["name"] == pose_name:
-                _log.info(
-                    f"get_pose: resolved -> x={pose['start_x']} "
-                    f"y={pose['start_y']} heading={pose['start_heading']} "
-                    f"path='{pose.get('auto_path', 'none')}'"
-                )
-                return pose
-        _log.warning(
-            f"get_pose: pose '{pose_name}' not found in alliance "
-            f"'{alliance['name']}' -- using first pose"
-        )
-        return alliance["poses"][0]
-
     def get_tag_priority(self) -> list[int]:
         """Return the ordered tag list for the selected alliance."""
         return self.get_alliance()["tag_priority"]

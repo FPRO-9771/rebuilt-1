@@ -14,10 +14,12 @@ This doc covers how autonomous routines work: named commands, PathPlanner event 
 2. [Named Commands](#2-named-commands)
 3. [PathPlanner Event Markers](#3-pathplanner-event-markers)
 4. [Auto Files](#4-auto-files)
-5. [Path Selection](#5-path-selection)
-6. [AutonModes Factory](#6-autonmodes-factory)
-7. [Using in Robot.py](#7-using-in-robotpy)
-8. [Adding a New Named Command](#8-adding-a-new-named-command)
+5. [Odometry Reset](#5-odometry-reset)
+6. [Path Selection](#6-path-selection)
+7. [AutonModes Factory](#7-autonmodes-factory)
+8. [Using in Robot.py](#8-using-in-robotpy)
+9. [Adding a New Named Command](#9-adding-a-new-named-command)
+10. [Adding a New Auto Phase](#10-adding-a-new-auto-phase)
 
 ---
 
@@ -30,12 +32,25 @@ PathPlanner GUI          You place event markers on paths
        |
 Named Commands           Python code defines what each marker does
        |
-.auto files              Simple wrapper: "follow this path"
+.auto files              Sequence of paths: "follow pickup, then shoot"
        |
 AutonModes               Pre-loads .auto files, robot.py picks one at match start
 ```
 
 **The key idea:** The kids control *when* things happen by placing event markers in PathPlanner GUI. The code defines *what* each marker does by registering named commands. Clean separation.
+
+### Multi-path pattern
+
+Each auto is split into focused paths, one per phase:
+
+```
+Auto Blue Right.auto:
+  1. path: "BR Pickup"      (drive to fuel, intake event markers)
+  2. path: "BR Shoot"       (return + shoot, aim/shoot event markers)
+  3. path: "BR Pickup 2"    (future: drive to more fuel)
+```
+
+This makes it easy to add new phases -- just draw a new path and add it to the .auto sequence.
 
 ---
 
@@ -76,6 +91,7 @@ Called from `robot_container.py` **before** any .auto files are loaded.
 | `AimStart` | Turret auto-aim at Hub (CoordinateAim) | Interrupted (by AimStop or path end) |
 | `AimStop` | Stop turret | Instant |
 | `ShooterStart` | Spin up launcher, feed when at speed (ShootWhenReady) | Interrupted (by ShooterStop or path end) |
+| `ManualShootStart` | Manual shoot at center distance (for center autos) | Interrupted (by ShooterStop or path end) |
 | `ShooterStop` | Stop launcher and feeders | Instant |
 
 > **ShooterStart = ShootWhenReady.** It handles launcher spin-up, feeding when at speed, and auto-unjam -- all in one command. No need for separate feeder commands.
@@ -94,15 +110,21 @@ Event markers are placed on `.path` files in the PathPlanner GUI. Each marker ha
 4. Set the name to one of the named commands (e.g. `IntakeDown`, `ShooterStart`)
 5. The dropdown shows all available named commands
 
-### Example: Auto Blue Right path markers
+### Example: BR Pickup path markers
+
+```
+Position 0.1  -> IntakeDown      (lower arm at path start)
+Position 1.5  -> IntakeStart     (spin wheels approaching Fuel)
+Position 3.8  -> IntakeStop      (stop wheels after collection)
+```
+
+### Example: BR Shoot path markers
 
 ```
 Position 0.0  -> AimStart        (start aiming immediately)
-Position 0.6  -> IntakeDown      (lower arm as robot approaches Fuel)
-Position 1.75 -> IntakeStart     (spin wheels to collect Fuel)
-Position 3.5  -> IntakeStop      (stop wheels after collection)
-Position 5.0  -> ShooterStart    (spin up and shoot)
-Position 5.8  -> AimStop         (stop aiming near end)
+Position 0.5  -> ShooterStart    (spin up launcher)
+Position 2.0  -> ShooterStop     (stop shooting at path end)
+Position 2.0  -> AimStop         (stop aiming at path end)
 ```
 
 ### Important rules
@@ -115,7 +137,7 @@ Position 5.8  -> AimStop         (stop aiming near end)
 
 ## 4. Auto Files
 
-Each `.auto` file in `deploy/pathplanner/autos/` is a simple wrapper that tells PathPlanner which path to follow:
+Each `.auto` file in `deploy/pathplanner/autos/` sequences one or more paths:
 
 ```json
 {
@@ -124,12 +146,8 @@ Each `.auto` file in `deploy/pathplanner/autos/` is a simple wrapper that tells 
     "type": "sequential",
     "data": {
       "commands": [
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Auto Blue Right"
-          }
-        }
+        { "type": "path", "data": { "pathName": "BR Pickup" } },
+        { "type": "path", "data": { "pathName": "BR Shoot" } }
       ]
     }
   },
@@ -137,23 +155,44 @@ Each `.auto` file in `deploy/pathplanner/autos/` is a simple wrapper that tells 
 }
 ```
 
-The `.auto` file just says "follow this path." All the interesting stuff (when to aim, when to shoot, when to intake) is on the path's event markers.
+The `.auto` file says "follow these paths in order." All the interesting stuff (when to aim, when to shoot, when to intake) is on each path's event markers.
 
 ### Current .auto files
 
-| File | Path |
-|------|------|
-| `Auto Blue Left.auto` | Auto Blue Left |
-| `Auto Blue Center.auto` | Auto Blue Center |
-| `Auto Blue Right.auto` | Auto Blue Right |
-| `Auto Red Left.auto` | Auto Red Left |
-| `Auto Red Center.auto` | Auto Red Center |
-| `Auto Red Right.auto` | Auto Red Right |
+| File | Paths |
+|------|-------|
+| `Auto Blue Left.auto` | BL Pickup -> BL Shoot |
+| `Auto Blue Center.auto` | BC Drive -> BC Shoot |
+| `Auto Blue Right.auto` | BR Pickup -> BR Shoot |
 | `Mini Test.auto` | Mini Test |
+
+### Current .path files
+
+| Phase | Path | Event Markers |
+|-------|------|---------------|
+| BR Pickup | `BR Pickup.path` | IntakeDown, IntakeStart, IntakeStop |
+| BR Shoot | `BR Shoot.path` | AimStart, ShooterStart, ShooterStop, AimStop |
+| BL Pickup | `BL Pickup.path` | IntakeDown, IntakeStart, IntakeStop |
+| BL Shoot | `BL Shoot.path` | AimStart, ShooterStart, ShooterStop, AimStop |
+| BC Drive | `BC Drive.path` | (none -- just driving) |
+| BC Shoot | `BC Shoot.path` | ManualShootStart, ShooterStop |
+| Mini Test | `Mini Test.path` | IntakeDown, IntakeStart, IntakeStop, ShooterStart, IntakeUp, ShooterStop |
+
+> **No Red files.** PathPlanner auto-flips Blue paths for Red alliance. The code always loads `"Auto Blue {pose_name}"`.
 
 ---
 
-## 5. Path Selection
+## 5. Odometry Reset
+
+PathPlanner handles odometry reset automatically. Each `.auto` file has `"resetOdom": true`, which tells PathPlanner to reset the robot's odometry to the first waypoint of the first path when the auto starts.
+
+**No manual pose code needed.** The starting position is defined by the path's first waypoint in the PathPlanner GUI. The `constants/match.py` file does NOT store starting coordinates -- PathPlanner is the source of truth.
+
+The `AutoBuilder.configure()` call in `command_swerve_drivetrain.py` provides the `reset_pose` callback that PathPlanner uses.
+
+---
+
+## 6. Path Selection
 
 The drive team selects a starting pose on the Elastic dashboard before the match. The auto routine is derived from the alliance (Blue/Red from Driver Station) and the pose name (Left/Center/Right from Elastic):
 
@@ -165,37 +204,37 @@ A test override chooser (`Auton Override` on SmartDashboard) can override this f
 
 ---
 
-## 6. AutonModes Factory
+## 7. AutonModes Factory
 
 ```python
 # autonomous/auton_modes.py
 
 class AutonModes:
     def __init__(self):
-        # Pre-load all .auto files during robotInit (not autonomousInit!)
-        # This avoids file I/O during the 20-second auto period.
+        # Validate all .auto files during robotInit (not autonomousInit!)
+        # This catches missing/broken files early.
         for name in _ALL_AUTO_NAMES:
-            self._cached_autos[name] = AutoBuilder.buildAuto(name)
+            AutoBuilder.buildAuto(name)
 
     def get_auto_command(self, alliance_name, pose_name):
-        auto_name = f"Auto {alliance_name} {pose_name}"
-        return self._cached_autos[auto_name]
+        auto_name = f"Auto Blue {pose_name}"
+        return self._load_auto(auto_name)
 ```
 
 Key points:
-- All `.auto` files are pre-loaded at construction time (during `robotInit`) to avoid file I/O during auto.
-- `get_auto_command()` does a dict lookup -- instant.
+- All `.auto` files are validated at construction time (during `robotInit`).
+- `get_auto_command()` always loads Blue paths -- PathPlanner flips for Red.
+- Commands are built fresh each call (WPILib commands are single-use).
 - Falls back to `WaitCommand(15.0)` if a file fails to load.
 
 ---
 
-## 7. Using in Robot.py
+## 8. Using in Robot.py
 
 ```python
 # robot.py
 
 def autonomousInit(self):
-    self._apply_selected_pose()       # Reset odometry to starting position
     # Test override takes priority
     test_factory = self.container.test_chooser.getSelected()
     if test_factory is not None:
@@ -213,14 +252,14 @@ def autonomousExit(self):
 ```
 
 The flow:
-1. `_apply_selected_pose()` resets drivetrain odometry to the selected starting position.
+1. PathPlanner resets odometry via `resetOdom: true` in the .auto file.
 2. Check for test override; otherwise derive the auto name from alliance + pose.
-3. Schedule the cached `PathPlannerAuto` command.
+3. Build a fresh `PathPlannerAuto` command and schedule it.
 4. `autonomousExit()` cancels the auto command (which cancels all event-scheduled commands).
 
 ---
 
-## 8. Adding a New Named Command
+## 9. Adding a New Named Command
 
 1. **Write the command** in `commands/` (or use an existing subsystem method).
 2. **Register it** in `autonomous/named_commands.py`:
@@ -231,6 +270,23 @@ The flow:
 4. **Test it** with Mini Test path first.
 
 That's it. The command is now available in the PathPlanner event marker dropdown for all paths.
+
+---
+
+## 10. Adding a New Auto Phase
+
+To add a new phase to an existing auto (e.g., a second pickup run after shooting):
+
+1. **Draw a new path** in PathPlanner GUI (e.g., `BR Pickup 2.path`).
+   - Start it where the previous path ends.
+   - Add event markers for the commands you want.
+2. **Add the path** to the `.auto` file's command sequence:
+   ```json
+   { "type": "path", "data": { "pathName": "BR Pickup 2" } }
+   ```
+3. **Test in simulation** first (`python -m robotpy sim`).
+
+The odometry carries over between paths in the same .auto -- no special handling needed.
 
 ---
 

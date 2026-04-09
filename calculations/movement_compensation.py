@@ -23,8 +23,8 @@ def compute_angle_compensation(vx, vy, distance_m, bearing_rad):
     """Compute the lead angle to add to turret error for robot movement.
 
     Args:
-        vx: robot forward velocity (m/s, field-relative)
-        vy: robot lateral velocity (m/s, field-relative)
+        vx: robot X velocity (m/s, field-relative)
+        vy: robot Y velocity (m/s, field-relative)
         distance_m: distance to target (meters)
         bearing_rad: angle from shooter to hub (radians, field frame)
 

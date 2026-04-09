@@ -33,8 +33,8 @@ def compute_velocity_lead(vx, vy, distance, bearing_rad):
     for lead correction (radial is handled by distance compensation).
 
     Args:
-        vx: robot forward velocity (m/s, field-relative)
-        vy: robot lateral velocity (m/s, field-relative)
+        vx: robot X velocity (m/s, field-relative)
+        vy: robot Y velocity (m/s, field-relative)
         distance: distance to target (meters)
         bearing_rad: angle from shooter to hub (radians, field frame)
 

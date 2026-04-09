@@ -33,5 +33,5 @@ CON_DISTANCE_TABLE = {
     # Stick -1 = min, stick 0 = center, stick +1 = max.
     "manual_min_distance": 1.5,     # Stick full back
     "manual_center_distance": 2.0,  # Stick at rest
-    "manual_max_distance": 3.0,     # Stick full forward
+    "manual_max_distance": 5.0,     # Stick full forward
 }

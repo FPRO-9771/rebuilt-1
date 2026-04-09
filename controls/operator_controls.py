@@ -11,6 +11,8 @@ Controls:
     Right trigger (hold) -- Manual shoot (launcher + auto-feed when at speed)
 """
 
+import math
+
 from commands2.button import Trigger
 
 from constants import CON_ROBOT
@@ -102,11 +104,21 @@ def configure_operator(operator, conveyor, turret, launcher, vision,
         )
 
     # --- Robot velocity supplier ---
+    # get_state().speeds is robot-relative ChassisSpeeds (forward/left).
+    # Convert to field-relative so all downstream callers (closing speed,
+    # angle compensation) use the same frame as field-coordinate math.
     vel_supplier = None
     if drivetrain is not None:
         def _get_robot_velocity():
             dt_state = drivetrain.get_state()
-            return (dt_state.speeds.vx, dt_state.speeds.vy)
+            vx_robot = dt_state.speeds.vx
+            vy_robot = dt_state.speeds.vy
+            heading_rad = math.radians(dt_state.pose.rotation().degrees())
+            cos_h = math.cos(heading_rad)
+            sin_h = math.sin(heading_rad)
+            vx_field = vx_robot * cos_h - vy_robot * sin_h
+            vy_field = vx_robot * sin_h + vy_robot * cos_h
+            return (vx_field, vy_field)
         vel_supplier = _get_robot_velocity
 
     # --- Shoot context supplier ---

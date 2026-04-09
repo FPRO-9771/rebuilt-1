@@ -111,8 +111,8 @@ class CoordinateAim(Command):
         self._last_state = state
 
         # 3. Compute angle compensation (lead correction for movement)
-        # bearing_deg is the angle from robot front to hub; convert to
-        # field-frame radians by adding heading, for velocity decomposition.
+        # velocity is field-relative (converted in operator_controls.py),
+        # so use field-frame bearing here to match.
         bearing_field_rad = math.radians(state.bearing_deg + ctx.heading_deg)
         lead_deg = compute_angle_compensation(
             ctx.vx, ctx.vy, state.distance_m, bearing_field_rad,
