@@ -118,13 +118,13 @@ Called by CoordinateAim command -- all data passed in as arguments.
 | SmartDashboard Key | Type | Description |
 |--------------------|------|-------------|
 | `AutoAim/OnTarget` | boolean | True when turret is aligned within tolerance |
+| `AutoAim/DistanceM` | number | Distance to target in meters |
 
 **Debug-only (requires `DEBUG["debug_telemetry"]`):**
 
 | SmartDashboard Key | Type | Description |
 |--------------------|------|-------------|
 | `AutoAim/ErrorDeg` | number | Current turret error in degrees |
-| `AutoAim/DistanceM` | number | Distance to target in meters |
 | `AutoAim/RobotVX` | number | Robot X velocity (velocity compensation debug) |
 | `AutoAim/RobotVY` | number | Robot Y velocity (velocity compensation debug) |
 | `AutoAim/LeadDeg` | number | Lead angle in degrees (velocity compensation debug) |

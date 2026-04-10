@@ -12,9 +12,9 @@ from constants.debug import DEBUG
 def init_auto_aim_keys():
     """Publish diagnostic keys at boot so Elastic can find them immediately."""
     SmartDashboard.putBoolean("AutoAim/OnTarget", False)
+    SmartDashboard.putNumber("AutoAim/DistanceM", 0.0)
     if DEBUG["debug_telemetry"]:
         SmartDashboard.putNumber("AutoAim/ErrorDeg", 0.0)
-        SmartDashboard.putNumber("AutoAim/DistanceM", 0.0)
 
 
 def publish_auto_aim(cycle, on_target, error_deg=0.0, distance_m=0.0):
@@ -26,16 +26,16 @@ def publish_auto_aim(cycle, on_target, error_deg=0.0, distance_m=0.0):
         error_deg: current turret error in degrees
         distance_m: distance to target in meters
     """
-    # Match-critical: on-target only (~5 Hz)
+    # Match-critical (~5 Hz)
     if cycle % 10 == 1:
         SmartDashboard.putBoolean("AutoAim/OnTarget", on_target)
+        SmartDashboard.putNumber("AutoAim/DistanceM", distance_m)
 
     # Debug-only: everything else
     if not DEBUG["debug_telemetry"]:
         return
     if cycle % 10 == 1:
         SmartDashboard.putNumber("AutoAim/ErrorDeg", error_deg)
-        SmartDashboard.putNumber("AutoAim/DistanceM", distance_m)
 
 
 def publish_velocity_debug(cycle, vx, vy, lead_deg):
