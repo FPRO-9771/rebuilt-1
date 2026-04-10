@@ -56,12 +56,14 @@ class ManualShoot(Command):
         self._reached_speed = False
         self._unjamming = False
         self._unjam_counter = 0
+        self._feed_cycle_count = 0
         self.addRequirements(launcher, h_feed, v_feed)
 
     def initialize(self):
         self._reached_speed = False
         self._unjamming = False
         self._unjam_counter = 0
+        self._feed_cycle_count = 0
 
     def execute(self):
         stick = self._stick_supplier()
@@ -83,8 +85,10 @@ class ManualShoot(Command):
                 self._unjamming = False
                 _log.info("Un-jam complete -- resuming feed")
         elif self._reached_speed:
+            self._feed_cycle_count += 1
             h_vel = self.h_feed.get_velocity()
-            if abs(h_vel) < CON_H_FEED["unjam_velocity_threshold"]:
+            # Skip stall check during spin-up to avoid false unjam triggers
+            if self._feed_cycle_count > CON_H_FEED["unjam_spinup_cycles"] and abs(h_vel) < CON_H_FEED["unjam_velocity_threshold"]:
                 self._unjamming = True
                 self._unjam_counter = CON_H_FEED["unjam_duration_cycles"]
                 _log.warning("H feed stalled -- un-jamming")

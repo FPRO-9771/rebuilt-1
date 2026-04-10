@@ -18,8 +18,31 @@ Usage:
 
 import logging
 import sys
+import time
 
 from constants.debug import DEBUG
+
+
+# Elapsed-time tracking for auton logging.
+_auton_start_time = None
+
+
+def reset_auton_timer():
+    """Call from autonomousInit to start the elapsed-time clock."""
+    global _auton_start_time
+    _auton_start_time = time.monotonic()
+
+
+class _ElapsedFormatter(logging.Formatter):
+    """Shows elapsed time since auton started (or wall clock before that)."""
+
+    def format(self, record):
+        if _auton_start_time is not None:
+            elapsed = time.monotonic() - _auton_start_time
+            record.elapsed = f"T+{elapsed:06.2f}s"
+        else:
+            record.elapsed = ""
+        return super().format(record)
 
 
 class _DriverStationHandler(logging.Handler):
@@ -38,6 +61,11 @@ class _DriverStationHandler(logging.Handler):
             pass
 
 
+# Loggers that keep INFO level in auton_quiet_mode.
+# Everything else is raised to WARNING to reduce noise.
+_AUTON_LOGGERS = {"robot", "named_commands", "auton_modes"}
+
+
 def get_logger(name: str) -> logging.Logger:
     """
     Get a named logger with FRC-aware handlers.
@@ -54,15 +82,20 @@ def get_logger(name: str) -> logging.Logger:
     if logger.handlers:
         return logger
 
-    level = logging.DEBUG if DEBUG["verbose"] else logging.INFO
+    if DEBUG["verbose"]:
+        level = logging.DEBUG
+    elif DEBUG.get("auton_quiet_mode") and name not in _AUTON_LOGGERS:
+        level = logging.WARNING
+    else:
+        level = logging.INFO
     logger.setLevel(level)
     logger.propagate = False  # prevent root logger from duplicating output
 
     # Console handler — all messages go to stdout (Rio log)
     console = logging.StreamHandler(sys.stdout)
     console.setLevel(level)
-    console.setFormatter(logging.Formatter(
-        "[%(name)s] %(levelname)s: %(message)s"
+    console.setFormatter(_ElapsedFormatter(
+        "%(elapsed)s [%(name)s] %(levelname)s: %(message)s"
     ))
     logger.addHandler(console)
 

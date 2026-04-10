@@ -20,44 +20,44 @@
         "y": 0.7194474492521363
       },
       "prevControl": {
-        "x": 5.814963601456828,
-        "y": 0.8106111550009814
+        "x": 6.204358373397436,
+        "y": 0.738282719017094
       },
       "nextControl": {
-        "x": 7.3556323303504545,
-        "y": 0.6262851482142369
+        "x": 7.289413536602081,
+        "y": 0.6834302879773262
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.530297256097562,
-        "y": 1.297408536585366
+        "x": 7.586600694444444,
+        "y": 1.3020689770299145
       },
       "prevControl": {
-        "x": 7.517633762336156,
-        "y": 1.0477294707313085
+        "x": 7.573937200683038,
+        "y": 1.052389911175857
       },
       "nextControl": {
-        "x": 7.559654463236204,
-        "y": 1.8762282677404107
+        "x": 7.615957901583086,
+        "y": 1.8808887081849592
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.797006036166488,
-        "y": 3.445714195514547
+        "x": 7.7229292868589745,
+        "y": 3.3947825186965814
       },
       "prevControl": {
-        "x": 8.099820178598089,
-        "y": 3.656014964845726
+        "x": 7.943537491467717,
+        "y": 3.69017181859957
       },
       "nextControl": {
-        "x": 7.590752311231796,
-        "y": 3.3024734714093817
+        "x": 7.554804821047009,
+        "y": 3.169667735042735
       },
       "isLocked": false,
       "linkedName": null
@@ -68,12 +68,12 @@
         "y": 0.6504722016433198
       },
       "prevControl": {
-        "x": 6.322814362893979,
-        "y": 0.9708673825563174
+        "x": 7.189727630876068,
+        "y": 0.9749045806623928
       },
       "nextControl": {
-        "x": 4.967425221870374,
-        "y": 0.4997441549546431
+        "x": 4.949346456061756,
+        "y": 0.568539552916376
       },
       "isLocked": false,
       "linkedName": "BR Midpoint"
@@ -84,8 +84,8 @@
         "y": 0.65
       },
       "prevControl": {
-        "x": 4.322999340553432,
-        "y": 0.6276543426152605
+        "x": 4.3215549879223,
+        "y": 0.6151212392022063
       },
       "nextControl": null,
       "isLocked": false,
@@ -94,8 +94,8 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 1.0,
-      "rotationDegrees": 21.394908816968456
+      "waypointRelativePos": 0.3519424854085602,
+      "rotationDegrees": 0.0
     },
     {
       "waypointRelativePos": 2.0,
@@ -110,7 +110,7 @@
     {
       "name": "Constraints Zone",
       "minWaypointRelativePos": 2.0674157303370784,
-      "maxWaypointRelativePos": 3.2,
+      "maxWaypointRelativePos": 3.147630774456522,
       "constraints": {
         "maxVelocity": 0.75,
         "maxAcceleration": 1.5,
@@ -124,13 +124,13 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "IntakeDown",
-      "waypointRelativePos": 0.1,
-      "endWaypointRelativePos": null,
+      "name": "CorrectOdometry",
+      "waypointRelativePos": 0.8023947010869564,
+      "endWaypointRelativePos": 1.3347486413043466,
       "command": {
         "type": "named",
         "data": {
-          "name": "IntakeDown"
+          "name": "CorrectOdometry"
         }
       }
     },
@@ -149,7 +149,12 @@
       "name": "CorrectOdometry",
       "waypointRelativePos": 3.758491847826087,
       "endWaypointRelativePos": 3.95299762228261,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "CorrectOdometry"
+        }
+      }
     },
     {
       "name": "AimStart",
@@ -164,7 +169,7 @@
     },
     {
       "name": "ShooterStart",
-      "waypointRelativePos": 4.4,
+      "waypointRelativePos": 4.1,
       "endWaypointRelativePos": null,
       "command": {
         "type": "named",

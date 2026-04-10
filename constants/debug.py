@@ -14,7 +14,8 @@ DEBUG = {
     "limelight_reset_logging": False,  # True = log full input/output details on Limelight one-shot pose resets
     "drive_input_logging": False,  # True = log drive input pipeline (raw stick, curved, velocity) to console + SmartDashboard
     "compensation_logging": False,  # True = log movement compensation pipeline (flight time, tangential vel, lead angle, corrected distance)
-    "auto_sequence_logging": False,  # True = log every auto event trigger, command start/stop, and path milestone
+    "auto_sequence_logging": True,  # True = log every auto event trigger, command start/stop, and path milestone
+    "auton_quiet_mode": True,  # True = suppress INFO from non-auton loggers (hardware, motors, subsystem internals)
     # Match-only telemetry (always published):
     #   Motors/Launcher At Speed, Motors/Feeder Running, Motors/Turret Clear,
     #   Motors/Intake Running, AutoAim/HasTarget,

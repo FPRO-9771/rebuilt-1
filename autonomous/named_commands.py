@@ -19,7 +19,6 @@ Named commands registered here:
 """
 
 from pathplannerlib.auto import NamedCommands
-from pathplannerlib.events import EventTrigger
 from commands2 import Command, ParallelCommandGroup, RunCommand
 
 from commands.coordinate_aim import CoordinateAim
@@ -44,7 +43,7 @@ class _LoggedCommand(Command):
         self.addRequirements(*inner.getRequirements())
 
     def initialize(self):
-        _log.warning(f"NAMED CMD '{self._name}' -> initialize")
+        _log.info(f"NAMED CMD '{self._name}' -> initialize")
         self._inner.initialize()
 
     def execute(self):
@@ -53,11 +52,11 @@ class _LoggedCommand(Command):
     def isFinished(self) -> bool:
         finished = self._inner.isFinished()
         if finished:
-            _log.warning(f"NAMED CMD '{self._name}' -> isFinished=True")
+            _log.info(f"NAMED CMD '{self._name}' -> isFinished=True")
         return finished
 
     def end(self, interrupted: bool):
-        _log.warning(
+        _log.info(
             f"NAMED CMD '{self._name}' -> end(interrupted={interrupted})"
         )
         self._inner.end(interrupted)
@@ -149,25 +148,17 @@ def register_named_commands(intake, intake_spinner, launcher,
             drivetrain.add_vision_measurement(
                 estimate.pose, estimate.timestamp_seconds
             )
-            _log.debug(
+            _log.info(
                 f"CorrectOdometry: ({estimate.pose.X():.2f}, "
                 f"{estimate.pose.Y():.2f}) {estimate.tag_count} tag(s)"
             )
         else:
-            _log.debug("CorrectOdometry: no tags visible, skipped")
+            _log.info("CorrectOdometry: no tags visible, skipped")
 
-    # Point marker (named command): feeds one measurement, finishes immediately.
-    _logged("CorrectOdometry", drivetrain.runOnce(_correct_odom_from_vision))
-
-    # Zone trigger: feeds a measurement every loop while inside the zone.
-    # In PathPlanner GUI set the zone's command to null (no named command) --
-    # the EventTrigger binding picks it up and runs whileTrue automatically.
-    # This gives continuous corrections while the Limelight can see a tag.
-    # IMPORTANT: Use RunCommand (no subsystem requirements) instead of
-    # drivetrain.run() -- drivetrain.run() would require the drivetrain
-    # subsystem and cancel the path follower mid-path.
-    EventTrigger("CorrectOdometry").whileTrue(
-        RunCommand(_correct_odom_from_vision)
-    )
+    # Zone marker: feeds a vision measurement every loop while inside the zone.
+    # RunCommand runs _correct_odom_from_vision each execute() cycle and never
+    # self-finishes -- PathPlanner interrupts it when the robot leaves the zone.
+    # IMPORTANT: No subsystem requirements so it won't cancel the path follower.
+    _logged("CorrectOdometry", RunCommand(_correct_odom_from_vision))
 
     _log.info("all named commands registered")

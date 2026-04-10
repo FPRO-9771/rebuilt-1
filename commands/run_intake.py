@@ -11,6 +11,11 @@ Tuning (constants/intake.py):
   hold_deadband   -- ignore drift smaller than this (rotations).
                      Arm buzzes/chatters? Raise this.
                      Arm feels sloppy? Lower this.
+
+Un-jam (constants/intake_spinner.py):
+  If the spinner velocity drops below unjam_velocity_threshold while
+  running, the command reverses the spinner at unjam_speed_multiplier
+  times the normal spin voltage for unjam_duration_cycles, then resumes.
 """
 
 from commands2 import Command
@@ -32,19 +37,41 @@ class RunIntake(Command):
         self.spinner = spinner
         self._hold_target = 0.0
         self._exec_count = 0
+        self._unjamming = False
+        self._unjam_counter = 0
         self.addRequirements(intake, spinner)
 
     def initialize(self):
         self._hold_target = self.intake.get_position()
         self._exec_count = 0
+        self._unjamming = False
+        self._unjam_counter = 0
         _log.info(f"RunIntake ENABLED -- holding at {self._hold_target:.4f}")
 
     def execute(self):
         self._exec_count += 1
 
-        # Spin the intake wheels
+        # --- Spinner with un-jam state machine ---
         spin_v = CON_INTAKE_SPINNER["spin_voltage"]
-        self.spinner._set_voltage(spin_v)
+
+        if self._unjamming:
+            # Reverse at multiplied speed to clear jam
+            unjam_v = -(spin_v * CON_INTAKE_SPINNER["unjam_speed_multiplier"])
+            self.spinner._set_voltage(unjam_v)
+            self._unjam_counter -= 1
+            if self._unjam_counter <= 0:
+                self._unjamming = False
+                self._exec_count = 0  # Reset so spinup grace applies after resume
+                _log.info("Spinner un-jam complete -- resuming")
+        else:
+            self.spinner._set_voltage(spin_v)
+            # Check for stall after spinup grace period
+            if self._exec_count > CON_INTAKE_SPINNER["unjam_spinup_cycles"]:
+                vel = self.spinner.get_velocity()
+                if abs(vel) < CON_INTAKE_SPINNER["unjam_velocity_threshold"]:
+                    self._unjamming = True
+                    self._unjam_counter = CON_INTAKE_SPINNER["unjam_duration_cycles"]
+                    _log.warning("Intake spinner stalled -- un-jamming")
 
         # Log first execute to confirm command is actually running
         if self._exec_count == 1:

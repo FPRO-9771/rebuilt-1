@@ -8,7 +8,7 @@ from commands2 import CommandScheduler
 from robot_container import RobotContainer
 from telemetry import update_telemetry
 from constants.debug import DEBUG
-from utils.logger import get_logger
+from utils.logger import get_logger, reset_auton_timer
 
 _log = get_logger("robot")
 
@@ -42,6 +42,7 @@ class Robot(wpilib.TimedRobot):
 
     def autonomousInit(self):
         """Called when autonomous mode starts."""
+        reset_auton_timer()
         _log.info("autonomousInit: fired")
 
         # Test override takes priority over the derived routine.
@@ -64,10 +65,7 @@ class Robot(wpilib.TimedRobot):
         """Called every 20ms during autonomous."""
         if DEBUG["auto_sequence_logging"] and self.auto_command:
             self._auto_periodic_count += 1
-            scheduled = self.auto_command.isScheduled()
-            finished = self.auto_command.isFinished()
-            _log.info(f"AUTO PERIODIC [{self._auto_periodic_count}]: scheduled={scheduled} finished={finished}")
-            if not scheduled and self._auto_periodic_count <= 5:
+            if not self.auto_command.isScheduled() and self._auto_periodic_count <= 5:
                 _log.warning(f"AUTO PERIODIC [{self._auto_periodic_count}]: command NOT scheduled after {self._auto_periodic_count} cycles!")
 
     def autonomousExit(self):

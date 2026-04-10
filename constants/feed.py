@@ -10,7 +10,8 @@ CON_H_FEED = {
     "feed_voltage": 8.0,      # Voltage when feeding forward
     "reverse_voltage": -6.0,  # Voltage when reversing to un-jam
     "unjam_velocity_threshold": 0.5,  # RPS below this = jammed
-    "unjam_duration_cycles": 10,      # 25 cycles * 20ms = 0.5 seconds
+    "unjam_duration_cycles": 10,      # 10 cycles * 20ms = 0.2 seconds
+    "unjam_spinup_cycles": 5,         # Ignore stall checks for this many cycles after feed starts (motor spin-up)
 }
 
 # =============================================================================

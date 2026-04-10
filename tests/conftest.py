@@ -126,6 +126,10 @@ TEST_CON_INTAKE = {
 TEST_CON_INTAKE_SPINNER = {
     "max_voltage": 10.0,
     "spin_voltage": 5.0,
+    "unjam_velocity_threshold": 0.5,
+    "unjam_speed_multiplier": 2.0,
+    "unjam_duration_cycles": 3,
+    "unjam_spinup_cycles": 2,
 }
 
 TEST_CON_POSE = {

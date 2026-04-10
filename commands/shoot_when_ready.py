@@ -9,8 +9,6 @@ reverses it briefly to un-jam, then resumes. Release to stop everything.
 from typing import Callable
 
 from commands2 import Command
-from wpilib import RobotBase
-
 from subsystems.launcher import Launcher
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
@@ -51,7 +49,6 @@ class ShootWhenReady(Command):
         self._unjam_counter = 0
         self._cycle_count = 0
         self._feed_cycle_count = 0
-        self._is_sim = RobotBase.isSimulation()
         requirements = [launcher, h_feed, v_feed]
         if conveyor is not None:
             requirements.append(conveyor)
@@ -115,10 +112,8 @@ class ShootWhenReady(Command):
         elif self._feeding:
             self._feed_cycle_count += 1
             h_vel = self.h_feed.get_velocity()
-            # In sim, skip stall check for first 5 cycles to let physics
-            # engine spin up the motor -- avoids false unjam triggers
-            sim_spinup = self._is_sim and self._feed_cycle_count <= 5
-            if not sim_spinup and abs(h_vel) < CON_H_FEED["unjam_velocity_threshold"]:
+            # Skip stall check during spin-up to avoid false unjam triggers
+            if self._feed_cycle_count > CON_H_FEED["unjam_spinup_cycles"] and abs(h_vel) < CON_H_FEED["unjam_velocity_threshold"]:
                 self._unjamming = True
                 self._unjam_counter = CON_H_FEED["unjam_duration_cycles"]
                 _log.warning("H feed stalled -- un-jamming")
