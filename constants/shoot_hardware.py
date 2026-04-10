@@ -11,7 +11,7 @@ distance lookup table, see shoot_distance_table.py.
 # =============================================================================
 CON_TURRET = {
     "max_voltage": 4.0,         # Maximum voltage to apply
-    "manual_speed_factor": 0.20, # Manual mode runs at 20% of max voltage
+    "manual_speed_factor": 0.10, # Manual mode runs at 10% of max voltage
     "min_position": 0,       # Soft limit: leftmost rotation (rotations)
     "max_position": 9.5,        # Soft limit: rightmost rotation (rotations)
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)

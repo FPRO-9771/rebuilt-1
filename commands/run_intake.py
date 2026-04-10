@@ -78,16 +78,18 @@ class RunIntake(Command):
             _log.debug(f"RunIntake execute #1: sending {spin_v:.1f}V to spinner")
 
         # Hold arm at snapshot position with soft P-control
-        # Use higher voltage cap while spinner is active (reaction force pushes arm up)
+        # Arm is on hard stops at down position -- only push DOWN (negative voltage).
+        # The stop prevents overshoot, so we never need to push up.
         pos = self.intake.get_position()
         error = self._hold_target - pos
         if abs(error) < CON_INTAKE["hold_deadband"]:
             self.intake._set_voltage(0)
             hold_v = 0.0
         else:
-            hold_kP = CON_INTAKE["hold_kP"]
             max_v = CON_INTAKE["spin_hold_max_voltage"]
-            hold_v = max(-max_v, min(hold_kP * error, max_v))
+            # Arm is on hard stops -- no proportional ramp needed.
+            # Full voltage immediately so fuel can't push the arm up.
+            hold_v = -max_v if error < 0 else 0.0
             self.intake._set_voltage(hold_v)
 
         # Log hold state every 10 cycles (~5 Hz)

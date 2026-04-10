@@ -13,7 +13,7 @@ Turret geometry constants for converting between motor rotations and field angle
 # center_position: motor position where turret faces forward.
 #   Negative because start_angle_deg is CW-positive but motor-negative = turret-left.
 #   See docs/architecture/auto-aim.md "Turret starting position" for full derivation.
-_START_ANGLE_DEG = 154     # Turret starts 40 deg right of forward
+_START_ANGLE_DEG = 161     # ..
 _DEG_PER_ROT = 10.8          # 360 / 33.333 gear ratio
 
 CON_POSE = {

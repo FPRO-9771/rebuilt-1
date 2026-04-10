@@ -13,6 +13,8 @@ from commands2 import Subsystem, Command
 from hardware import create_motor
 from constants import MOTOR_IDS
 from constants.shoot_hardware import CON_TURRET_MINION
+from constants.pose import CON_POSE
+from constants.debug import DEBUG
 from utils.logger import get_logger
 
 _log = get_logger("turret_minion")
@@ -133,6 +135,13 @@ class TurretMinion(Subsystem):
             speed = abs(raw) ** exp * (1.0 if raw >= 0 else -1.0)
             voltage = speed * CON_TURRET_MINION["max_voltage"] * CON_TURRET_MINION["manual_speed_factor"]
             self.turret._set_voltage(voltage)
+
+            if DEBUG["turret_angle_logging"]:
+                pos = self.turret.get_position()
+                center = CON_POSE["center_position"]
+                dpr = CON_POSE["degrees_per_rotation"]
+                physical_deg = -(center - pos) * dpr
+                _log.info(f"manual aim: pos={pos:.4f} angle={physical_deg:.1f} (0=fwd 90=right)")
 
         def end(self, interrupted: bool):
             self.turret._stop()

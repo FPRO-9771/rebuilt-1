@@ -203,12 +203,10 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
 
         driver.y().onTrue(InstantCommand(_toggle_intake))
 
-    # --- Left trigger: spin intake rollers (arm can still be moving) ---
-    # Uses spinner-only command so go_down/go_up are not interrupted.
-    # RunIntake (which also holds the arm) is reserved for auto.
-    if intake_spinner is not None:
+    # --- Left trigger: spin intake rollers + hold arm down ---
+    if intake is not None and intake_spinner is not None:
         driver.leftTrigger().whileTrue(
-            intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"])
+            RunIntake(intake, intake_spinner)
         )
 
     # --- Register swerve telemetry ---

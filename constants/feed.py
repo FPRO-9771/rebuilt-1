@@ -7,7 +7,7 @@ Feed (horizontal and vertical) configuration.
 # =============================================================================
 CON_H_FEED = {
     "max_voltage": 10.0,      # Maximum voltage to apply
-    "feed_voltage": 8.0,      # Voltage when feeding forward
+    "feed_voltage": 10.0,      # Voltage when feeding forward
     "reverse_voltage": -6.0,  # Voltage when reversing to un-jam
     "unjam_velocity_threshold": 0.5,  # RPS below this = jammed
     "unjam_duration_cycles": 10,      # 10 cycles * 20ms = 0.2 seconds
