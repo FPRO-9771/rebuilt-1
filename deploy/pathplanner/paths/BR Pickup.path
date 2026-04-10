@@ -8,24 +8,24 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 4.709748475609757,
-        "y": 0.4816615853658539
+        "x": 4.6886804403759355,
+        "y": 0.5698635386663345
       },
       "isLocked": false,
       "linkedName": "BR Start"
     },
     {
       "anchor": {
-        "x": 6.451852134146342,
-        "y": 0.7167073170731704
+        "x": 6.5769454460470085,
+        "y": 0.7194474492521363
       },
       "prevControl": {
-        "x": 5.893471962865874,
-        "y": 0.6930622299245774
+        "x": 5.814963601456828,
+        "y": 0.8106111550009814
       },
       "nextControl": {
-        "x": 7.439175881692992,
-        "y": 0.7585163877661368
+        "x": 7.3556323303504545,
+        "y": 0.6262851482142369
       },
       "isLocked": false,
       "linkedName": null
@@ -36,12 +36,12 @@
         "y": 1.297408536585366
       },
       "prevControl": {
-        "x": 7.510119495089727,
-        "y": 1.0482241511180765
+        "x": 7.517633762336156,
+        "y": 1.0477294707313085
       },
       "nextControl": {
-        "x": 7.560406325269391,
-        "y": 1.6692391820004413
+        "x": 7.559654463236204,
+        "y": 1.8762282677404107
       },
       "isLocked": false,
       "linkedName": null
@@ -52,12 +52,12 @@
         "y": 3.445714195514547
       },
       "prevControl": {
-        "x": 8.008462985434102,
-        "y": 3.8233840707800346
+        "x": 8.099820178598089,
+        "y": 3.656014964845726
       },
       "nextControl": {
-        "x": 7.674871982243353,
-        "y": 3.2275782909222475
+        "x": 7.590752311231796,
+        "y": 3.3024734714093817
       },
       "isLocked": false,
       "linkedName": null
@@ -68,12 +68,12 @@
         "y": 0.6504722016433198
       },
       "prevControl": {
-        "x": 6.133849085365854,
-        "y": 0.9794054878048781
+        "x": 6.322814362893979,
+        "y": 0.9708673825563174
       },
       "nextControl": {
-        "x": 5.166174698471123,
-        "y": 0.5450375584789438
+        "x": 4.967425221870374,
+        "y": 0.4997441549546431
       },
       "isLocked": false,
       "linkedName": "BR Midpoint"
@@ -84,8 +84,8 @@
         "y": 0.65
       },
       "prevControl": {
-        "x": 4.34214560923397,
-        "y": 0.6334124525511793
+        "x": 4.322999340553432,
+        "y": 0.6276543426152605
       },
       "nextControl": null,
       "isLocked": false,
@@ -95,7 +95,7 @@
   "rotationTargets": [
     {
       "waypointRelativePos": 1.0,
-      "rotationDegrees": 18.970407808486524
+      "rotationDegrees": 21.394908816968456
     },
     {
       "waypointRelativePos": 2.0,
@@ -146,6 +146,12 @@
       }
     },
     {
+      "name": "CorrectOdometry",
+      "waypointRelativePos": 3.758491847826087,
+      "endWaypointRelativePos": 3.95299762228261,
+      "command": null
+    },
+    {
       "name": "AimStart",
       "waypointRelativePos": 4.0,
       "endWaypointRelativePos": null,
@@ -169,8 +175,8 @@
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 2.5,
-    "maxAcceleration": 2.5,
+    "maxVelocity": 3.25,
+    "maxAcceleration": 3.25,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
