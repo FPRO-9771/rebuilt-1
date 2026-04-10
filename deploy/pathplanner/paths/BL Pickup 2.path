@@ -9,7 +9,7 @@
       "prevControl": null,
       "nextControl": {
         "x": 4.615931926606801,
-        "y": 7.347235336482550
+        "y": 7.34723533648255
       },
       "isLocked": false,
       "linkedName": null
@@ -72,7 +72,7 @@
         "y": 7.082039170731708
       },
       "nextControl": {
-        "x": 5.489888508822896,
+        "x": 5.4898885088228955,
         "y": 7.416981257567506
       },
       "isLocked": false,
@@ -142,8 +142,8 @@
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 2.5,
-    "maxAcceleration": 2.5,
+    "maxVelocity": 3.25,
+    "maxAcceleration": 3.25,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
