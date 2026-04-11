@@ -104,6 +104,7 @@ TEST_CON_INTAKE = {
     "position_tolerance": 0.05,
     "hold_kP": 4.0,
     "hold_max_voltage": 2.0,
+    "spin_hold_enabled": True,
     "spin_hold_max_voltage": 4.0,
     "hold_deadband": 0.1,
     "stall_current": 40.0,

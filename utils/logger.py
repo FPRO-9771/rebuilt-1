@@ -85,7 +85,11 @@ def get_logger(name: str) -> logging.Logger:
     if DEBUG["verbose"]:
         level = logging.DEBUG
     elif DEBUG.get("auton_quiet_mode") and name not in _AUTON_LOGGERS:
-        level = logging.WARNING
+        # Allow turret_minion through when turret_angle_logging is on
+        if name == "turret_minion" and DEBUG.get("turret_angle_logging"):
+            level = logging.INFO
+        else:
+            level = logging.WARNING
     else:
         level = logging.INFO
     logger.setLevel(level)
