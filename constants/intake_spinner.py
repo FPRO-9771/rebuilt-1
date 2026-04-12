@@ -7,7 +7,7 @@ Intake spinner configuration.
 # =============================================================================
 CON_INTAKE_SPINNER = {
     "max_voltage": 12.0,      # Maximum voltage to apply
-    "spin_voltage": 5,      # Voltage when spinning to intake Fuel
+    "spin_voltage": 11,      # Voltage when spinning to intake Fuel
 
     # Un-jam detection and recovery
     "unjam_velocity_threshold": 0.5,  # RPS below this = jammed
