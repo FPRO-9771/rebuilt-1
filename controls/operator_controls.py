@@ -9,6 +9,7 @@ Controls:
     Left trigger (hold)  -- Shoot when ready (launcher + feed when on target)
     Right bumper (hold)  -- Reverse all feeds (un-jam, interrupts right trigger)
     Right trigger (hold) -- Manual shoot (launcher + auto-feed when at speed)
+    Start (hold) + Right stick Y -- Pit-mode intake jog (low voltage)
 """
 
 import math
@@ -32,6 +33,7 @@ from commands.manual_launcher import ManualLauncher
 from commands.manual_shoot import ManualShoot
 from commands.reverse_feeds import ReverseFeeds
 from commands.shoot_when_ready import ShootWhenReady
+from commands.intake_pit_move import IntakePitMove
 
 
 def _make_shoot_context_supplier(drivetrain, alliance_supplier,
@@ -71,7 +73,7 @@ def _make_shoot_context_supplier(drivetrain, alliance_supplier,
 
 def configure_operator(operator, conveyor, turret, launcher, vision,
                        match_setup, h_feed=None, v_feed=None,
-                       drivetrain=None):
+                       drivetrain=None, intake=None):
     """
     Wire all operator controller bindings.
     Call once from RobotContainer.__init__.
@@ -140,4 +142,14 @@ def configure_operator(operator, conveyor, turret, launcher, vision,
                 context_supplier=context_supplier,
                 on_target_supplier=coord_aim.is_on_target,
             )
+        )
+
+    # --- Pit-mode intake jog: Start held + right stick Y ---
+    # Lets the pit crew raise/lower the locked intake arm without the
+    # position guard interfering. Command outputs 0V when the stick is
+    # centered, so just holding Start does nothing on its own. Start
+    # alone is a combo the operator will never press by accident.
+    if intake is not None:
+        operator.start().whileTrue(
+            IntakePitMove(intake, lambda: operator.getRightY())
         )

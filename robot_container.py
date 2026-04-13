@@ -108,4 +108,5 @@ class RobotContainer:
             self.launcher, None,  # vision provider disabled
             self.match_setup, self.h_feed, self.v_feed,
             drivetrain=self.drivetrain,
+            intake=self.intake,
         )

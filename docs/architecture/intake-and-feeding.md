@@ -109,6 +109,7 @@ Same command interface as HFeed (`run_at_voltage()` and `manual()`).
 |---------|--------|---------|
 | B button (toggle) | Run both feeds | `ParallelCommandGroup` of h_feed + v_feed at feed voltage |
 | Right bumper (hold) | Reverse H feed | Runs h_feed at `reverse_voltage` to un-jam (interrupts B toggle) |
+| Start (hold) + Right stick Y | Pit-mode intake jog | `IntakePitMove` -- low-voltage manual raise/lower for pit crew when the mechanical arm locks are engaged. Stick up = `pit_up_voltage`, stick down = `pit_down_voltage`. Command outputs 0V when the stick is centered, so holding Start alone is a no-op. |
 
 ---
 

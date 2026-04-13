@@ -34,6 +34,13 @@ CON_INTAKE = {
     # Going up phase 2: slow down before hitting the up stop
     "up_ease_voltage": -0.2,            # TUNE on robot (negative = brakes against momentum)
 
+    # Pit-mode manual jog (Start + Right stick Y on operator controller).
+    # Used to raise/lower the arm by hand when mechanical locks prevent
+    # moving it physically and position zeros may be stale. Voltages are
+    # intentionally low so the arm creeps rather than slams.
+    "pit_up_voltage": 2.0,              # Voltage while jogging UP (fights gravity)
+    "pit_down_voltage": -0.8,           # Voltage while jogging DOWN (gravity helps)
+
     # Slot 0 gains for closed-loop position control
     # NEEDS TUNING on the real robot
     "slot0_kP": 0.35,

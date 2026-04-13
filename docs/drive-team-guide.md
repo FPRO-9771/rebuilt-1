@@ -40,7 +40,8 @@ Quick reference for what every button does on each Xbox controller.
 | Input | Action | Notes |
 |-------|--------|-------|
 | **D-pad** | *unassigned* | |
-| **Back / Start** | *unassigned* | |
+| **Back** | *unassigned* | |
+| **Start (hold) + Right stick Y** | Pit-mode intake jog | Low-voltage raise/lower for pit crew when mechanical arm locks are engaged. Stick up = raise, stick down = lower. Holding Start alone does nothing. |
 
 ### How to shoot (manual aim)
 

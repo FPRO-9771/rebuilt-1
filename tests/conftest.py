@@ -115,6 +115,8 @@ TEST_CON_INTAKE = {
     "down_brake_voltage": 1.0,
     "up_fight_voltage": 3.0,
     "up_ease_voltage": -1.0,
+    "pit_up_voltage": 1.5,
+    "pit_down_voltage": -0.5,
     "slot0_kP": 1.0,
     "slot0_kI": 0.0,
     "slot0_kD": 0.0,
@@ -203,6 +205,7 @@ def _patch_constants(monkeypatch):
     monkeypatch.setattr("subsystems.intake_spinner.CON_INTAKE_SPINNER", TEST_CON_INTAKE_SPINNER)
     monkeypatch.setattr("commands.run_intake.CON_INTAKE", TEST_CON_INTAKE)
     monkeypatch.setattr("commands.run_intake.CON_INTAKE_SPINNER", TEST_CON_INTAKE_SPINNER)
+    monkeypatch.setattr("commands.intake_pit_move.CON_INTAKE", TEST_CON_INTAKE)
 
     # Manual shoot / launcher -- stick-to-distance mapping
     monkeypatch.setattr("commands.manual_shoot.CON_DISTANCE_TABLE",

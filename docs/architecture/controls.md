@@ -137,6 +137,7 @@ A 3% stick deadband (`stick_deadband`) is applied in both modes to prevent drift
 | Left trigger | `whileTrue` | Shoot when ready (launcher + auto-feed when aligned and at speed) |
 | Right bumper | `whileTrue` | Reverse all feeds (unjam H feed + V feed + conveyor, interrupts right trigger) |
 | Right trigger | `whileTrue` | Manual shoot (launcher + auto-feed when at speed, speed from right stick Y) |
+| Start (hold) + Right stick Y | `whileTrue` | Pit-mode intake jog -- low-voltage raise/lower when mechanical locks prevent manual movement |
 
 ### Source
 
