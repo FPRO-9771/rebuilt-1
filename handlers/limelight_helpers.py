@@ -6,7 +6,7 @@ orientation, using the same NetworkTables keys as the official
 LimelightHelpers (Java/C++).
 
 NT table name must match the Limelight's configured name
-(e.g. "limelight-shooter").
+(e.g. "limelight-left", "limelight-right").
 """
 
 from dataclasses import dataclass, field

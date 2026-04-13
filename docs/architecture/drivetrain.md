@@ -84,7 +84,13 @@ It also publishes a `Field2d` widget and per-module `Mechanism2d` visualizations
 
 ### Vision Integration
 
-`CommandSwerveDrivetrain` provides `add_vision_measurement()` for fusing Limelight pose estimates with odometry. This is ready to wire up when the vision pipeline is configured.
+`CommandSwerveDrivetrain` provides three methods for Limelight MegaTag2 odometry corrections, all of which iterate over every camera defined in `CON_VISION`:
+
+- **`vision_pose_correct()`** -- soft, Kalman-blended. Reads MT2 from every Limelight that currently sees tags and feeds each estimate into `add_vision_measurement()`. Called automatically from `periodic()` every `VISION_POSE_CORRECT_PERIOD_LOOPS` loops (default: every loop, ~50 Hz), and also from the auton `CorrectOdometry` PathPlanner named command.
+- **`vision_pose_reset_request()`** -- hard. Arms a one-shot flag that `periodic()` services on the next loop a camera sees tags. Snaps pose to vision X/Y while keeping current gyro heading. Bound to the driver B button as an escape hatch.
+- **`_vision_pose_read()`** -- private helper, returns the best `(camera_key, PoseEstimate)` tuple across all cameras.
+
+See `docs/architecture/vision.md` for the full flow and tuning knobs.
 
 ---
 

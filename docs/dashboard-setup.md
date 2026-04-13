@@ -124,11 +124,11 @@ This is how we discover values like conveyor speed and launcher RPM before hardc
 Each Limelight's MJPEG video feed is registered with CameraServer automatically at startup. In Elastic:
 
 1. Look for the camera streams in the sidebar under **CameraServer**
-2. Drag **Limelight Shooter** and **Limelight Front** onto your layout
+2. Drag **Limelight Left** and **Limelight Right** onto your layout
 3. Right-click → change to **Camera Stream** widget type
 4. Resize to your preferred video size
 
-The streams come from the Limelights at `http://limelight-shooter:5800/stream.mjpg` and `http://limelight-front:5800/stream.mjpg`. Camera config is defined in `constants/vision.py`.
+The streams come from the Limelights at `http://10.97.71.11:5800/stream.mjpg` (left) and `http://10.97.71.12:5800/stream.mjpg` (right). Camera config is defined in `constants/vision.py`.
 
 ---
 

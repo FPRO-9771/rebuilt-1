@@ -6,12 +6,16 @@ This doc covers using Limelight cameras for AprilTag detection, the testable vis
 
 > **When to read this:** You're working with Limelight vision for odometry, teleop assist, or any vision use.
 
-> **Current status (March 2026):** The vision abstraction layer (VisionProvider,
+> **Current status (April 2026):** The vision abstraction layer (VisionProvider,
 > LimelightVisionProvider, MockVisionProvider) exists in code but is **not wired
 > up** in `robot_container.py`. The factory functions in `handlers/__init__.py`
-> are commented out. Right now the team is focused on **Limelight MegaTag2
-> odometry** via `handlers/limelight_helpers.py`, which uses NetworkTables
-> directly and does not go through the VisionProvider layer.
+> are commented out. Right now the team uses **two Limelights** (left and right,
+> fixed-mounted off the back of the robot) for continuous **MegaTag2 odometry
+> corrections**. Both cameras feed the drivetrain pose estimator every robot
+> loop via `drivetrain.vision_pose_correct()`, which calls
+> `add_vision_measurement()` for every Limelight that currently sees tags.
+> The NetworkTables reads go through `handlers/limelight_helpers.py` and do
+> not use the VisionProvider layer.
 
 ---
 
@@ -46,32 +50,71 @@ The Limelight camera detects AprilTags and provides:
 
 ## 2. Limelight Network Setup
 
+The robot has two Limelights, pointed left and right off the back of the
+chassis. Both are on static IPs so the web UI is reachable without
+hostname lookup at competition.
+
+| Camera | NT Name | IP Address | Web UI |
+|--------|---------|------------|--------|
+| Left   | `limelight-left`  | `10.97.71.11` (static) | `http://10.97.71.11:5801` |
+| Right  | `limelight-right` | `10.97.71.12` (static) | `http://10.97.71.12:5801` |
+
+Shared settings:
+
 | Setting | Value |
 |---------|-------|
-| IP Address | `10.97.71.11` (static) |
 | Subnet Mask | `255.255.255.0` |
 | Gateway | `10.97.71.1` |
-| Web UI | `http://10.97.71.11:5801` |
 | Pipeline 0 | AprilTag detection |
 
-- The Limelight connects via **Ethernet to the radio** (not the roboRIO)
+- Each Limelight connects via **Ethernet to the radio** (not the roboRIO)
 - IP must be **static** -- DHCP is unreliable at competition
 - The team number subnet is `10.97.71.x` (from team 9771)
-- If you can't reach it by IP, try `ping limelight.local` to find it
+- The **NT Name** in the left column must match the "Hostname" field in
+  each Limelight's web UI -- if it doesn't, `drivetrain.vision_pose_correct()`
+  will read empty NetworkTables entries and silently do nothing
 
 ---
 
 ## 3. MegaTag2 Odometry (Active)
 
 This is the **currently active** Limelight integration. The module
-`handlers/limelight_helpers.py` talks to the Limelight over NetworkTables
+`handlers/limelight_helpers.py` talks to each Limelight over NetworkTables
 (not the websocket/polling approach used by `LimelightVisionProvider`).
 
 ### What it does
 
-MegaTag2 fuses the robot's gyro heading with AprilTag detections to produce a
-field-relative pose estimate. The drivetrain feeds this into WPILib's pose
-estimator for odometry corrections.
+MegaTag2 fuses the robot's gyro heading with AprilTag detections to produce
+a field-relative pose estimate. The drivetrain feeds each Limelight's
+estimate into WPILib's pose estimator every loop, which Kalman-blends the
+measurements with wheel odometry to keep the robot's pose accurate
+continuously (rather than only on button press).
+
+### Architecture: three methods on the drivetrain
+
+All Limelight access on the drivetrain goes through three methods in
+`subsystems/command_swerve_drivetrain.py`. They are the only public /
+private names the rest of the code should touch for vision odometry.
+
+| Method | Kind | Purpose |
+|--------|------|---------|
+| `_vision_pose_read()` | private | Loops over every camera in `CON_VISION`, reads MT2, returns the best `(camera_key, PoseEstimate)` tuple (most tags, tie-broken by `avg_tag_area`). Returns `None` if no camera has tags. |
+| `vision_pose_correct()` | public, **soft** | For every Limelight currently seeing tags, calls `add_vision_measurement()` on its own MT2 estimate. Kalman-blended -- safe to call every loop, safe mid-path in auton (no subsystem requirements). This is the one that runs continuously. |
+| `vision_pose_reset_request()` | public, **hard** | Arms a one-shot flag. `periodic()` services it on the next loop a camera actually sees tags (up to `LIMELIGHT_RESET_TIMEOUT`). Uses `reset_pose()` to snap the pose to vision X/Y while keeping the current gyro heading. Driver escape hatch for when the Kalman estimate has drifted too far for soft corrections to recover. |
+
+### Where each is called from
+
+- **`periodic()`** sends `set_robot_orientation()` to every Limelight every
+  loop (required so MT2 can disambiguate single-tag PnP), and calls
+  `vision_pose_correct()` every `VISION_POSE_CORRECT_PERIOD_LOOPS` loops
+  (defined in `constants/vision.py`, default `1` = every loop = ~50 Hz).
+  Bump that constant if the driver station reports loop overruns.
+- **Driver B button** (`controls/driver_controls.py`) calls
+  `vision_pose_reset_request()`.
+- **Auton `CorrectOdometry` named command** (`autonomous/named_commands.py`)
+  is a `RunCommand(lambda: drivetrain.vision_pose_correct())`. PathPlanner
+  point markers feed one measurement; zone markers feed one every loop
+  inside the zone.
 
 ### Key data types
 
@@ -91,35 +134,18 @@ class PoseEstimate:
     raw_data: list = field(default_factory=list)
 ```
 
-### Key functions
+### Low-level functions in `limelight_helpers`
 
 | Function | Purpose |
 |----------|---------|
-| `get_bot_pose_estimate_wpi_blue_megatag2()` | MegaTag2 pose (gyro-fused). Used for continuous odometry updates. |
-| `get_bot_pose_estimate_wpi_blue_megatag1()` | MegaTag1 pose (pure AprilTag geometry, no gyro). Better for one-shot pose resets. |
-| `set_robot_orientation()` | Send gyro heading to Limelight each loop so MegaTag2 can fuse it. Must be called every cycle. |
-| `get_tv()` | Returns True if the Limelight has a valid target. |
-| `get_tag_count()` | Number of tags visible in the latest MegaTag2 result. |
+| `get_bot_pose_estimate_wpi_blue_megatag2(nt_name)` | MegaTag2 pose (gyro-fused). Used by `vision_pose_correct` and `_vision_pose_read`. |
+| `get_bot_pose_estimate_wpi_blue_megatag1(nt_name)` | MegaTag1 pose (pure AprilTag geometry, no gyro). Currently unused -- kept for completeness. |
+| `set_robot_orientation(nt_name, ...)` | Send gyro heading to a Limelight each loop so MegaTag2 can fuse it. Must be called every cycle, for every camera. |
+| `get_tv(nt_name)` | Returns True if the Limelight has a valid target. |
+| `get_tag_count(nt_name)` | Number of tags visible in the latest MegaTag2 result. |
 
-### Usage
-
-The NetworkTables table name must match the Limelight's configured name.
-For our shooter Limelight the table name is `"limelight-shooter"`:
-
-```python
-from handlers.limelight_helpers import (
-    set_robot_orientation,
-    get_bot_pose_estimate_wpi_blue_megatag2,
-)
-
-# Every loop -- feed gyro heading to the Limelight
-set_robot_orientation("limelight-shooter", yaw_degrees=gyro_yaw)
-
-# Read MegaTag2 pose estimate
-estimate = get_bot_pose_estimate_wpi_blue_megatag2("limelight-shooter")
-if estimate and estimate.tag_count >= 1:
-    drivetrain.add_vision_measurement(estimate.pose, estimate.timestamp_seconds)
-```
+All of these take a NetworkTables table name (`limelight-left` or
+`limelight-right`), which must match each Limelight's configured hostname.
 
 ---
 
@@ -209,28 +235,47 @@ To re-enable: uncomment these functions and wire them into `robot_container.py`.
 
 ## 5. Vision Configuration
 
-Camera configuration lives in `constants/vision.py`:
+Camera configuration lives in `constants/vision.py`. The dict defines the
+full fleet of Limelights -- everything else (telemetry, camera streams,
+the drivetrain vision methods above) iterates over this one source of
+truth:
 
 ```python
 # constants/vision.py
 
 CON_VISION = {
     "cameras": {
-        "shooter": {
-            "name": "Limelight Shooter",
+        "left": {
+            "name": "Limelight Left",
+            "nt_name": "limelight-left",
             "host": "10.97.71.11",
         },
-        # "front": {
-        #     "name": "Limelight Front",
-        #     "host": "limelight-front",  # TODO: set static IP when connected
-        # },
+        "right": {
+            "name": "Limelight Right",
+            "nt_name": "limelight-right",
+            "host": "10.97.71.12",
+        },
     },
 }
+
+VISION_POSE_CORRECT_PERIOD_LOOPS = 1
 ```
 
-The `"host"` value is the camera's **static IP address** (not an mDNS hostname).
-Only one camera (`shooter`) is currently configured. A second camera (`front`)
-is stubbed out for future use.
+Per-camera fields:
+
+| Field | Meaning |
+|-------|---------|
+| `name`    | Human-readable label (shown in CameraServer / Elastic dashboard) |
+| `nt_name` | NetworkTables table name; must match the Hostname configured in the Limelight's own web UI |
+| `host`    | Static IP address; used for the MJPEG stream URL (`http://<host>:5800/stream.mjpg`) and the web UI (`http://<host>:5801`) |
+
+`VISION_POSE_CORRECT_PERIOD_LOOPS` controls how often `periodic()` runs
+the continuous soft correction: `1` = every loop (~50 Hz), `2` = every
+other loop (~25 Hz), etc. Raise it if the driver station reports loop
+overruns, but start at `1`.
+
+To add a third camera, drop another entry into this dict -- no other code
+changes needed.
 
 ---
 

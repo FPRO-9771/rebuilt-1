@@ -18,6 +18,7 @@ from handlers.limelight_helpers import (
 )
 from constants.debug import DEBUG
 from constants.match import HUB_RESET_POSES, LIMELIGHT_RESET_TIMEOUT
+from constants.vision import CON_VISION, VISION_POSE_CORRECT_PERIOD_LOOPS
 from utils.logger import get_logger
 
 _log = get_logger("drivetrain")
@@ -33,7 +34,6 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
     """
 
     _SIM_LOOP_PERIOD: units.second = 0.004  # 4 ms
-    _LIMELIGHT_NAME = "limelight-shooter"
 
     _BLUE_ALLIANCE_PERSPECTIVE_ROTATION = Rotation2d.fromDegrees(0)
     """Blue alliance sees forward as 0 degrees (toward red alliance wall)"""
@@ -236,9 +236,15 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         self._sys_id_routine_to_apply = self._sys_id_routine_translation
         """The SysId routine to test"""
 
-        # --- Limelight MegaTag2 odometry reset ---
-        self._limelight_reset_enabled = False
-        self._limelight_reset_deadline = 0.0
+        # --- Limelight MegaTag2 odometry ---
+        # Continuous soft-correction counter: gates vision_pose_correct()
+        # inside periodic() so we can dial back frequency on overruns.
+        self._vision_correct_loop_counter = 0
+        # Deferred one-shot hard reset (B button). Armed by
+        # vision_pose_reset_request(), serviced in periodic() once a
+        # camera actually sees tags (up to LIMELIGHT_RESET_TIMEOUT).
+        self._vision_reset_pending = False
+        self._vision_reset_deadline = 0.0
 
         # PathPlanner AutoBuilder configuration
         self._path_apply_robot_speeds = swerve.requests.ApplyRobotSpeeds()
@@ -328,30 +334,33 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                 )
                 self._has_applied_operator_perspective = True
 
-        # --- MegaTag2: always send heading so Limelight can fuse ---
-        # This is cheap (6 doubles to NT) and must run every loop so
+        # --- MegaTag2: always send heading to every Limelight ---
+        # Cheap (6 doubles per camera to NT). Must run every loop so
         # MegaTag2 can break the single-tag PnP ambiguity.
         yaw_deg = self.get_pose().rotation().degrees()
-        set_robot_orientation(self._LIMELIGHT_NAME, yaw_deg)
+        for cam in CON_VISION["cameras"].values():
+            set_robot_orientation(cam["nt_name"], yaw_deg)
 
-        # Only read/apply the pose estimate when a reset is pending.
-        # The NT read + parse is the expensive part we gate.
-        if self._limelight_reset_enabled:
-            # Give up after the timeout so we don't flood logs / overrun the loop
-            if Timer.getFPGATimestamp() > self._limelight_reset_deadline:
-                self._limelight_reset_enabled = False
+        # --- Continuous soft correction ---
+        self._vision_correct_loop_counter += 1
+        if self._vision_correct_loop_counter >= VISION_POSE_CORRECT_PERIOD_LOOPS:
+            self._vision_correct_loop_counter = 0
+            self.vision_pose_correct()
+
+        # --- Deferred one-shot hard reset (B button) ---
+        if self._vision_reset_pending:
+            if Timer.getFPGATimestamp() > self._vision_reset_deadline:
+                self._vision_reset_pending = False
                 _log.warning(
                     f"MT2 reset timed out after {LIMELIGHT_RESET_TIMEOUT}s "
                     f"-- no tags seen"
                 )
                 return
 
-            odom_pose = self.get_pose()
-            estimate = get_bot_pose_estimate_wpi_blue_megatag2(
-                self._LIMELIGHT_NAME
-            )
-
-            if estimate and estimate.tag_count > 0:
+            best = self._vision_pose_read()
+            if best is not None:
+                cam_key, estimate = best
+                odom_pose = self.get_pose()
                 # Use vision X/Y but keep current gyro heading
                 corrected = Pose2d(
                     estimate.pose.x,
@@ -359,11 +368,12 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                     odom_pose.rotation(),
                 )
                 self.reset_pose(corrected)
-                self._limelight_reset_enabled = False
+                self._vision_reset_pending = False
 
                 if DEBUG["limelight_reset_logging"]:
                     _log.info(
                         f"MT2 RESET | "
+                        f"cam={cam_key} | "
                         f"sent_yaw={yaw_deg:.1f} | "
                         f"odom_before=({odom_pose.x:.2f}, "
                         f"{odom_pose.y:.2f}, "
@@ -381,19 +391,67 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
                     )
                 else:
                     _log.info(
-                        f"MT2 reset: "
+                        f"MT2 reset ({cam_key}): "
                         f"({odom_pose.x:.1f},{odom_pose.y:.1f})"
                         f"->({corrected.x:.1f},{corrected.y:.1f}) "
                         f"tags={estimate.tag_count}"
                     )
 
-    def request_limelight_reset(self) -> None:
-        """Request a one-shot Limelight MegaTag2 odometry reset."""
-        self._limelight_reset_enabled = True
-        self._limelight_reset_deadline = (
+    def _vision_pose_read(self) -> tuple[str, "object"] | None:
+        """
+        Read MegaTag2 pose from every configured Limelight and return the
+        best (camera_key, PoseEstimate) tuple, or None if no camera has
+        tags. "Best" = most tags, tie-broken by larger avg_tag_area
+        (closer / more-reliable tags).
+        """
+        best_key: str | None = None
+        best_estimate = None
+        for key, cam in CON_VISION["cameras"].items():
+            estimate = get_bot_pose_estimate_wpi_blue_megatag2(cam["nt_name"])
+            if estimate is None or estimate.tag_count < 1:
+                continue
+            if best_estimate is None:
+                best_key, best_estimate = key, estimate
+                continue
+            if (
+                estimate.tag_count > best_estimate.tag_count
+                or (
+                    estimate.tag_count == best_estimate.tag_count
+                    and estimate.avg_tag_area > best_estimate.avg_tag_area
+                )
+            ):
+                best_key, best_estimate = key, estimate
+        if best_estimate is None:
+            return None
+        return best_key, best_estimate
+
+    def vision_pose_correct(self) -> None:
+        """
+        Soft pose correction. For every Limelight that currently sees
+        tags, feed its MegaTag2 estimate into the pose estimator via
+        add_vision_measurement(). Safe to call every loop; safe to call
+        from auton named commands (no subsystem requirements).
+        """
+        for cam in CON_VISION["cameras"].values():
+            estimate = get_bot_pose_estimate_wpi_blue_megatag2(cam["nt_name"])
+            if estimate is None or estimate.tag_count < 1:
+                continue
+            self.add_vision_measurement(
+                estimate.pose, estimate.timestamp_seconds
+            )
+
+    def vision_pose_reset_request(self) -> None:
+        """
+        Arm a one-shot hard pose reset. Serviced in periodic() on the
+        next loop that any Limelight actually sees tags, up to
+        LIMELIGHT_RESET_TIMEOUT. Driver escape hatch when the Kalman
+        estimate has drifted too far for soft corrections to recover.
+        """
+        self._vision_reset_pending = True
+        self._vision_reset_deadline = (
             Timer.getFPGATimestamp() + LIMELIGHT_RESET_TIMEOUT
         )
-        _log.info("Limelight one-shot reset requested")
+        _log.info("vision_pose_reset_request: armed")
 
     def request_hub_reset(self) -> None:
         """Hard-reset odometry to the front of the alliance Hub."""

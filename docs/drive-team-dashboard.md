@@ -47,8 +47,8 @@ This tab is what the operator watches during the match. Keep it simple -- only t
 
 | Widget | SmartDashboard Key | Widget Type | What it tells you |
 |--------|--------------------|-------------|-------------------|
-| Shooter camera | CameraServer / Limelight Shooter | **Camera Stream** | What the shooter Limelight sees |
-| Driver camera | CameraServer / Limelight Front | **Camera Stream** | Front-facing view (not plugged in yet) |
+| Left camera | CameraServer / Limelight Left | **Camera Stream** | Left-rear Limelight (used for odometry + awareness) |
+| Right camera | CameraServer / Limelight Right | **Camera Stream** | Right-rear Limelight (used for odometry + awareness) |
 | On Target | `AutoAim/OnTarget` | **Boolean Box** | Green = turret is locked on the Hub |
 | Launcher At Speed | `Motors/Launcher At Speed` | **Boolean Box** | Green = flywheel is up to speed |
 | Intake Running | `Motors/Intake Running` | **Boolean Box** | Green = intake spinner is active |

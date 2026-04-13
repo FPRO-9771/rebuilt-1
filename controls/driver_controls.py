@@ -159,9 +159,9 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
         InstantCommand(drivetrain.request_hub_reset)
     )
 
-    # --- B button: one-shot Limelight MegaTag2 odometry reset ---
+    # --- B button: one-shot MegaTag2 hard pose reset (driver escape hatch) ---
     driver.b().onTrue(
-        InstantCommand(drivetrain.request_limelight_reset)
+        InstantCommand(drivetrain.vision_pose_reset_request)
     )
 
     # --- Left bumper: reset field-centric heading ---

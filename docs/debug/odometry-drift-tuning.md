@@ -215,7 +215,7 @@ After completing the above steps, run the full validation test.
 | Y error | < 5 cm | > 10 cm |
 | Heading error | < 2 degrees | > 5 degrees |
 
-If drift is still significant after tuning all the above, **vision-based pose correction** (Limelight MegaTag) is the next step -- which is what we are building on the `limelight-odometry` branch.
+If drift is still significant after tuning all the above, **vision-based pose correction** (Limelight MegaTag2) is already running continuously -- see `docs/architecture/vision.md` and the `VISION_POSE_CORRECT_PERIOD_LOOPS` constant. Verify both Limelights are online and actually seeing tags where you expect them to.
 
 ---
 
