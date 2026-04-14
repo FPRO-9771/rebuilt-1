@@ -34,10 +34,12 @@ def _emit(msg):
 
 def log_hold(cycle, pose_x, pose_y, heading_deg,
              shooter_x, shooter_y, target_x, target_y,
-             turret_pos, error_deg, distance_m, closing_mps):
+             turret_pos, error_deg, distance_m, closing_mps,
+             target_mode="hub"):
     """Log when turret is on-target and holding still. Every other cycle.
 
     Shows inputs (where we think we are) and why we're holding.
+    target_mode is "hub" or "corner" -- whatever the supplier picked.
     """
     if not _enabled() or cycle % 2 != 0:
         return
@@ -45,7 +47,7 @@ def log_hold(cycle, pose_x, pose_y, heading_deg,
         f"[AIM HOLD] "
         f"pose=({pose_x:.2f},{pose_y:.2f}) hdg={heading_deg:.1f} "
         f"shooter=({shooter_x:.2f},{shooter_y:.2f}) "
-        f"tgt=({target_x:.1f},{target_y:.1f}) "
+        f"tgt=({target_x:.2f},{target_y:.2f})[{target_mode.upper()}] "
         f"tpos={turret_pos:.3f} "
         f"err={error_deg:.2f} dist={distance_m:.2f} cls={closing_mps:.2f} "
         f"-- HOLD (within tolerance)"
@@ -57,10 +59,11 @@ def log_drive(cycle, pose_x, pose_y, heading_deg,
               turret_pos, error_deg, distance_m, closing_mps,
               lead_deg, routed_error, filtered_error,
               p_term, i_term, d_term, raw_voltage, voltage,
-              turret_vel, vx, vy):
+              turret_vel, vx, vy, target_mode="hub"):
     """Log PID control output when actively driving. Every other cycle.
 
     Shows the full pipeline: inputs -> lead -> PID terms -> voltage.
+    target_mode is "hub" or "corner" -- whatever the supplier picked.
     """
     if not _enabled() or cycle % 2 != 0:
         return
@@ -69,7 +72,7 @@ def log_drive(cycle, pose_x, pose_y, heading_deg,
         f"[AIM DRIVE] "
         f"pose=({pose_x:.2f},{pose_y:.2f}) hdg={heading_deg:.1f} "
         f"shooter=({shooter_x:.2f},{shooter_y:.2f}) "
-        f"tgt=({target_x:.1f},{target_y:.1f}) "
+        f"tgt=({target_x:.2f},{target_y:.2f})[{target_mode.upper()}] "
         f"tpos={turret_pos:.3f} "
         f"| err={error_deg:.2f} dist={distance_m:.2f} cls={closing_mps:.2f} "
         f"| lead={lead_deg:.2f} "
@@ -114,7 +117,7 @@ def log_shoot(cycle, ctx, rps,
         f"[SHOOT] "
         f"pose=({ctx.pose_x:.2f},{ctx.pose_y:.2f}) hdg={ctx.heading_deg:.1f} "
         f"shooter=({ctx.shooter_x:.2f},{ctx.shooter_y:.2f}) "
-        f"tgt=({ctx.target_x:.1f},{ctx.target_y:.1f}) "
+        f"tgt=({ctx.target_x:.2f},{ctx.target_y:.2f})[{ctx.target_mode.upper()}] "
         f"| rawDist={ctx.raw_distance:.2f} corrDist={ctx.corrected_distance:.2f} "
         f"cls={ctx.closing_speed_mps:.2f} "
         f"vel=({ctx.vx:.2f},{ctx.vy:.2f}) "

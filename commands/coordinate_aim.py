@@ -165,6 +165,7 @@ class CoordinateAim(Command):
                 ctx.target_x, ctx.target_y,
                 turret_pos, state.error_deg, state.distance_m,
                 state.closing_speed_mps,
+                target_mode=ctx.target_mode,
             )
         else:
             turret_vel = self.turret.get_velocity()
@@ -187,6 +188,7 @@ class CoordinateAim(Command):
                 self._filtered_error,
                 p_term, i_term, d_term, raw_voltage, voltage,
                 turret_vel, ctx.vx, ctx.vy,
+                target_mode=ctx.target_mode,
             )
 
         self._cycle_count += 1

@@ -15,6 +15,7 @@ Controls:
 import math
 
 from commands2.button import Trigger
+from wpilib import DriverStation
 
 from constants import CON_ROBOT
 from constants.shoot_hardware import CON_TURRET_MINION
@@ -22,6 +23,7 @@ from constants.pose import CON_POSE
 from calculations.shooter_position import get_shooter_field_position
 from calculations.target_state import compute_range_state, ShootContext
 from calculations.distance_compensation import compute_corrected_distance
+from calculations.corner_target import CornerAimSelector
 from utils.logger import get_logger
 
 _log = get_logger("operator")
@@ -37,8 +39,15 @@ from commands.intake_pit_move import IntakePitMove
 
 
 def _make_shoot_context_supplier(drivetrain, alliance_supplier,
-                                 velocity_supplier=None):
-    """Build a callable that returns a ShootContext with full pose context."""
+                                 velocity_supplier=None,
+                                 teleop_supplier=DriverStation.isTeleop):
+    """Build a callable that returns a ShootContext with full pose context.
+
+    teleop_supplier: zero-arg callable returning True when the match is in
+    teleop. Defaults to DriverStation.isTeleop; tests inject a stub.
+    """
+    corner_selector = CornerAimSelector()
+
     def _get_context():
         pose = drivetrain.get_pose()
         shooter_xy = get_shooter_field_position(
@@ -47,7 +56,14 @@ def _make_shoot_context_supplier(drivetrain, alliance_supplier,
             CON_POSE["shooter_offset_y"],
         )
         alliance = alliance_supplier()
-        target_xy = (alliance["target_x"], alliance["target_y"])
+        hub_xy = (alliance["target_x"], alliance["target_y"])
+        target_xy = corner_selector.select_target(
+            shooter_xy,
+            hub_xy,
+            alliance.get("corners", ()),
+            teleop_supplier(),
+        )
+        target_mode = "corner" if corner_selector.in_corner_mode else "hub"
         vx, vy = 0.0, 0.0
         if velocity_supplier is not None:
             vx, vy = velocity_supplier()
@@ -67,6 +83,7 @@ def _make_shoot_context_supplier(drivetrain, alliance_supplier,
             target_y=target_xy[1],
             vx=vx,
             vy=vy,
+            target_mode=target_mode,
         )
     return _get_context
 

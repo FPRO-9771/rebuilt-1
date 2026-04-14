@@ -26,6 +26,7 @@ CON_DISTANCE_TABLE = {
         (4.0, 59, 1.2),
         (4.5, 64, 1.3),
         (5.0, 72.0, 2),
+        (8, 100, 2),
     ],
 
     # Manual shoot stick mapping -- maps joystick Y to virtual distance,
