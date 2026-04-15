@@ -23,8 +23,8 @@ real matches -- zero extra NetworkTables bandwidth when off.
 from constants.debug import DEBUG
 from constants.vision import (
     CON_VISION,
+    VISION_MT1_MIN_TAGS,
     VISION_POSE_CORRECT_MODE,
-    VISION_POSE_CORRECT_MT1_MIN_TAGS,
     VISION_POSE_LOG_PERIOD_LOOPS,
 )
 from handlers.limelight_helpers import (
@@ -85,10 +85,7 @@ def _log_one_camera(cam_key, nt_name, odom_pose) -> None:
     mode = VISION_POSE_CORRECT_MODE
     if mode == "mt1":
         active = mt1
-        rejected = (
-            mt1 is None
-            or mt1.tag_count < VISION_POSE_CORRECT_MT1_MIN_TAGS
-        )
+        rejected = mt1 is None or mt1.tag_count < VISION_MT1_MIN_TAGS
     else:
         active = mt2
         rejected = mt2 is None or mt2.tag_count < 1

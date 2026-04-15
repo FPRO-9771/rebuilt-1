@@ -17,17 +17,14 @@ from handlers.limelight_helpers import (
     get_bot_pose_estimate_wpi_blue_megatag2,
     set_robot_orientation,
 )
-from constants.match import (
-    HUB_RESET_POSES,
-    LIMELIGHT_RESET_MIN_TAGS,
-    LIMELIGHT_RESET_TIMEOUT,
-)
+from constants.match import HUB_RESET_POSES
 from constants.vision import (
     CON_VISION,
+    VISION_MT1_MIN_TAGS,
     VISION_POSE_CORRECT_ENABLED,
     VISION_POSE_CORRECT_MODE,
-    VISION_POSE_CORRECT_MT1_MIN_TAGS,
     VISION_POSE_CORRECT_PERIOD_LOOPS,
+    VISION_RESET_TIMEOUT,
 )
 from telemetry.vision_correct_logging import maybe_log_vision_correct
 from telemetry.vision_reset_logging import (
@@ -259,7 +256,7 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         self._vision_correct_loop_counter = 0
         # Deferred one-shot hard reset (B button). Armed by
         # vision_pose_reset_request(), serviced in periodic() once a
-        # camera actually sees tags (up to LIMELIGHT_RESET_TIMEOUT).
+        # camera actually sees tags (up to VISION_RESET_TIMEOUT).
         self._vision_reset_pending = False
         self._vision_reset_deadline = 0.0
 
@@ -368,7 +365,7 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         if self._vision_reset_pending:
             if Timer.getFPGATimestamp() > self._vision_reset_deadline:
                 self._vision_reset_pending = False
-                _log_reset_timeout(LIMELIGHT_RESET_TIMEOUT)
+                _log_reset_timeout(VISION_RESET_TIMEOUT)
                 return
 
             odom_pose = self.get_pose()
@@ -400,9 +397,9 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         feedback loop where odom and MT2 have converged on a wrong but
         self-consistent pose.
 
-        Requires `tag_count >= LIMELIGHT_RESET_MIN_TAGS` (default 2)
-        because single-tag MT1 has unresolved PnP ambiguity and could
-        snap odom to a mirrored position.
+        Requires `tag_count >= VISION_MT1_MIN_TAGS` (default 2) because
+        single-tag MT1 has unresolved PnP ambiguity and could snap odom
+        to a mirrored position.
 
         "Best" = most tags, tie-broken by larger avg_tag_area.
         """
@@ -410,7 +407,7 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         best_estimate = None
         for key, cam in CON_VISION["cameras"].items():
             estimate = get_bot_pose_estimate_wpi_blue_megatag1(cam["nt_name"])
-            if estimate is None or estimate.tag_count < LIMELIGHT_RESET_MIN_TAGS:
+            if estimate is None or estimate.tag_count < VISION_MT1_MIN_TAGS:
                 continue
             if best_estimate is None:
                 best_key, best_estimate = key, estimate
@@ -438,8 +435,8 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
           "mt2" -- MegaTag2 (gyro-fused). Accepts single-tag readings
                    because the gyro disambiguates PnP.
           "mt1" -- MegaTag1 (pure AprilTag PnP). Requires at least
-                   VISION_POSE_CORRECT_MT1_MIN_TAGS tags per camera;
-                   single-tag MT1 is rejected because PnP is ambiguous.
+                   VISION_MT1_MIN_TAGS tags per camera; single-tag MT1
+                   is rejected because PnP is ambiguous.
 
         Honors the VISION_POSE_CORRECT_ENABLED kill switch so it can be
         flipped off between matches without rebuilding the binding tree.
@@ -466,10 +463,7 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         """
         if VISION_POSE_CORRECT_MODE == "mt1":
             estimate = get_bot_pose_estimate_wpi_blue_megatag1(nt_name)
-            if (
-                estimate is None
-                or estimate.tag_count < VISION_POSE_CORRECT_MT1_MIN_TAGS
-            ):
+            if estimate is None or estimate.tag_count < VISION_MT1_MIN_TAGS:
                 return None
             return estimate
         # Default / "mt2": accept any tag count >= 1 (gyro disambiguates).
@@ -482,14 +476,14 @@ class CommandSwerveDrivetrain(Subsystem, TunerSwerveDrivetrain):
         """
         Arm a one-shot hard pose reset. Serviced in periodic() on the
         next loop that any Limelight actually sees tags, up to
-        LIMELIGHT_RESET_TIMEOUT. Driver escape hatch when the Kalman
+        VISION_RESET_TIMEOUT. Driver escape hatch when the Kalman
         estimate has drifted too far for soft corrections to recover.
         """
         self._vision_reset_pending = True
         self._vision_reset_deadline = (
-            Timer.getFPGATimestamp() + LIMELIGHT_RESET_TIMEOUT
+            Timer.getFPGATimestamp() + VISION_RESET_TIMEOUT
         )
-        _log_reset_armed(LIMELIGHT_RESET_TIMEOUT)
+        _log_reset_armed(VISION_RESET_TIMEOUT)
 
     def request_hub_reset(self) -> None:
         """Hard-reset odometry to the front of the alliance Hub."""

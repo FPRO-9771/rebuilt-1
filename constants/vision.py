@@ -50,16 +50,27 @@ VISION_POSE_LOG_PERIOD_LOOPS = 10
 #   "mt2" -- MegaTag2, gyro-fused. Handles single-tag PnP automatically
 #            via gyro disambiguation. What most FRC teams use, and the
 #            default here.
-#   "mt1" -- MegaTag1, pure AprilTag PnP, no gyro. Requires 2+ tags
-#            per camera per measurement (single-tag MT1 has unresolved
-#            PnP ambiguity). Use when MT2 shows a systematic position
-#            bias on your setup that MT1 does not.
+#   "mt1" -- MegaTag1, pure AprilTag PnP, no gyro. Requires
+#            VISION_MT1_MIN_TAGS per camera per measurement (single-tag
+#            MT1 has unresolved PnP ambiguity). Use when MT2 shows a
+#            systematic position bias on your setup that MT1 does not.
 # The B-button hard reset always uses MT1 regardless of this setting;
 # that is the whole point of the escape hatch.
 VISION_POSE_CORRECT_MODE = "mt2"
 
-# Minimum tags per camera when MODE is "mt1". Cameras with fewer tags
-# are skipped that loop -- no measurement fed to the estimator. Does
-# not apply in "mt2" mode; MT2 uses the gyro to disambiguate single
-# tags.
-VISION_POSE_CORRECT_MT1_MIN_TAGS = 2
+# Minimum tags per camera before any MT1 pose estimate is trusted.
+# Applies to BOTH:
+#   - The continuous soft correction when VISION_POSE_CORRECT_MODE is "mt1"
+#   - The B-button hard reset (which always uses MT1)
+# Single-tag MT1 has unresolved PnP ambiguity -- the camera can be on
+# either side of a mirror plane perpendicular to the tag face, and
+# MT1 has no way to pick the right one. Two or more tags over-constrain
+# the geometry and eliminate the mirror solution. Lower this to 1 only
+# in controlled setups where the mirror solution is physically
+# impossible (e.g. a single AprilTag in a fixed lab location).
+VISION_MT1_MIN_TAGS = 2
+
+# How long (seconds) the B-button hard reset waits for a qualifying
+# MT1 reading after it is armed. Keeps the logs clean when the cameras
+# have no tag visibility and lets the driver see a clear timeout line.
+VISION_RESET_TIMEOUT = 2.0

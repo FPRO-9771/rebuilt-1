@@ -88,7 +88,7 @@ It also publishes a `Field2d` widget and per-module `Mechanism2d` visualizations
 
 - **`vision_pose_correct()`** -- soft, Kalman-blended. Reads **MT2** from every Limelight that currently sees tags and feeds each estimate into `add_vision_measurement()`. Called automatically from `periodic()` every `VISION_POSE_CORRECT_PERIOD_LOOPS` loops (default: every loop, ~50 Hz), and also from the auton `CorrectOdometry` PathPlanner named command. Honors the `VISION_POSE_CORRECT_ENABLED` kill switch.
 - **`vision_pose_reset_request()`** -- hard. Arms a one-shot flag that `periodic()` services on the next loop a camera satisfies the MT1 tag-count requirement (default 2 tags). Reads **MT1** (gyro-independent) and overrides the **full** pose -- X, Y, AND yaw -- so it can escape gyro drift. Bound to the driver B button as an escape hatch.
-- **`_vision_pose_read_mt1()`** -- private helper for the hard reset. Returns the best `(camera_key, PoseEstimate)` MT1 tuple across all cameras, requiring `LIMELIGHT_RESET_MIN_TAGS` tags.
+- **`_vision_pose_read_mt1()`** -- private helper for the hard reset. Returns the best `(camera_key, PoseEstimate)` MT1 tuple across all cameras, requiring `VISION_MT1_MIN_TAGS` tags.
 
 See `docs/architecture/vision.md` for the full flow and tuning knobs.
 

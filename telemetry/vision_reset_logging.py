@@ -9,9 +9,9 @@ the log.
 The reset uses **MegaTag1** (pure AprilTag PnP, no gyro fusion) so it
 is independent of the gyro -- the only way to escape a gyro-MT2
 feedback loop where odom and MT2 have converged on a wrong but
-self-consistent pose. It requires LIMELIGHT_RESET_MIN_TAGS visible
-tags (default 2) to avoid single-tag PnP ambiguity, and it overrides
-the **full** pose including yaw.
+self-consistent pose. It requires VISION_MT1_MIN_TAGS visible tags
+(default 2) to avoid single-tag PnP ambiguity, and it overrides the
+**full** pose including yaw.
 
 This logger is whitelisted in utils/logger.py so it always emits at
 INFO level, even with auton_quiet_mode on. There is intentionally no
@@ -23,8 +23,7 @@ Lifecycle of one B press:
     log_fired() OR log_timeout() -- exactly one of these, ever
 """
 
-from constants.match import LIMELIGHT_RESET_MIN_TAGS
-from constants.vision import CON_VISION
+from constants.vision import CON_VISION, VISION_MT1_MIN_TAGS
 from handlers.limelight_helpers import get_bot_pose_estimate_wpi_blue_megatag1
 from utils.logger import get_logger
 
@@ -69,8 +68,8 @@ def log_pending(odom_pose) -> None:
         else:
             status = (
                 "READY"
-                if mt1.tag_count >= LIMELIGHT_RESET_MIN_TAGS
-                else f"need_{LIMELIGHT_RESET_MIN_TAGS}+_tags"
+                if mt1.tag_count >= VISION_MT1_MIN_TAGS
+                else f"need_{VISION_MT1_MIN_TAGS}+_tags"
             )
             parts.append(
                 f"{key}=mt1_tags{mt1.tag_ids}@{mt1.avg_tag_dist:.1f}m({status})"
