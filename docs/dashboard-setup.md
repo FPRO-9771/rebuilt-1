@@ -78,8 +78,8 @@ Once connected, you'll see keys grouped by prefix:
 
 - **Motors/** -- motor positions and velocities (numbers)
 - **Commands/** -- active commands and recent event log (text)
-- **Vision/Shooter/** -- Shooter Limelight AprilTag data (text + booleans)
-- **Vision/Front/** -- Front Limelight AprilTag data (text + booleans)
+- **Vision/Left/** -- Left Limelight AprilTag data (text + booleans)
+- **Vision/Right/** -- Right Limelight AprilTag data (text + booleans)
 
 ### Setting Up a Layout
 
@@ -87,7 +87,7 @@ Once connected, you'll see keys grouped by prefix:
 2. Right-click a widget to change its display type (e.g., use "Text View" for table strings)
 3. Arrange widgets into tabs (e.g., "Motors", "Commands", "Vision")
 
-### Table Widgets (Commands/Recent, Vision/Shooter/Tags, Vision/Front/Tags)
+### Table Widgets (Commands/Recent, Vision/Left/Tags, Vision/Right/Tags)
 
 These keys contain multi-line ASCII tables. To display them well:
 

@@ -63,7 +63,15 @@ class _DriverStationHandler(logging.Handler):
 
 # Loggers that keep INFO level in auton_quiet_mode.
 # Everything else is raised to WARNING to reduce noise.
-_AUTON_LOGGERS = {"robot", "named_commands", "auton_modes"}
+#
+# vpc          -- per-cycle vision_pose_correct() debug dump (gated by
+#                 DEBUG["vision_pose_correct_logging"], rate-limited).
+# vision_reset -- B-button hard-reset breadcrumb trail. Always on so the
+#                 driver can see why the escape hatch did or did not fire.
+_AUTON_LOGGERS = {
+    "robot", "named_commands", "auton_modes",
+    "vpc", "vision_reset",
+}
 
 
 def get_logger(name: str) -> logging.Logger:

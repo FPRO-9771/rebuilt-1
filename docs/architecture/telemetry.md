@@ -159,7 +159,7 @@ Log messages include `[AIM HOLD]`, `[AIM DRIVE]`, and `[SHOOT]` prefixes with fu
 
 ### Vision Telemetry (`vision_telemetry.py`)
 
-**Debug-only (requires `DEBUG["debug_telemetry"]`).** Published per camera -- keys are prefixed with the camera name (e.g., `Vision/Shooter/`, `Vision/Front/`).
+**Debug-only (requires `DEBUG["debug_telemetry"]`).** Published per camera -- keys are prefixed with the camera name (e.g., `Vision/Left/`, `Vision/Right/`).
 
 | SmartDashboard Key | Type | Description |
 |--------------------|------|-------------|
@@ -170,7 +170,7 @@ Log messages include `[AIM HOLD]`, `[AIM DRIVE]`, and `[SHOOT]` prefixes with fu
 | `Vision/{Camera}/Tag 3` | string | Third tag (empty if fewer than 3 visible) |
 | `Vision/{Camera}/Tag 4` | string | Fourth tag (empty if fewer than 4 visible) |
 
-`{Camera}` is `Shooter` or `Front`. Loops over all cameras defined in `CON_VISION` and calls `get_all_targets()` on each. Up to 4 tags are shown; unused slots publish empty strings.
+`{Camera}` is `Left` or `Right`. Loops over all cameras defined in `CON_VISION` and calls `get_all_targets()` on each. Up to 4 tags are shown; unused slots publish empty strings.
 
 ### Camera Streams (`camera_telemetry.py`)
 

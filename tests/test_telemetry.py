@@ -109,8 +109,8 @@ def test_vision_telemetry_no_targets(mock_wpilib):
     sd = mock_wpilib.SmartDashboard
 
     cameras = {
-        "shooter": MockVisionProvider(),
-        "front": MockVisionProvider(),
+        "left": MockVisionProvider(),
+        "right": MockVisionProvider(),
     }
     publisher = VisionTelemetry(cameras)
     publisher.update()
@@ -118,10 +118,10 @@ def test_vision_telemetry_no_targets(mock_wpilib):
     boolean_keys = [c.args[0] for c in sd.putBoolean.call_args_list]
     number_keys = [c.args[0] for c in sd.putNumber.call_args_list]
 
-    assert "Vision/Shooter/Has Target" in boolean_keys
-    assert "Vision/Front/Has Target" in boolean_keys
-    assert "Vision/Shooter/Tag Count" in number_keys
-    assert "Vision/Front/Tag Count" in number_keys
+    assert "Vision/Left/Has Target" in boolean_keys
+    assert "Vision/Right/Has Target" in boolean_keys
+    assert "Vision/Left/Tag Count" in number_keys
+    assert "Vision/Right/Tag Count" in number_keys
 
 
 @patch("telemetry.vision_telemetry.wpilib")
@@ -129,28 +129,26 @@ def test_vision_telemetry_with_targets(mock_wpilib):
     """When targets are visible, data should be published with prefixed keys."""
     sd = mock_wpilib.SmartDashboard
 
-    shooter = MockVisionProvider()
-    shooter.simulate_target_left(tag_id=4, offset_degrees=3.2, distance=2.4)
+    left = MockVisionProvider()
+    left.simulate_target_left(tag_id=4, offset_degrees=3.2, distance=2.4)
 
-    front = MockVisionProvider()
-    front.simulate_target_right(tag_id=7, offset_degrees=1.0, distance=3.1)
+    right = MockVisionProvider()
+    right.simulate_target_right(tag_id=7, offset_degrees=1.0, distance=3.1)
 
-    cameras = {"shooter": shooter, "front": front}
+    cameras = {"left": left, "right": right}
     publisher = VisionTelemetry(cameras)
     publisher.update()
 
-    # Check shooter camera published with prefix
     boolean_calls = {c.args[0]: c.args[1] for c in sd.putBoolean.call_args_list}
-    assert boolean_calls["Vision/Shooter/Has Target"] is True
-    assert boolean_calls["Vision/Front/Has Target"] is True
+    assert boolean_calls["Vision/Left/Has Target"] is True
+    assert boolean_calls["Vision/Right/Has Target"] is True
 
     number_calls = {c.args[0]: c.args[1] for c in sd.putNumber.call_args_list}
-    assert number_calls["Vision/Shooter/Tag Count"] == 1
-    assert number_calls["Vision/Front/Tag Count"] == 1
+    assert number_calls["Vision/Left/Tag Count"] == 1
+    assert number_calls["Vision/Right/Tag Count"] == 1
 
-    # Check individual tag slot keys
     string_calls = {c.args[0]: c.args[1] for c in sd.putString.call_args_list}
-    assert "ID 4" in string_calls["Vision/Shooter/Tag 1"]
-    assert string_calls["Vision/Shooter/Tag 2"] == ""
-    assert "ID 7" in string_calls["Vision/Front/Tag 1"]
-    assert string_calls["Vision/Front/Tag 2"] == ""
+    assert "ID 4" in string_calls["Vision/Left/Tag 1"]
+    assert string_calls["Vision/Left/Tag 2"] == ""
+    assert "ID 7" in string_calls["Vision/Right/Tag 1"]
+    assert string_calls["Vision/Right/Tag 2"] == ""

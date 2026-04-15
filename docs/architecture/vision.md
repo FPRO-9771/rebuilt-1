@@ -98,9 +98,20 @@ private names the rest of the code should touch for vision odometry.
 
 | Method | Kind | Purpose |
 |--------|------|---------|
-| `_vision_pose_read()` | private | Loops over every camera in `CON_VISION`, reads MT2, returns the best `(camera_key, PoseEstimate)` tuple (most tags, tie-broken by `avg_tag_area`). Returns `None` if no camera has tags. |
-| `vision_pose_correct()` | public, **soft** | For every Limelight currently seeing tags, calls `add_vision_measurement()` on its own MT2 estimate. Kalman-blended -- safe to call every loop, safe mid-path in auton (no subsystem requirements). This is the one that runs continuously. |
-| `vision_pose_reset_request()` | public, **hard** | Arms a one-shot flag. `periodic()` services it on the next loop a camera actually sees tags (up to `LIMELIGHT_RESET_TIMEOUT`). Uses `reset_pose()` to snap the pose to vision X/Y while keeping the current gyro heading. Driver escape hatch for when the Kalman estimate has drifted too far for soft corrections to recover. |
+| `_vision_pose_read_mt1()` | private | Loops over every camera in `CON_VISION`, reads **MegaTag1** (pure AprilTag PnP, no gyro fusion), returns the best `(camera_key, PoseEstimate)` tuple. Skips any camera with fewer than `LIMELIGHT_RESET_MIN_TAGS` tags (default 2) so single-tag PnP ambiguity can never snap odom to a mirrored pose. Best = most tags, tie-broken by larger `avg_tag_area`. Returns `None` if no camera qualifies. |
+| `vision_pose_correct()` | public, **soft** | For every Limelight currently seeing tags, calls `add_vision_measurement()` on its bot-pose estimate. Kalman-blended -- safe to call every loop, safe mid-path in auton (no subsystem requirements). This is the one that runs continuously. The source is selectable via `VISION_POSE_CORRECT_MODE` (`"mt2"` = MegaTag2, gyro-fused, accepts single-tag; `"mt1"` = MegaTag1, pure PnP, requires `VISION_POSE_CORRECT_MT1_MIN_TAGS` tags). Honors the `VISION_POSE_CORRECT_ENABLED` kill switch and feeds the per-cycle debug logger -- see [Vision Configuration](#5-vision-configuration). |
+| `vision_pose_reset_request()` | public, **hard** | Arms a one-shot flag. `periodic()` services it on the next loop a camera satisfies the MT1 tag-count requirement (up to `LIMELIGHT_RESET_TIMEOUT`). Uses `reset_pose()` to **fully override** the pose -- X, Y, AND yaw -- with the MT1 estimate. Driver escape hatch for when the gyro has drifted and soft correction has converged on a wrong but self-consistent pose. **Bypasses** the `VISION_POSE_CORRECT_ENABLED` kill switch on purpose -- the hard reset stays available even when continuous correction is disabled. The full B-press lifecycle (armed, pending, fired/timeout) is logged unconditionally via `telemetry/vision_reset_logging.py` -- see [B-press breadcrumb logging](#b-press-breadcrumb-logging). |
+
+> **Why MT1 for the hard reset and MT2 for soft correction?** MT2 fuses
+> the gyro heading into its position estimate, which lets it disambiguate
+> single-tag PnP -- exactly what continuous multi-camera correction needs.
+> But that fusion also means MT2 cannot detect or correct gyro errors:
+> if the gyro is off, MT2's position is off in a predictable geometric
+> way, the soft correction propagates that into odom, and the system
+> converges on a wrong-but-stable pose. MT1 is gyro-independent, so it
+> is the only way to escape that loop. We pay for that independence by
+> requiring 2+ tags (multi-tag PnP eliminates the single-tag ambiguity
+> MT2 normally resolves with the gyro).
 
 ### Where each is called from
 
@@ -138,8 +149,8 @@ class PoseEstimate:
 
 | Function | Purpose |
 |----------|---------|
-| `get_bot_pose_estimate_wpi_blue_megatag2(nt_name)` | MegaTag2 pose (gyro-fused). Used by `vision_pose_correct` and `_vision_pose_read`. |
-| `get_bot_pose_estimate_wpi_blue_megatag1(nt_name)` | MegaTag1 pose (pure AprilTag geometry, no gyro). Currently unused -- kept for completeness. |
+| `get_bot_pose_estimate_wpi_blue_megatag2(nt_name)` | MegaTag2 pose (gyro-fused). Used by `vision_pose_correct` for continuous soft correction. |
+| `get_bot_pose_estimate_wpi_blue_megatag1(nt_name)` | MegaTag1 pose (pure AprilTag PnP, no gyro). Used by `_vision_pose_read_mt1` for the B-button hard reset, and by `vision_correct_logging` as an independent sanity check on MT2. |
 | `set_robot_orientation(nt_name, ...)` | Send gyro heading to a Limelight each loop so MegaTag2 can fuse it. Must be called every cycle, for every camera. |
 | `get_tv(nt_name)` | Returns True if the Limelight has a valid target. |
 | `get_tag_count(nt_name)` | Number of tags visible in the latest MegaTag2 result. |
@@ -259,6 +270,10 @@ CON_VISION = {
 }
 
 VISION_POSE_CORRECT_PERIOD_LOOPS = 1
+VISION_POSE_CORRECT_ENABLED = True
+VISION_POSE_LOG_PERIOD_LOOPS = 10
+VISION_POSE_CORRECT_MODE = "mt2"
+VISION_POSE_CORRECT_MT1_MIN_TAGS = 2
 ```
 
 Per-camera fields:
@@ -269,13 +284,121 @@ Per-camera fields:
 | `nt_name` | NetworkTables table name; must match the Hostname configured in the Limelight's own web UI |
 | `host`    | Static IP address; used for the MJPEG stream URL (`http://<host>:5800/stream.mjpg`) and the web UI (`http://<host>:5801`) |
 
-`VISION_POSE_CORRECT_PERIOD_LOOPS` controls how often `periodic()` runs
-the continuous soft correction: `1` = every loop (~50 Hz), `2` = every
-other loop (~25 Hz), etc. Raise it if the driver station reports loop
-overruns, but start at `1`.
+Module-level constants in the same file:
+
+| Constant | Meaning |
+|----------|---------|
+| `VISION_POSE_CORRECT_PERIOD_LOOPS` | How often `periodic()` runs the continuous soft correction. `1` = every loop (~50 Hz), `2` = every other loop (~25 Hz), etc. Raise it if the driver station reports loop overruns, but start at `1`. |
+| `VISION_POSE_CORRECT_ENABLED` | Master kill switch for `vision_pose_correct()`. Set `False` between matches if vision is feeding the estimator garbage and you want to fly on pure wheel odometry. **The B-button hard reset still works** -- it deliberately bypasses this flag. |
+| `VISION_POSE_CORRECT_MODE` | Which bot-pose estimate feeds `add_vision_measurement()`. `"mt2"` (default) = MegaTag2, gyro-fused, handles single-tag PnP via gyro disambiguation. `"mt1"` = MegaTag1, pure AprilTag PnP, requires multi-tag visibility. **The B-button hard reset always uses MT1** regardless of this setting -- that is the point of the escape hatch. |
+| `VISION_POSE_CORRECT_MT1_MIN_TAGS` | Minimum tags per camera when `MODE == "mt1"`. Default `2`. Cameras with fewer tags are skipped that loop -- no measurement fed to the estimator. Single-tag MT1 has unresolved PnP ambiguity and can snap odom to a mirrored position. |
+| `VISION_POSE_LOG_PERIOD_LOOPS` | Rate limit for the per-cycle debug logger -- only used when `DEBUG["vision_pose_correct_logging"]` is on. `10` = ~5 Hz at a 50 Hz loop. |
+
+**Choosing MT1 vs MT2 for soft correction.** MT2 is the common choice
+in FRC because single-tag PnP disambiguation via gyro "just works" --
+any time a camera sees a tag, it produces a measurement. But MT2 can
+show a systematic position bias relative to MT1 on some field setups
+(we have observed ~13 cm on our lab tags, where a tape measure confirms
+MT1 is the truth). If you see that pattern -- consistent MT2/MT1 offset
+on stationary pose, with MT1 matching a physical measurement -- try
+flipping `VISION_POSE_CORRECT_MODE = "mt1"` for a match-day test. MT1
+gives up single-tag corrections but trades that for bias-free multi-tag
+corrections. The debug logger shows both estimates every cycle so you
+can A/B them on the same run (see below).
 
 To add a third camera, drop another entry into this dict -- no other code
 changes needed.
+
+### Debug logging for soft correction
+
+When you see the Elastic field map disagreeing with reality and need to
+figure out which camera is at fault, flip
+`DEBUG["vision_pose_correct_logging"]` to `True` in `constants/debug.py`,
+redeploy, and tail `/var/log/messages` for `VPC` lines:
+
+```
+VPC left  [mt2] | tags=2 ids=[24, 25] avg_dist=2.41m avg_area=0.018 lat=22ms | mt2=(4.62,3.97,1.5) mt1=(4.59,3.95,1.7) | odom=(4.64,4.01,1.4) dxy=(-0.02,-0.04)
+VPC right: no tags
+```
+
+If `VISION_POSE_CORRECT_MODE = "mt1"` and a camera only sees 1 tag, the
+prefix switches to `[mt1-REJ]` and `dxy=rejected` -- the measurement
+was not fed to the estimator this loop (single-tag MT1 is too
+ambiguous). Both sources are still shown so you can see what MT2 *would*
+have reported:
+
+```
+VPC right [mt1-REJ] | tags=1 ids=[26] avg_dist=1.94m avg_area=0.469 lat=34ms | mt2=(1.98,4.02,88.8) mt1=(2.11,4.05,88.7) | odom=(1.98,4.02,88.8) dxy=rejected
+```
+
+Each line shows, for one camera on one log cycle:
+- `[mode]` prefix -- which source is currently active (`mt1`/`mt2`), with `-REJ` if the active source failed its minimum-tag check this loop
+- `tags` / `ids` -- how many AprilTags are visible, and which ones
+- `avg_dist` / `avg_area` / `lat` -- tag quality fields (further/smaller/older = less trustworthy)
+- `mt2` -- the MegaTag2 (gyro-fused) pose
+- `mt1` -- the MegaTag1 (pure AprilTag PnP, no gyro) pose
+- `odom` -- the current fused pose just before this measurement was added
+- `dxy` -- (active.x - odom.x, active.y - odom.y), the jump the Kalman filter is being asked to absorb (or `rejected` if no measurement was fed)
+
+Showing both MT1 and MT2 every cycle is what makes this logger useful
+for A/B testing `VISION_POSE_CORRECT_MODE`. Run both modes on the same
+field layout, compare the `dxy` column against physical reality, and
+pick the one that tracks better.
+
+Logging lives in `telemetry/vision_correct_logging.py` (mirrors the
+`auto_aim_logging` pattern). NetworkTables reads only happen **on log
+cycles** (~5 Hz), so leaving the flag off costs zero extra bandwidth in
+matches.
+
+> **auton_quiet_mode gotcha:** with `DEBUG["auton_quiet_mode"] = True`,
+> `utils/logger.py` silently raises non-whitelisted loggers to WARNING
+> level. The `vpc` logger is on the whitelist (in `_AUTON_LOGGERS`) so
+> these INFO lines actually reach the console. If you add a new logger
+> for vision and don't see its INFO output, **add the logger name to
+> `_AUTON_LOGGERS`** -- otherwise the messages are dropped before they
+> ever leave Python.
+
+### B-press breadcrumb logging
+
+The B-button hard reset is a driver escape hatch, so we log every step
+of its lifecycle unconditionally -- there is no debug flag to forget to
+flip. The `vision_reset` logger is whitelisted in `_AUTON_LOGGERS`, so
+its INFO lines come through even with `auton_quiet_mode` on.
+
+The reset uses **MegaTag1** (no gyro fusion) and requires
+`LIMELIGHT_RESET_MIN_TAGS` visible tags (default 2) on at least one
+camera. It overrides the **full** pose -- X, Y, AND yaw -- so the
+driver's field-centric "forward" direction will visibly jump on a
+successful press. That is intentional: the whole point of the hard
+reset is to escape gyro drift.
+
+One B press with multi-tag visibility produces this trail:
+
+```
+B PRESSED: hard reset armed, will fire on next tag-visible loop within 2.0s
+PENDING odom=(1.38,3.88,-85) | left=mt1_tags[26, 25]@2.4m(READY) | right=no_tags
+FIRED via left: tags=2 ids=[26, 25] avg_dist=2.45m avg_area=0.268 lat=54ms | odom_before=(1.38,3.88,-84.7) | vision_raw=(1.53,4.03,-87.7) | applied=(1.53,4.03,-87.7)
+```
+
+Or, if only single-tag MT1 is available the whole window:
+
+```
+B PRESSED: hard reset armed, will fire on next tag-visible loop within 2.0s
+PENDING odom=(1.38,3.88,-85) | left=mt1_tags[26]@2.4m(need_2+_tags) | right=no_tags
+PENDING odom=(1.38,3.88,-85) | left=mt1_tags[26]@2.4m(need_2+_tags) | right=no_tags
+TIMEOUT after 2.0s -- no camera saw any tags. Reset NOT applied; odometry unchanged.
+```
+
+`PENDING` lines are rate-limited to ~5 Hz (`_PENDING_LOG_PERIOD_LOOPS`
+in `vision_reset_logging.py`), so the 2 s window produces at most a
+handful of lines per press. Logging lives in
+`telemetry/vision_reset_logging.py`.
+
+**Reading the trail to diagnose "B did nothing":**
+- No `B PRESSED` line at all -> the trigger binding never fired. Check the controller mapping in `controls/driver_controls.py`.
+- `B PRESSED`, all `PENDING` lines show `need_2+_tags` or `no_tags`, then `TIMEOUT` -> binding works, but the cameras never had multi-tag visibility in the window. Drive somewhere with two or more tags in view of one Limelight and try again.
+- `B PRESSED` then `FIRED` with `applied` close to `odom_before` -> reset worked, odometry was already correct. This is the healthy case after gyro is well-calibrated.
+- `B PRESSED` then `FIRED` with `applied` materially different from `odom_before` (especially in yaw) -> reset worked AND found a real gyro/odom error. Watch for the same delta to come back over the next few minutes -- if it does, the gyro is drifting and you have a calibration problem to chase, not a vision problem.
 
 ---
 

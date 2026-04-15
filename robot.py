@@ -40,10 +40,35 @@ class Robot(wpilib.TimedRobot):
 
     # --- Autonomous ---
 
+    def _apply_selected_pose(self):
+        """Seed drivetrain odometry from the selected routine's first waypoint.
+
+        PathPlanner owns the starting pose. We read it via
+        auton_modes.get_starting_pose() (which handles alliance flipping) and
+        reset the drivetrain before the auto command is scheduled. In the
+        normal (override=None) case, PathPlanner's own resetOdom fires ~20ms
+        later with the same pose, so this is a no-op on behavior. In the
+        'Do Nothing' override case, this is the only thing that sets the
+        pose, so Field2d shows the selected starting spot instead of (0,0).
+        """
+        pose_name = self.container.match_setup.get_pose_name()
+        start = self.container.auton_modes.get_starting_pose(pose_name)
+        if start is None:
+            _log.warning(
+                f"_apply_selected_pose: no starting pose for '{pose_name}' -- leaving odometry alone"
+            )
+            return
+        self.container.drivetrain.reset_pose(start)
+        _log.info(
+            f"_apply_selected_pose: seeded pose -> "
+            f"x={start.X():.3f} y={start.Y():.3f} heading={start.rotation().degrees():.1f} deg"
+        )
+
     def autonomousInit(self):
         """Called when autonomous mode starts."""
         reset_auton_timer()
         _log.info("autonomousInit: fired")
+        self._apply_selected_pose()
 
         # Test override takes priority over the derived routine.
         test_factory = self.container.test_chooser.getSelected()

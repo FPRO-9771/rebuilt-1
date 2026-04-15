@@ -87,6 +87,13 @@ DEFAULT_ALLIANCE = "Red"
 # giving up.  Keeps logs clean when the camera has no view.
 LIMELIGHT_RESET_TIMEOUT = 2.0
 
+# Minimum tag count required for the B-button hard reset to fire.
+# The hard reset uses MT1 (no gyro fusion), and MT1 with a single tag
+# has unresolved PnP ambiguity -- it can pick the wrong solution and
+# snap odom to a mirrored position. Requiring 2+ tags eliminates the
+# ambiguity. Lower this to 1 only if you know what you are doing.
+LIMELIGHT_RESET_MIN_TAGS = 2
+
 HUB_RESET_POSES = {
     "Blue": {"x": 4.6, "y": 4.0, "heading": 0.0},
     "Red":  {"x": 12.0, "y": 4.0, "heading": 180.0},

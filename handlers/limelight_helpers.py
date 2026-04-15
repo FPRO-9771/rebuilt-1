@@ -28,10 +28,22 @@ class PoseEstimate:
     avg_tag_dist: float = 0.0
     avg_tag_area: float = 0.0
     raw_data: list = field(default_factory=list)
+    tag_ids: list = field(default_factory=list)
 
 
 def _get_table(limelight_name: str) -> ntcore.NetworkTable:
     return ntcore.NetworkTableInstance.getDefault().getTable(limelight_name)
+
+
+def _extract_tag_ids(data, tag_count: int) -> list:
+    # botpose_orb / botpose layout: 11 header doubles, then 7 doubles per
+    # tag (id, txnc, tync, ta, distToCamera, distToRobot, ambiguity).
+    ids = []
+    for i in range(tag_count):
+        base = 11 + i * 7
+        if base < len(data):
+            ids.append(int(data[base]))
+    return ids
 
 
 def get_bot_pose_estimate_wpi_blue_megatag2(
@@ -76,6 +88,7 @@ def get_bot_pose_estimate_wpi_blue_megatag2(
         avg_tag_dist=avg_tag_dist,
         avg_tag_area=avg_tag_area,
         raw_data=list(data),
+        tag_ids=_extract_tag_ids(data, tag_count),
     )
 
 
@@ -123,6 +136,7 @@ def get_bot_pose_estimate_wpi_blue_megatag1(
         avg_tag_dist=avg_tag_dist,
         avg_tag_area=avg_tag_area,
         raw_data=list(data),
+        tag_ids=_extract_tag_ids(data, tag_count),
     )
 
 

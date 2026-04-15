@@ -12,8 +12,12 @@ All .auto files are pre-loaded at construction time (during robotInit)
 so autonomousInit does a dict lookup instead of file I/O.
 """
 
+from typing import Optional
+
 from commands2 import Command, WaitCommand
-from pathplannerlib.auto import AutoBuilder
+from pathplannerlib.auto import AutoBuilder, PathPlannerAuto
+from pathplannerlib.util import FlippingUtil
+from wpimath.geometry import Pose2d
 
 from constants.debug import DEBUG
 from utils.logger import get_logger
@@ -50,6 +54,35 @@ class AutonModes:
         """Auto that does nothing -- safe default."""
         _log.info("do_nothing: auto routine selected -- waiting 15s")
         return WaitCommand(15.0)
+
+    def get_starting_pose(self, pose_name: str) -> Optional[Pose2d]:
+        """Return the starting pose for the selected routine, alliance-flipped.
+
+        Reads the first waypoint of the first path in "Auto Blue <pose_name>"
+        via PathPlannerLib -- PathPlanner stays the single source of truth for
+        starting positions. If the DS alliance is Red, FlippingUtil mirrors
+        the pose, matching what AutoBuilder does when it actually runs the
+        auto. Returns None on any failure so callers can skip the reset
+        instead of crashing autonomousInit.
+        """
+        auto_name = f"Auto Blue {pose_name}"
+        try:
+            paths = PathPlannerAuto.getPathGroupFromAutoFile(auto_name)
+            if not paths:
+                _log.warning(f"get_starting_pose: '{auto_name}' has no paths")
+                return None
+            start = paths[0].getStartingHolonomicPose()
+            if start is None:
+                _log.warning(
+                    f"get_starting_pose: '{auto_name}' first path has no holonomic start"
+                )
+                return None
+            if AutoBuilder.shouldFlip():
+                start = FlippingUtil.flipFieldPose(start)
+            return start
+        except Exception as e:
+            _log.warning(f"get_starting_pose: failed to read '{auto_name}': {e}")
+            return None
 
     def get_auto_command(self, alliance_name: str, pose_name: str) -> Command:
         """
