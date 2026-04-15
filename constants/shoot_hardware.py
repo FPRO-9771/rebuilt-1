@@ -36,7 +36,7 @@ CON_TURRET_MINION = {
     "manual_speed_factor": 0.5, # Manual mode: 1.0 * 0.40 = 1.0V max
     "manual_exponent": 2.0,     # Joystick response curve (1.0=linear, 2.0=squared, 3.0=cubed)
     "min_position": 0,       # Soft limit: leftmost rotation (rotations)
-    "max_position": 39.8,        # Soft limit: measured on robot -- just before hard stop
+    "max_position": 41,        # Soft limit: measured on robot -- just before hard stop
     "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
     "inverted": False,           # Positive = left (unconfirmed -- flip if reversed)
     "brake": True,               # Brake on neutral -- holds turret steady

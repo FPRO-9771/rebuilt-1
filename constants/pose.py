@@ -12,7 +12,7 @@ Turret geometry constants for converting between motor rotations and field angle
 # degrees_per_rotation: turret degrees per motor rotation (360 / gear ratio)
 # center_position: motor position where turret faces forward.
 #   See docs/architecture/auto-aim.md "Turret starting position" for full derivation.
-_START_ANGLE_DEG = 159     # ..
+_START_ANGLE_DEG = 135     # ..
 _DEG_PER_ROT = 10.8          # 360 / 33.333 gear ratio
 
 CON_POSE = {
