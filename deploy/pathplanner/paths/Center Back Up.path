@@ -3,41 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.67,
-        "y": 4.521
+        "x": 3.5820618489583333,
+        "y": 4.009346281828703
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.507406082289803,
-        "y": 5.50339892665474
-      },
-      "isLocked": false,
-      "linkedName": "BL Midpoint"
-    },
-    {
-      "anchor": {
-        "x": 6.291,
-        "y": 7.28819320214669
-      },
-      "prevControl": {
-        "x": 7.225029644141266,
-        "y": 7.075913737569129
-      },
-      "nextControl": {
-        "x": 5.934041144901611,
-        "y": 7.3693202146690515
+        "x": 3.332174468721002,
+        "y": 4.0018431359469036
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.776,
-        "y": 7.418
+        "x": 2.635,
+        "y": 4.003
       },
       "prevControl": {
-        "x": 3.3379141323792476,
-        "y": 7.426112701252236
+        "x": 2.8846471493934995,
+        "y": 4.016277831136885
       },
       "nextControl": null,
       "isLocked": false,
@@ -47,7 +31,30 @@
   "rotationTargets": [],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "AimStart",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "AimStart"
+        }
+      }
+    },
+    {
+      "name": "ShooterStart",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ShooterStart"
+        }
+      }
+    }
+  ],
   "globalConstraints": {
     "maxVelocity": 3.5,
     "maxAcceleration": 3.25,
@@ -64,7 +71,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -87.88
+    "rotation": 0.0
   },
   "useDefaultConstraints": true
 }
