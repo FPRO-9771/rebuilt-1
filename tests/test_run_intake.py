@@ -44,7 +44,7 @@ def test_spinner_runs_at_spin_voltage():
 
 
 def test_hold_no_correction_within_deadband():
-    """Arm gets 0V when drift is within the deadband."""
+    """Arm gets base hold voltage when drift is within the deadband."""
     intake = Intake()
     spinner = IntakeSpinner()
     cmd = RunIntake(intake, spinner)
@@ -60,7 +60,7 @@ def test_hold_no_correction_within_deadband():
     intake.motor_right.simulate_position(-1.0 + half_deadband)
     cmd.execute()
 
-    expected_base = -TEST_CON_INTAKE["spin_hold_base_voltage"]
+    expected_base = TEST_CON_INTAKE["down_hold_voltage"]
     assert intake.motor_left.get_last_voltage() == expected_base
     assert intake.motor_right.get_last_voltage() == expected_base
 
@@ -86,8 +86,8 @@ def test_hold_corrects_when_drift_exceeds_deadband():
     assert voltage < 0
 
 
-def test_hold_correction_clamped_to_max():
-    """Correction voltage never exceeds spin_hold_max_voltage."""
+def test_hold_fight_voltage_when_drift_exceeds_deadband():
+    """Arm gets fight voltage when it drifts up past the deadband."""
     intake = Intake()
     spinner = IntakeSpinner()
     cmd = RunIntake(intake, spinner)
@@ -96,14 +96,13 @@ def test_hold_correction_clamped_to_max():
     intake.motor_right.simulate_position(-1.0)
     cmd.initialize()
 
-    # Simulate huge drift that would exceed max voltage
+    # Simulate large drift up (toward 0) past deadband
     intake.motor_left.simulate_position(0.0)
     intake.motor_right.simulate_position(0.0)
     cmd.execute()
 
-    max_v = TEST_CON_INTAKE["spin_hold_max_voltage"]
-    voltage = intake.motor_left.get_last_voltage()
-    assert abs(voltage) <= max_v
+    expected_fight = TEST_CON_INTAKE["down_hold_fight_voltage"]
+    assert intake.motor_left.get_last_voltage() == expected_fight
 
 
 def test_end_stops_both_subsystems():

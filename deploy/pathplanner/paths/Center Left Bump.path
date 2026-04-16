@@ -64,16 +64,16 @@
     },
     {
       "anchor": {
-        "x": 5.916287760416667,
-        "y": 5.459404658564815
+        "x": 5.9082832754629635,
+        "y": 5.406588179976852
       },
       "prevControl": {
-        "x": 6.129784432870371,
-        "y": 5.13738816550926
+        "x": 6.121779947916667,
+        "y": 5.084571686921297
       },
       "nextControl": {
-        "x": 5.778142202948731,
-        "y": 5.667769254770296
+        "x": 5.770137717995027,
+        "y": 5.614952776182333
       },
       "isLocked": false,
       "linkedName": null
@@ -166,34 +166,12 @@
   "eventMarkers": [
     {
       "name": "IntakeStart",
-      "waypointRelativePos": 1.8011510724852018,
-      "endWaypointRelativePos": 4.2,
+      "waypointRelativePos": 0.0,
+      "endWaypointRelativePos": null,
       "command": {
         "type": "named",
         "data": {
           "name": "IntakeStart"
-        }
-      }
-    },
-    {
-      "name": "AimStart",
-      "waypointRelativePos": 4.787352071005887,
-      "endWaypointRelativePos": null,
-      "command": {
-        "type": "named",
-        "data": {
-          "name": "AimStart"
-        }
-      }
-    },
-    {
-      "name": "ShooterStart",
-      "waypointRelativePos": 5.5,
-      "endWaypointRelativePos": null,
-      "command": {
-        "type": "named",
-        "data": {
-          "name": "ShooterStart"
         }
       }
     }

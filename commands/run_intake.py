@@ -79,22 +79,21 @@ class RunIntake(Command):
 
         # Hold arm at snapshot position while spinner runs.
         # Arm is on hard stops at down position -- only push DOWN (negative voltage).
-        if CON_INTAKE["spin_hold_enabled"]:
+        if CON_INTAKE["down_hold_enabled"]:
             pos = self.intake.get_position()
             error = self._hold_target - pos
-            base_v = -CON_INTAKE["spin_hold_base_voltage"]
             if abs(error) >= CON_INTAKE["hold_deadband"] and error < 0:
-                # Arm drifted up past deadband -- slam it back down
-                hold_v = -CON_INTAKE["spin_hold_max_voltage"]
+                # Arm drifted up past deadband -- fight it back down
+                hold_v = CON_INTAKE["down_hold_fight_voltage"]
             else:
-                # Always-on baseline hold to keep arm pinned
-                hold_v = base_v
+                # Constant light hold pushing down
+                hold_v = CON_INTAKE["down_hold_voltage"]
             self.intake._set_voltage(hold_v)
         else:
             hold_v = 0.0
 
         # Log hold state every 10 cycles (~5 Hz)
-        if CON_INTAKE["spin_hold_enabled"] and self._exec_count % 10 == 0:
+        if CON_INTAKE["down_hold_enabled"] and self._exec_count % 10 == 0:
             _log.debug(
                 f"RunIntake hold: pos={pos:.3f} target={self._hold_target:.3f}"
                 f" err={error:.3f} v={hold_v:.2f}V"

@@ -5,22 +5,9 @@
     "data": {
       "commands": [
         {
-          "type": "deadline",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "BC Drive"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "AimStart"
-                }
-              }
-            ]
+            "pathName": "Center Back Up"
           }
         },
         {
@@ -30,7 +17,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 10.0
+                  "waitTime": 15.0
                 }
               },
               {

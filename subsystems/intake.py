@@ -294,8 +294,8 @@ class Intake(Subsystem):
 
         When the arm is far from up (i.e. deployed down), this command
         applies 0V and lets gravity/brake do the work.  When near up,
-        it uses soft P-control with deadband -- identical to the hold
-        logic but only active in the guard zone.
+        it applies a constant light hold voltage, with a stronger
+        "fight" voltage if the arm drifts down past the deadband.
         """
 
         def __init__(self, intake: "Intake"):
@@ -310,13 +310,16 @@ class Intake(Subsystem):
             if abs(pos - self._target) > CON_INTAKE["guard_zone"]:
                 self.intake._set_voltage(0)
                 return
-            error = self._target - pos
+            error = self._target - pos  # positive = arm is below target (drifted down)
             if abs(error) < CON_INTAKE["hold_deadband"]:
-                self.intake._set_voltage(0)
-                return
-            hold_kP = CON_INTAKE["hold_kP"]
-            max_v = CON_INTAKE["hold_max_voltage"]
-            volts = max(-max_v, min(hold_kP * error, max_v))
+                # Within deadband -- constant light hold
+                volts = CON_INTAKE["up_hold_voltage"]
+            elif error > 0:
+                # Arm drifted down past deadband -- fight it back up
+                volts = CON_INTAKE["up_hold_fight_voltage"]
+            else:
+                # Arm drifted up past deadband (unusual) -- light hold only
+                volts = CON_INTAKE["up_hold_voltage"]
             _log.debug(f"position_guard: pos={pos:.4f} err={error:.4f} v={volts:.2f}")
             self.intake._set_voltage(volts)
 

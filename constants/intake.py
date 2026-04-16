@@ -12,10 +12,18 @@ CON_INTAKE = {
     "position_tolerance": 0.05, # "Close enough" tolerance (rotations)
     "hold_kP": 2.0,             # Soft hold gain (volts per rotation of drift)
     "hold_max_voltage": 1.0,    # Max voltage during soft hold (low to protect gears)
-    "spin_hold_enabled": True,       # Enable hold-down while spinner is running
-    "spin_hold_max_voltage": 2.5,  # Max hold voltage while spinner is running -- TUNE
-    "spin_hold_base_voltage": 1.0,  # Always-on downward hold while spinner runs -- TUNE
     "hold_deadband": 0.02,      # Ignore drift smaller than this (rotations)
+
+    # Hold-down while spinner runs (arm is deployed)
+    # Signs are baked in: negative = push toward down_position
+    "down_hold_enabled": True,          # Enable hold while spinner runs
+    "down_hold_voltage": -1.0,          # Constant light hold pushing down -- TUNE
+    "down_hold_fight_voltage": -2.5,    # Stronger push if arm drifts up -- TUNE
+
+    # Hold-up when stowed (position guard)
+    # Signs are baked in: positive = push toward up_position
+    "up_hold_voltage": 0.3,             # Constant light hold pushing up -- TUNE
+    "up_hold_fight_voltage": 1.0,       # Stronger push if arm drifts down -- TUNE
     "guard_zone": 1.0,          # Position guard only active within this distance of up_position (rotations)
     "stall_current": 40.0,      # Current limit (amps) -- stop motor if exceeded
     "inverted": False,

@@ -42,7 +42,20 @@ Key positions from `CON_INTAKE`:
 - `position_tolerance: 0.06` -- "close enough" in rotations
 - `gear_ratio: 15.0` -- 1:15 gearbox
 
-The arm also has a **hold mode** using soft P-control (`hold_kP: 2.0`, `hold_max_voltage: 1.0V`) with a deadband of `0.05` rotations. When the spinner is active, hold voltage is allowed up to `spin_hold_max_voltage: 6.0V` to counteract the reaction force.
+The arm has **directional hold modes** that use a base/fight voltage pattern (all in `CON_INTAKE`):
+
+**Hold-down** (while spinner runs, arm deployed):
+- `down_hold_voltage: -1.0V` -- constant light hold pushing down
+- `down_hold_fight_voltage: -2.5V` -- stronger push if arm drifts up past deadband
+- `down_hold_enabled: True` -- toggle for this hold
+- Signs are baked in (negative = toward down_position)
+
+**Hold-up** (position guard, arm stowed):
+- `up_hold_voltage: 0.3V` -- constant light hold pushing up
+- `up_hold_fight_voltage: 1.0V` -- stronger push if arm drifts down past deadband
+- Signs are baked in (positive = toward up_position)
+
+Shared: `hold_deadband: 0.02` rotations.
 
 ### Position Guard (default command)
 
@@ -52,11 +65,10 @@ How it works:
 
 - Runs automatically whenever no other intake command is active (deploy, stow, run intake, etc.)
 - **Only active near `up_position`** -- within `guard_zone: 1.0` rotations. When the arm is deployed down, the guard applies 0V and lets gravity/brake hold it.
-- Uses the same soft P-control as hold mode (`hold_kP`, `hold_max_voltage`, `hold_deadband`).
-- Inside the deadband (0.05 rotations of drift): 0V, zero power draw.
-- Outside the deadband: small correction up to `hold_max_voltage` (1.0V).
+- Inside the guard zone: constant `up_hold_voltage` keeps the arm pressed up.
+- If the arm drifts down past the deadband: switches to `up_hold_fight_voltage` to push it back.
 
-**Power draw:** Essentially zero during normal operation. The guard only applies voltage for the brief moment after an impact pushes the arm past the deadband.
+**Power draw:** Very low. The guard applies a small constant voltage (0.3V) when near up, only ramping to fight voltage after an impact.
 
 **No interference with other commands:** `go_down()`, `go_up()`, and `RunIntake` all require the intake subsystem, so they automatically interrupt the guard. When they finish, the guard restarts.
 
