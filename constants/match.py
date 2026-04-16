@@ -45,7 +45,7 @@ ALLIANCES = {
         "target_y": 4.0,
         "tag_priority": [8, 10, 11],
         "poses": _POSES,
-        "corners": [(14.5, 7.0), (14.5, 1.4)],
+        "corners": [(14, 6), (14, 2)],
     },
     "Blue": {
         "name": "Blue",
@@ -53,7 +53,7 @@ ALLIANCES = {
         "target_y": 4.0,
         "tag_priority": [25, 26, 24, 27],
         "poses": _POSES,
-        "corners": [(1.5, 7.0), (1.5, 1.4)],
+        "corners": [(2, 6), (2, 2)],
     },
 }
 

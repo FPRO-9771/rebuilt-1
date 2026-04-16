@@ -12,9 +12,10 @@ CON_INTAKE = {
     "position_tolerance": 0.05, # "Close enough" tolerance (rotations)
     "hold_kP": 2.0,             # Soft hold gain (volts per rotation of drift)
     "hold_max_voltage": 1.0,    # Max voltage during soft hold (low to protect gears)
-    "spin_hold_enabled": False,       # Enable hold-down while spinner is running
+    "spin_hold_enabled": True,       # Enable hold-down while spinner is running
     "spin_hold_max_voltage": 2.5,  # Max hold voltage while spinner is running -- TUNE
-    "hold_deadband": 0.05,      # Ignore drift smaller than this (rotations)
+    "spin_hold_base_voltage": 1.0,  # Always-on downward hold while spinner runs -- TUNE
+    "hold_deadband": 0.02,      # Ignore drift smaller than this (rotations)
     "guard_zone": 1.0,          # Position guard only active within this distance of up_position (rotations)
     "stall_current": 40.0,      # Current limit (amps) -- stop motor if exceeded
     "inverted": False,

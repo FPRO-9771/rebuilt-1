@@ -7,8 +7,8 @@ Controls:
     Right stick X   -- Rotation
     A button        -- Manual Hub odometry reset (when all else fails)
     B button        -- One-shot Limelight MegaTag2 odometry reset
-    Left bumper     -- Reset field-centric heading
-    Right bumper    -- Toggle field-centric / robot-centric
+    Left bumper     -- Unjam intake (reverse spinner briefly)
+    Right bumper    -- Reset field-centric heading
     Y button        -- Toggle intake deploy (down/up)
     Left trigger    -- Run intake: spin wheels + hold arm (hold)
     Right trigger   -- Slow mode (squeeze to cap speed, linear stick)
@@ -33,6 +33,7 @@ from constants.controls import CON_ROBOT
 from constants.debug import DEBUG
 from constants import CON_INTAKE_SPINNER
 from commands.run_intake import RunIntake
+from commands.unjam_intake import UnjamIntake
 from subsystems.command_swerve_drivetrain import CommandSwerveDrivetrain
 from telemetry.drive_input_logging import log_drive_inputs
 from telemetry.swerve_telemetry import SwerveTelemetry
@@ -164,16 +165,14 @@ def configure_driver(driver, drivetrain: CommandSwerveDrivetrain,
         InstantCommand(drivetrain.vision_pose_reset_request)
     )
 
-    # --- Left bumper: reset field-centric heading ---
-    driver.leftBumper().onTrue(
+    # --- Right bumper: reset field-centric heading ---
+    driver.rightBumper().onTrue(
         drivetrain.runOnce(drivetrain.seed_field_centric)
     )
 
-    # --- Right bumper: toggle field-centric / robot-centric ---
-    def _toggle_drive_mode():
-        state["robot_centric"] = not state["robot_centric"]
-
-    driver.rightBumper().onTrue(InstantCommand(_toggle_drive_mode))
+    # --- Left bumper: unjam intake (reverse spinner briefly) ---
+    if intake_spinner is not None:
+        driver.leftBumper().onTrue(UnjamIntake(intake_spinner))
 
     # --- SysId routines: back/start + Y/X ---
     # Run each routine exactly once per log session

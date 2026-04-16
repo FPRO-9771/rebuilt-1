@@ -56,6 +56,7 @@ class CoordinateAim(Command):
         self._i_accumulator = 0.0
         self._cycle_count = 0
         self._active = False
+        self._target_mode = "hub"
 
         self.addRequirements(turret)
         init_auto_aim_keys()
@@ -89,6 +90,7 @@ class CoordinateAim(Command):
         self._cycle_count = 0
         self._active = True
         self._last_state = None
+        self._target_mode = "hub"
         SmartDashboard.putBoolean("Shooter/AutoAim", True)
         _log.info("CoordinateAim ENABLED")
         if DEBUG["auto_sequence_logging"]:
@@ -97,6 +99,7 @@ class CoordinateAim(Command):
     def execute(self):
         # 1. Read shared context (pose, shooter, target, velocity)
         ctx = self._context_supplier()
+        self._target_mode = ctx.target_mode
 
         # 2. Compute target state (error, distance, closing speed)
         state = compute_target_state(
@@ -207,6 +210,13 @@ class CoordinateAim(Command):
 
     # --- Internal ---
 
+    def _get_tolerance(self) -> float:
+        """Return alignment tolerance, widened for corner aims."""
+        tolerance = CON_AUTO_AIM["turret_alignment_tolerance"]
+        if self._target_mode == "corner":
+            tolerance *= CON_AUTO_AIM["corner_tolerance_multiplier"]
+        return tolerance
+
     def _in_hold_state(self) -> bool:
         """True if error is within tolerance -- sets motor to 0V so turret coasts.
 
@@ -215,8 +225,7 @@ class CoordinateAim(Command):
         for small initial errors. Cutting voltage lets the turret coast
         to a stop naturally. Firing clearance uses is_on_target() instead.
         """
-        tolerance = CON_AUTO_AIM["turret_alignment_tolerance"]
-        return abs(self._filtered_error) <= tolerance
+        return abs(self._filtered_error) <= self._get_tolerance()
 
     def _is_on_target(self) -> bool:
         """True if turret is in hold AND velocity is settled (safe to fire).

@@ -5,31 +5,19 @@
     "data": {
       "commands": [
         {
-          "type": "path",
-          "data": {
-            "pathName": "Center Back Up"
-          }
-        },
-        {
           "type": "deadline",
           "data": {
             "commands": [
               {
-                "type": "wait",
+                "type": "path",
                 "data": {
-                  "waitTime": 3.5
+                  "pathName": "BC Drive"
                 }
               },
               {
                 "type": "named",
                 "data": {
                   "name": "AimStart"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "ShooterStart"
                 }
               }
             ]
@@ -42,44 +30,19 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 0.5
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "IntakeDown"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Center Left Bump"
-          }
-        },
-        {
-          "type": "deadline",
-          "data": {
-            "commands": [
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 20.0
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "AimStart"
+                  "waitTime": 10.0
                 }
               },
               {
                 "type": "named",
                 "data": {
                   "name": "ShooterStart"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "AimStart"
                 }
               }
             ]

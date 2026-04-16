@@ -12,7 +12,7 @@ for velocity lead calculations.
 
 CON_AUTO_AIM = {
     # -- PD gains --
-    "turret_p_gain": 0.5,               # ...
+    "turret_p_gain": 0.65,               # ...
     "turret_i_gain": 0.008,              # Reduced -- much less friction to push through
     "turret_i_max": 0.4,                 # Low cap -- ~4x static friction (kS=0.10)
     "turret_d_velocity_gain": 0.08,      # ...
@@ -20,6 +20,7 @@ CON_AUTO_AIM = {
 
     # -- On-target thresholds --
     "turret_alignment_tolerance": 1.5,   # Degrees of error considered "aligned"
+    "corner_tolerance_multiplier": 4.0,  # Widen tolerance by this factor for corner aims
     "turret_on_target_max_vel": 2.0,     # Max turret velocity (rot/s) to be on-target
 
     # -- Voltage limits --
@@ -28,5 +29,5 @@ CON_AUTO_AIM = {
     "turret_min_move_voltage": 0.18,     # Just above kS (0.10) -- avoids jolt from old 0.60
 
     # -- EMA filter --
-    "turret_tx_filter_alpha": 0.80,      # Slightly more smoothing -- low friction amplifies noise
+    "turret_tx_filter_alpha": 0.95,      # Less smoothing -- faster reaction to movement
 }

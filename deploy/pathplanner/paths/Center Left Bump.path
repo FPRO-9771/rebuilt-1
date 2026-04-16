@@ -73,7 +73,7 @@
       },
       "nextControl": {
         "x": 5.778142202948731,
-        "y": 5.667769254770295
+        "y": 5.667769254770296
       },
       "isLocked": false,
       "linkedName": null
@@ -168,19 +168,34 @@
       "name": "IntakeStart",
       "waypointRelativePos": 1.8011510724852018,
       "endWaypointRelativePos": 4.2,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeStart"
+        }
+      }
     },
     {
       "name": "AimStart",
       "waypointRelativePos": 4.787352071005887,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "AimStart"
+        }
+      }
     },
     {
       "name": "ShooterStart",
       "waypointRelativePos": 5.5,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ShooterStart"
+        }
+      }
     }
   ],
   "globalConstraints": {

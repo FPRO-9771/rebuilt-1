@@ -60,8 +60,9 @@ def test_hold_no_correction_within_deadband():
     intake.motor_right.simulate_position(-1.0 + half_deadband)
     cmd.execute()
 
-    assert intake.motor_left.get_last_voltage() == 0
-    assert intake.motor_right.get_last_voltage() == 0
+    expected_base = -TEST_CON_INTAKE["spin_hold_base_voltage"]
+    assert intake.motor_left.get_last_voltage() == expected_base
+    assert intake.motor_right.get_last_voltage() == expected_base
 
 
 def test_hold_corrects_when_drift_exceeds_deadband():

@@ -106,6 +106,7 @@ TEST_CON_INTAKE = {
     "hold_max_voltage": 2.0,
     "spin_hold_enabled": True,
     "spin_hold_max_voltage": 4.0,
+    "spin_hold_base_voltage": 1.0,
     "hold_deadband": 0.1,
     "stall_current": 40.0,
     "inverted": False,
@@ -129,6 +130,7 @@ TEST_CON_INTAKE = {
 TEST_CON_INTAKE_SPINNER = {
     "max_voltage": 10.0,
     "spin_voltage": 5.0,
+    "unjam_enabled": True,
     "unjam_velocity_threshold": 0.5,
     "unjam_speed_multiplier": 2.0,
     "unjam_duration_cycles": 3,

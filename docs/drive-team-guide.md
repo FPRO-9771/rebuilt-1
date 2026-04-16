@@ -83,8 +83,8 @@ Quick reference for what every button does on each Xbox controller.
 
 | Input | Action | Notes |
 |-------|--------|-------|
-| **Left bumper** | Reset field-centric heading | Press once when robot faces away from you |
-| **Right bumper** | Toggle field/robot centric | Dashboard shows current mode |
+| **Left bumper** | Unjam intake | Reverses spinner briefly to clear a jam |
+| **Right bumper** | Reset field-centric heading | Press once when robot faces away from you |
 | **Left trigger (hold)** | Run intake | Spins intake rollers + holds arm in place |
 | **Right trigger** | Slow mode | Squeeze to cap speed; harder squeeze = slower max |
 

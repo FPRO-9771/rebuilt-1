@@ -65,8 +65,8 @@ class RunIntake(Command):
                 _log.info("Spinner un-jam complete -- resuming")
         else:
             self.spinner._set_voltage(spin_v)
-            # Check for stall after spinup grace period
-            if self._exec_count > CON_INTAKE_SPINNER["unjam_spinup_cycles"]:
+            # Check for stall after spinup grace period (if auto-unjam enabled)
+            if CON_INTAKE_SPINNER["unjam_enabled"] and self._exec_count > CON_INTAKE_SPINNER["unjam_spinup_cycles"]:
                 vel = self.spinner.get_velocity()
                 if abs(vel) < CON_INTAKE_SPINNER["unjam_velocity_threshold"]:
                     self._unjamming = True
@@ -82,14 +82,14 @@ class RunIntake(Command):
         if CON_INTAKE["spin_hold_enabled"]:
             pos = self.intake.get_position()
             error = self._hold_target - pos
-            if abs(error) < CON_INTAKE["hold_deadband"]:
-                self.intake._set_voltage(0)
-                hold_v = 0.0
+            base_v = -CON_INTAKE["spin_hold_base_voltage"]
+            if abs(error) >= CON_INTAKE["hold_deadband"] and error < 0:
+                # Arm drifted up past deadband -- slam it back down
+                hold_v = -CON_INTAKE["spin_hold_max_voltage"]
             else:
-                max_v = CON_INTAKE["spin_hold_max_voltage"]
-                # Full voltage immediately so fuel can't push the arm up.
-                hold_v = -max_v if error < 0 else 0.0
-                self.intake._set_voltage(hold_v)
+                # Always-on baseline hold to keep arm pinned
+                hold_v = base_v
+            self.intake._set_voltage(hold_v)
         else:
             hold_v = 0.0
 
