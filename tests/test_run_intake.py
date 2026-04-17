@@ -55,7 +55,7 @@ def test_hold_no_correction_within_deadband():
     cmd.initialize()
 
     # Simulate small drift within deadband
-    half_deadband = TEST_CON_INTAKE["hold_deadband"] / 2
+    half_deadband = TEST_CON_INTAKE["down_hold_deadband"] / 2
     intake.motor_left.simulate_position(-1.0 + half_deadband)
     intake.motor_right.simulate_position(-1.0 + half_deadband)
     cmd.execute()
@@ -76,7 +76,7 @@ def test_hold_corrects_when_drift_exceeds_deadband():
     cmd.initialize()
 
     # Simulate drift beyond deadband (arm drifted up from -1.0 toward 0)
-    drift = TEST_CON_INTAKE["hold_deadband"] * 2
+    drift = TEST_CON_INTAKE["down_hold_deadband"] * 2
     intake.motor_left.simulate_position(-1.0 + drift)
     intake.motor_right.simulate_position(-1.0 + drift)
     cmd.execute()

@@ -82,7 +82,7 @@ class RunIntake(Command):
         if CON_INTAKE["down_hold_enabled"]:
             pos = self.intake.get_position()
             error = self._hold_target - pos
-            if abs(error) >= CON_INTAKE["hold_deadband"] and error < 0:
+            if abs(error) >= CON_INTAKE["down_hold_deadband"] and error < 0:
                 # Arm drifted up past deadband -- fight it back down
                 hold_v = CON_INTAKE["down_hold_fight_voltage"]
             else:

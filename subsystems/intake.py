@@ -259,7 +259,7 @@ class Intake(Subsystem):
 
         Uses soft P-control with deadband -- same tuning constants as the
         light hold in _GoToPositionCommand (hold_kP, hold_max_voltage,
-        hold_deadband).
+        down_hold_deadband).
         """
 
         def __init__(self, intake: "Intake"):
@@ -274,7 +274,7 @@ class Intake(Subsystem):
 
         def execute(self):
             error = self.target - self.intake.get_position()
-            if abs(error) < CON_INTAKE["hold_deadband"]:
+            if abs(error) < CON_INTAKE["down_hold_deadband"]:
                 self.intake._set_voltage(0)
                 return
             hold_kP = CON_INTAKE["hold_kP"]
@@ -311,7 +311,7 @@ class Intake(Subsystem):
                 self.intake._set_voltage(0)
                 return
             error = self._target - pos  # positive = arm is below target (drifted down)
-            if abs(error) < CON_INTAKE["hold_deadband"]:
+            if abs(error) < CON_INTAKE["up_hold_deadband"]:
                 # Within deadband -- constant light hold
                 volts = CON_INTAKE["up_hold_voltage"]
             elif error > 0:

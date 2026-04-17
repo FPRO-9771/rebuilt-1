@@ -19,11 +19,13 @@ CON_INTAKE = {
     "down_hold_enabled": True,          # Enable hold while spinner runs
     "down_hold_voltage": -1.0,          # Constant light hold pushing down -- TUNE
     "down_hold_fight_voltage": -2.5,    # Stronger push if arm drifts up -- TUNE
+    "down_hold_deadband": 0.02,         # Drift threshold before fight voltage kicks in (rotations)
 
     # Hold-up when stowed (position guard)
     # Signs are baked in: positive = push toward up_position
-    "up_hold_voltage": 0.5,             # Constant light hold pushing up -- TUNE
-    "up_hold_fight_voltage": 2,       # Stronger push if arm drifts down -- TUNE
+    "up_hold_voltage": 0.2,             # Constant light hold pushing up -- TUNE
+    "up_hold_fight_voltage": 3,       # Stronger push if arm drifts down -- TUNE
+    "up_hold_deadband": 0.1,          # Drift threshold before fight voltage kicks in (rotations)
     "guard_zone": 1.0,          # Position guard only active within this distance of up_position (rotations)
     "stall_current": 40.0,      # Current limit (amps) -- stop motor if exceeded
     "inverted": False,
