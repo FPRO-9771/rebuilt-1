@@ -23,6 +23,7 @@ from commands2 import Command, ParallelCommandGroup, RunCommand
 
 from commands.coordinate_aim import CoordinateAim
 from commands.manual_shoot import ManualShoot
+from commands.run_intake import RunIntake
 from commands.shoot_when_ready import ShootWhenReady
 from constants import CON_INTAKE_SPINNER
 from constants.shoot_hardware import CON_TURRET_MINION
@@ -92,10 +93,11 @@ def register_named_commands(intake, intake_spinner, launcher,
     # --- Intake ---
     _logged("IntakeDown", intake.go_down())
     _logged("IntakeUp", intake.go_up())
-    _logged("IntakeStart",
-        intake_spinner.run_at_voltage(CON_INTAKE_SPINNER["spin_voltage"]))
+    _logged("IntakeStart", RunIntake(intake, intake_spinner))
     _logged("IntakeStop",
-        intake_spinner.runOnce(lambda: intake_spinner._stop()))
+        ParallelCommandGroup(
+            intake_spinner.runOnce(lambda: intake_spinner._stop()),
+            intake.runOnce(lambda: intake._stop())))
 
     # --- Turret auto-aim ---
     aim_cmd = CoordinateAim(turret,
