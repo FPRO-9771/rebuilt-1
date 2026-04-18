@@ -63,9 +63,9 @@ class TunerConstants:
     # Some configs will be overwritten; check the `with_*_initial_configs()` API documentation.
     _drive_initial_configs = configs.TalonFXConfiguration().with_current_limits(
         configs.CurrentLimitsConfigs()
-        .with_stator_current_limit(80.0)
+        .with_stator_current_limit(80.0) # This controls torque output
         .with_stator_current_limit_enable(True)
-        .with_supply_current_limit(50.0) #was 60
+        .with_supply_current_limit(50.0) # THis controls how much current can be 'sucked from the battery' was 60, then 50
         .with_supply_current_limit_enable(True)
     )
     _steer_initial_configs = configs.TalonFXConfiguration().with_current_limits(

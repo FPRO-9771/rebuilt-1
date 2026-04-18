@@ -80,12 +80,12 @@
     },
     {
       "anchor": {
-        "x": 2.562189708480566,
-        "y": 4.042010821554771
+        "x": 2.562080512152778,
+        "y": 4.160709780092592
       },
       "prevControl": {
-        "x": 2.473990801564475,
-        "y": 4.275935922428548
+        "x": 2.473881605236687,
+        "y": 4.394634880966369
       },
       "nextControl": null,
       "isLocked": false,
@@ -173,6 +173,17 @@
         "type": "named",
         "data": {
           "name": "ShooterStart"
+        }
+      }
+    },
+    {
+      "name": "CorrectOdometry",
+      "waypointRelativePos": 4.7793777736686245,
+      "endWaypointRelativePos": 5.0,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "CorrectOdometry"
         }
       }
     }
