@@ -45,41 +45,7 @@
     }
   ],
   "pointTowardsZones": [],
-  "eventMarkers": [
-    {
-      "name": "AimStart",
-      "waypointRelativePos": 0,
-      "endWaypointRelativePos": null,
-      "command": {
-        "type": "named",
-        "data": {
-          "name": "AimStart"
-        }
-      }
-    },
-    {
-      "name": "ShooterStart",
-      "waypointRelativePos": 0,
-      "endWaypointRelativePos": null,
-      "command": {
-        "type": "named",
-        "data": {
-          "name": "ShooterStart"
-        }
-      }
-    },
-    {
-      "name": "IntakeDown",
-      "waypointRelativePos": 0.5,
-      "endWaypointRelativePos": null,
-      "command": {
-        "type": "named",
-        "data": {
-          "name": "IntakeDown"
-        }
-      }
-    }
-  ],
+  "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 3.25,
     "maxAcceleration": 2.5,

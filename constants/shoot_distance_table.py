@@ -19,13 +19,13 @@ Sorted by distance -- interpolated at runtime by shooter_lookup.py.
 CON_DISTANCE_TABLE = {
     "distance_table": [
         # (distance_m, launcher_rps, flight_time_s)
-        (1.5, 39.0, 0.95),
-        (2.0, 45.0, 1),
-        (3.0, 53.0, 1),
+        (2.0, 43, 1),
+        (2.5, 48, 1),
+        (3.0, 53, 1),
         (3.5, 59, 1.1),
         (4.0, 64, 1.2),
-        (4.5, 69, 1.3),
-        (5.0, 74, 2),
+        (4.5, 71, 1.3),
+        (5.0, 77, 2),
         (8, 100, 2),
     ],
 
@@ -33,6 +33,6 @@ CON_DISTANCE_TABLE = {
     # then looks up RPS from the distance table above.
     # Stick -1 = min, stick 0 = center, stick +1 = max.
     "manual_min_distance": 1.5,     # Stick full back
-    "manual_center_distance": 3.0,  # Stick at rest
-    "manual_max_distance": 5.0,     # Stick full forward
+    "manual_center_distance": 4.5,  # Stick at rest
+    "manual_max_distance": 8.0,     # Stick full forward
 }
