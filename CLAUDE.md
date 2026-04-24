@@ -121,7 +121,7 @@ This approach avoids wasted tool calls and context window. The docs tell you wha
 | `docs/architecture/hardware-and-subsystems.md` | Hardware abstraction layer and subsystem design patterns |
 | `docs/architecture/commands-and-controls.md` | Command-based architecture and controller bindings |
 | `docs/architecture/shooter-system.md` | Shooter subsystems, distance lookup table, and orchestrator |
-| `docs/architecture/intake-and-feeding.md` | Intake arm/spinner and H-feed/V-feed subsystems, Fuel path |
+| `docs/architecture/intake-and-feeding.md` | Intake arm/spinner and H-feed/V-feed subsystems, Fuel path, hopper agitate |
 | `docs/architecture/auto-aim.md` | Auto-aim deep dive: pose-based turret aiming, PD controller, movement compensation, debugging (DISABLED) |
 | `docs/architecture/controls.md` | Binding extraction pattern, GameController wrapper, operator control map |
 | `docs/architecture/match-setup.md` | Pre-match alliance/pose selection, tag priorities, SmartDashboard choosers |

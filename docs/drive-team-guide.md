@@ -31,7 +31,7 @@ Quick reference for what every button does on each Xbox controller.
 | Input | Action | Notes |
 |-------|--------|-------|
 | **Left bumper (toggle)** | Toggle auto-aim on/off | Turret aims at Hub via odometry |
-| **Left trigger (hold)** | Auto-shoot | Spins launcher; feeds when launcher at speed AND auto-aim on target |
+| **Left trigger (hold)** | Auto-shoot | Spins launcher; feeds when launcher at speed AND auto-aim on target. Also silently runs **hopper agitate** when the robot is stationary AND the driver is not holding their intake trigger -- shakes the arm to un-jam Fuel in the hopper. |
 | **Right bumper (hold)** | Reverse all feeds (unjam) | Reverses H feed and V feed; interrupts right trigger |
 | **Right trigger (hold)** | Manual shoot (hold) | Spins launcher (right stick Y = speed); auto-feeds when at speed |
 
@@ -149,4 +149,5 @@ the very end of stick travel. Edit `constants/controls.py` to change these:
 
 - **Reverse all feeds (right bumper)** interrupts the right trigger manual shoot since both require h_feed/v_feed. Release right bumper and hold right trigger again to resume shooting.
 - **Driver Y** toggles the intake arm up/down. **Driver left trigger** spins the intake rollers and holds the arm in place.
+- **Operator left trigger + stationary robot + driver not intaking = hopper agitate.** If the driver sees the intake arm hunting up and down during an auto-shoot, that's normal -- it's shaking Fuel loose. If the driver grabs intake (driver LT) or the driver starts moving, agitate stops and the arm returns to down_position. See [Intake & Feed System](architecture/intake-and-feeding.md#hopper-agitate) for details.
 - SysId routines require holding **two buttons at once** (Back/Start + X/Y) so they can't be triggered accidentally.

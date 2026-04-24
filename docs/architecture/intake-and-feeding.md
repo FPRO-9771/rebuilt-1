@@ -125,6 +125,55 @@ Same command interface as HFeed (`run_at_voltage()` and `manual()`).
 
 ---
 
+## Hopper Agitate
+
+When the robot is parked and shooting, Fuel sometimes wedges in the hopper behind the intake arm and stops feeding. Hopper Agitate fixes this by **oscillating the intake arm up and down a short distance while spinning the rollers at low voltage**. The motion shakes stuck Fuel loose and drops it back onto the feed path.
+
+Agitate is **not a separate button** -- it piggybacks on the operator's shoot-when-ready trigger. Three conditions must all be true for it to run:
+
+1. Operator is holding **left trigger** (auto-shoot)
+2. Driver is **NOT** holding **left trigger** (normal intake) -- otherwise agitate would fight the driver
+3. Robot is **stationary** (chassis speed below `stationary_speed_threshold`)
+
+When any of those becomes false, the arm parks back at `down_position` via `intake.go_down()` and the spinner stops. The three-way gate is built with WPILib `Trigger` composition in `controls/operator_controls.py`.
+
+### Subsystems required
+
+- `Intake` -- arm motors
+- `IntakeSpinner` -- roller motor
+
+Agitate takes the intake requirement, so it interrupts any currently running intake command (like `RunIntake`). Because of condition #2, that normally only happens when the driver is NOT trying to intake, so the interruption is safe.
+
+### Tuning
+
+All knobs live in `constants/intake_hopper_agitate.py` (`CON_INTAKE_HOPPER_AGITATE`):
+
+| Constant | Default | Effect |
+|----------|---------|--------|
+| `up_offset_rotations` | 1.0 | How far above `down_position` the arm peaks. About 20% of full travel. Raise for more shake, lower if the arm clashes into something at peak. |
+| `arm_voltage` | 2.5 | How hard the arm swings. Raise if the arm can't reach peak before reversing; lower for smoother motion. |
+| `dwell_cycles` | 3 | 20 ms cycles of 0V brake at each endpoint before reversing. Raise to smooth out jerky reversals (3 = 60 ms pause). |
+| `position_tolerance` | 0.05 | Rotations of slop before the command decides the arm has "reached" an endpoint and reverses. |
+| `spin_voltage` | 4.0 | Roller voltage during agitate. Slower than normal intake so balls jostle rather than feed. Lower if balls are escaping the hopper. |
+| `stationary_speed_threshold` | 0.15 m/s | Chassis speed below which agitate is allowed to run. |
+
+**Practice-field tuning walkthrough:**
+
+1. Deploy intake, load 3-4 balls into the hopper, park the robot.
+2. Hold operator left trigger. You should hear the spinner start and see the arm start hunting up/down.
+3. Watch for jerky reversals -- if the arm slams at either end, raise `dwell_cycles` or lower `arm_voltage`.
+4. Watch the balls -- they should jostle and work back onto the feed path. If balls jump out of the hopper instead, lower `spin_voltage`.
+5. If the arm barely moves before reversing, raise `arm_voltage` or raise `up_offset_rotations`.
+6. Release operator LT. The arm should park at `down_position` cleanly (no mid-swing hang).
+
+### Failure modes
+
+- **Agitate runs while the driver is intaking.** Should be impossible -- condition #2 gates on driver LT. If it happens, check the `driver` argument passed to `configure_operator()` in `robot_container.py`.
+- **Agitate refuses to start while parked.** Check `stationary_speed_threshold`. Swerve modules can hum at 0.05-0.10 m/s when idle; if the threshold is set too low (< 0.1) the gate may never latch. Default 0.15 is conservative.
+- **Arm jitters mid-run with no visible progress.** `position_tolerance` may be too tight or `up_offset_rotations` too small -- the command is immediately flipping direction without a real swing.
+
+---
+
 ## Fuel Path
 
 The full flow from field to launcher:
