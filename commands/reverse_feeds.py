@@ -10,43 +10,35 @@ from commands2 import Command
 
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
-from constants import CON_H_FEED, CON_V_FEED, CON_CONVEYOR
+from constants import CON_H_FEED, CON_V_FEED
 
 
-def reverse_all_feeds(h_feed, v_feed, conveyor=None):
-    """Reverse H feed, V feed, and conveyor to clear a jam."""
+def reverse_all_feeds(h_feed, v_feed):
+    """Reverse H feed and V feed to clear a jam."""
     h_feed._set_voltage(CON_H_FEED["reverse_voltage"])
     v_feed._set_voltage(CON_V_FEED["reverse_voltage"])
-    if conveyor is not None:
-        conveyor._set_voltage(CON_CONVEYOR["outtake_voltage"])
 
 
-def stop_all_feeds(h_feed, v_feed, conveyor=None):
-    """Stop H feed, V feed, and conveyor."""
+def stop_all_feeds(h_feed, v_feed):
+    """Stop H feed and V feed."""
     h_feed._stop()
     v_feed._stop()
-    if conveyor is not None:
-        conveyor._stop()
 
 
 class ReverseFeeds(Command):
-    """Hold to reverse all feed subsystems (H feed, V feed, conveyor)."""
+    """Hold to reverse all feed subsystems (H feed, V feed)."""
 
-    def __init__(self, h_feed: HFeed, v_feed: VFeed, conveyor=None):
+    def __init__(self, h_feed: HFeed, v_feed: VFeed):
         super().__init__()
         self.h_feed = h_feed
         self.v_feed = v_feed
-        self.conveyor = conveyor
-        requirements = [h_feed, v_feed]
-        if conveyor is not None:
-            requirements.append(conveyor)
-        self.addRequirements(*requirements)
+        self.addRequirements(h_feed, v_feed)
 
     def execute(self):
-        reverse_all_feeds(self.h_feed, self.v_feed, self.conveyor)
+        reverse_all_feeds(self.h_feed, self.v_feed)
 
     def isFinished(self) -> bool:
         return False
 
     def end(self, interrupted: bool):
-        stop_all_feeds(self.h_feed, self.v_feed, self.conveyor)
+        stop_all_feeds(self.h_feed, self.v_feed)

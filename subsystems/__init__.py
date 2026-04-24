@@ -3,10 +3,9 @@ Subsystems package.
 Each mechanism gets its own file here.
 """
 
-from .conveyor import Conveyor
 from .h_feed import HFeed
 from .v_feed import VFeed
-from .turret import Turret
+from .turret_minion import TurretMinion
 from .launcher import Launcher
 from .intake_spinner import IntakeSpinner
 

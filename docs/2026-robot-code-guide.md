@@ -28,7 +28,7 @@ Detailed guides live in `docs/architecture/`. Jump to the one you need:
 
 The codebase is organized by responsibility, not by file type:
 
-- **`constants/`** — Single source of truth for every configurable value (CAN IDs, voltages, limits, positions). Split into topic files (`ids.py`, `shooter.py`, `conveyor.py`, `controls.py`, `match.py`, `vision.py`, etc.) so you can find what you need fast. Import from the package (`from constants import CON_TURRET`) or from a specific file (`from constants.shooter import CON_TURRET`).
+- **`constants/`** — Single source of truth for every configurable value (CAN IDs, voltages, limits, positions). Split into topic files (`ids.py`, `shoot_hardware.py`, `feed.py`, `intake.py`, `controls.py`, `match.py`, `vision.py`, etc.) so you can find what you need fast. Import from the package (`from constants import CON_TURRET_MINION`) or from a specific file (`from constants.shoot_hardware import CON_TURRET_MINION`).
 - **`robot_container.py`** — Central hub that creates all subsystems and wires them together. The only place that knows about everything.
 - **`hardware/`** — Abstraction layer between subsystem code and real motors/sensors. Subsystems program against the `MotorController` ABC; the factory decides whether to return a real TalonFX or a mock. This is the big improvement over 2025.
 - **`subsystems/`** — One file per mechanism. Each subsystem owns its hardware, exposes Commands, and enforces safety limits. Also contains pure-logic helpers like `shooter_lookup.py`.
@@ -56,7 +56,6 @@ The `constants/` package is split into topic files so you can find what you need
 constants/
 ├── __init__.py        # Re-exports everything (no special imports needed)
 ├── controls.py        # CON_MANUAL, CON_ROBOT
-├── conveyor.py        # CON_CONVEYOR
 ├── debug.py           # DEBUG flags (verbose logging, telemetry toggles)
 ├── feed.py            # CON_H_FEED, CON_V_FEED (horizontal/vertical feed motors)
 ├── ids.py             # MOTOR_IDS (CAN IDs, types, current limits), SENSOR_IDS
@@ -64,7 +63,10 @@ constants/
 ├── intake_spinner.py  # CON_INTAKE_SPINNER
 ├── match.py           # ALLIANCES, DEFAULT_ALLIANCE, HUB_RESET_POSES
 ├── pose.py            # CON_POSE (turret geometry, shooter offset)
-├── shooter.py         # CON_TURRET, CON_LAUNCHER, CON_SHOOTER
+├── shoot_hardware.py  # CON_TURRET_MINION, CON_LAUNCHER
+├── shoot_auto_aim.py  # CON_AUTO_AIM
+├── shoot_auto_shoot.py # CON_AUTO_SHOOT
+├── shoot_distance_table.py # CON_DISTANCE_TABLE
 ├── simulation.py      # SIM_CALIBRATION, SIM_DT
 ├── telemetry.py       # CON_TELEMETRY
 └── vision.py          # CON_VISION (camera list, hosts)
@@ -72,12 +74,12 @@ constants/
 
 Import from the package — works the same as the old single file:
 ```python
-from constants import MOTOR_IDS, CON_TURRET
+from constants import MOTOR_IDS, CON_TURRET_MINION
 ```
 
 Or import from a specific file when you want to be explicit:
 ```python
-from constants.shooter import CON_LAUNCHER
+from constants.shoot_hardware import CON_LAUNCHER
 ```
 
 **From phoenix-v1:** We did this well. All motor IDs, limits, speeds, and positions were centralized. When we changed hardware, we only edited one place.

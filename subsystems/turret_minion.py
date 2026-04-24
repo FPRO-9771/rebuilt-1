@@ -42,6 +42,10 @@ class TurretMinion(Subsystem):
                 "kG": CON_TURRET_MINION["slot0_kG"],
             },
         )
+        # Runtime calibration offset (rotations) stacked on top of
+        # CON_POSE["center_position"]. Updated by ResyncTurret when the
+        # operator manually lines up on the Hub and presses B.
+        self._center_position_offset = 0.0
         self.setDefaultCommand(self.hold_position())
 
     # --- Sensor reads (public) ---
@@ -62,6 +66,24 @@ class TurretMinion(Subsystem):
         """Check if turret is within soft limits."""
         pos = self.get_position()
         return CON_TURRET_MINION["min_position"] <= pos <= CON_TURRET_MINION["max_position"]
+
+    # --- Calibration offset (public) ---
+
+    def get_center_position_offset(self) -> float:
+        """Runtime offset (rotations) stacked on CON_POSE center_position."""
+        return self._center_position_offset
+
+    def get_effective_center_position(self) -> float:
+        """center_position plus any runtime calibration offset (rotations)."""
+        return CON_POSE["center_position"] + self._center_position_offset
+
+    def set_center_position_offset(self, offset: float) -> None:
+        """Replace the runtime calibration offset."""
+        self._center_position_offset = offset
+
+    def reset_center_position_offset(self) -> None:
+        """Clear the runtime calibration offset (back to constant)."""
+        self._center_position_offset = 0.0
 
     # --- Motor control (internal) ---
 
@@ -138,7 +160,7 @@ class TurretMinion(Subsystem):
 
             if DEBUG["turret_angle_logging"]:
                 pos = self.turret.get_position()
-                center = CON_POSE["center_position"]
+                center = self.turret.get_effective_center_position()
                 dpr = CON_POSE["degrees_per_rotation"]
                 physical_deg = -(center - pos) * dpr
                 _log.info(f"manual aim: pos={pos:.4f} angle={physical_deg:.1f} (0=fwd 90=right)")

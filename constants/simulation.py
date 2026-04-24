@@ -8,9 +8,6 @@ These should be measured from the real robot and updated at events.
 # =============================================================================
 # TODO: Calibrate these values on the real robot
 SIM_CALIBRATION = {
-    "conveyor": {
-        "voltage_to_speed": 1.0,  # rotations/s per volt (measure this)
-    },
     "drivetrain": {
         "max_speed_mps": 5.0,
         "voltage_to_speed": 0.4,

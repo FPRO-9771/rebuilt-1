@@ -6,7 +6,7 @@ Publishes position and velocity for each motor to SmartDashboard.
 import wpilib
 
 from constants.debug import DEBUG
-from constants.shoot_hardware import CON_TURRET
+from constants.shoot_hardware import CON_TURRET_MINION
 
 
 class MotorTelemetry:
@@ -22,9 +22,8 @@ class MotorTelemetry:
     _OFF_TURRET_CLEAR = 6
     _OFF_DEBUG = 8
 
-    def __init__(self, conveyor, turret, launcher, h_feed=None,
+    def __init__(self, turret, launcher, h_feed=None,
                  v_feed=None, intake_spinner=None):
-        self._conveyor = conveyor
         self._turret = turret
         self._launcher = launcher
         self._h_feed = h_feed
@@ -57,14 +56,12 @@ class MotorTelemetry:
 
         elif slot == self._OFF_TURRET_CLEAR:
             pos = self._turret.get_position()
-            tol = CON_TURRET["position_tolerance"]
-            clear = (pos > CON_TURRET["min_position"] + tol
-                     and pos < CON_TURRET["max_position"] - tol)
+            tol = CON_TURRET_MINION["position_tolerance"]
+            clear = (pos > CON_TURRET_MINION["min_position"] + tol
+                     and pos < CON_TURRET_MINION["max_position"] - tol)
             sd.putBoolean("Motors/Turret Clear", clear)
 
         elif slot == self._OFF_DEBUG and DEBUG["debug_telemetry"]:
-            if self._conveyor is not None:
-                sd.putNumber("Motors/Conveyor Velocity", self._conveyor.get_velocity())
             sd.putNumber("Motors/Turret Position", self._turret.get_position())
             sd.putNumber("Motors/Turret Velocity", self._turret.get_velocity())
             sd.putNumber("Motors/Launcher Target RPS", self._launcher._target_rps)

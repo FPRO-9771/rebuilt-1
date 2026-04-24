@@ -17,18 +17,6 @@ from hardware import set_mock_mode
 # TEST CONSTANTS -- intentionally different from production values
 # ============================================================================
 
-TEST_CON_TURRET = {
-    "max_voltage": 10.0,
-    "manual_speed_factor": 0.5,
-    "min_position": -5.0,
-    "max_position": 5.0,
-    "position_tolerance": 0.1,
-    "inverted": False,
-    "search_voltage": 3.0,
-    "search_brake_voltage": 5.0,
-    "search_brake_cycles": 3,
-}
-
 TEST_CON_TURRET_MINION = {
     "max_voltage": 10.0,
     "manual_speed_factor": 0.5,
@@ -62,12 +50,6 @@ TEST_CON_LAUNCHER = {
     "slot0_kV": 0.0,
     "slot0_kA": 0.0,
     "slot0_kG": 0.0,
-}
-
-TEST_CON_CONVEYOR = {
-    "max_voltage": 10.0,
-    "intake_voltage": 5.0,
-    "outtake_voltage": -5.0,
 }
 
 TEST_CON_AUTO_AIM = {
@@ -182,10 +164,9 @@ def _patch_constants(monkeypatch):
     This runs before every test so production constants never leak in.
     """
     # Subsystems
-    monkeypatch.setattr("subsystems.turret.CON_TURRET", TEST_CON_TURRET)
     monkeypatch.setattr("subsystems.turret_minion.CON_TURRET_MINION", TEST_CON_TURRET_MINION)
+    monkeypatch.setattr("subsystems.turret_minion.CON_POSE", TEST_CON_POSE)
     monkeypatch.setattr("subsystems.launcher.CON_LAUNCHER", TEST_CON_LAUNCHER)
-    monkeypatch.setattr("subsystems.conveyor.CON_CONVEYOR", TEST_CON_CONVEYOR)
 
     # Shooter lookup (distance table)
     monkeypatch.setattr("subsystems.shooter_lookup.CON_DISTANCE_TABLE",
@@ -194,6 +175,9 @@ def _patch_constants(monkeypatch):
     # Coordinate aim command (auto-aim gains)
     monkeypatch.setattr("commands.coordinate_aim.CON_AUTO_AIM", TEST_CON_AUTO_AIM)
     monkeypatch.setattr("commands.coordinate_aim.CON_POSE", TEST_CON_POSE)
+
+    # Resync turret command (uses CON_POSE for shooter offset + deg/rot)
+    monkeypatch.setattr("commands.resync_turret.CON_POSE", TEST_CON_POSE)
 
     # Auto-shoot constants (used by movement_compensation, distance_compensation,
     # velocity_lead)

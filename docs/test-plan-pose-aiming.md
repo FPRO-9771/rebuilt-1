@@ -35,9 +35,9 @@ Step-by-step checkout for the new pose-based turret aiming and auto-shoot system
 | 1.4 | Hold left stick X left until turret stops. | Turret stops at other soft limit. | |
 | 1.5 | Release stick. | Turret holds position (not drifting). | |
 
-**If turret direction is backwards:** Flip `inverted` in `constants/shooter.py` -> `CON_TURRET`.
+**If turret direction is backwards:** Flip `inverted` in `constants/shoot_hardware.py` -> `CON_TURRET_MINION`.
 
-**If turret does not stop at limits:** Check `min_position` and `max_position` in `CON_TURRET`. The position value on Elastic should be between those values.
+**If turret does not stop at limits:** Check `min_position` and `max_position` in `CON_TURRET_MINION`. The position value on Elastic should be between those values.
 
 ---
 

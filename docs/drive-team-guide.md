@@ -22,7 +22,7 @@ Quick reference for what every button does on each Xbox controller.
 | Input | Action | Notes |
 |-------|--------|-------|
 | **A button** | *unassigned* | |
-| **B button** | *unassigned* | |
+| **B button** | Resync turret to Hub | Manually aim turret on Hub, then press B. See "Resync turret" below. |
 | **X button** | *unassigned* | |
 | **Y button** | *unassigned* | |
 
@@ -32,7 +32,7 @@ Quick reference for what every button does on each Xbox controller.
 |-------|--------|-------|
 | **Left bumper (toggle)** | Toggle auto-aim on/off | Turret aims at Hub via odometry |
 | **Left trigger (hold)** | Auto-shoot | Spins launcher; feeds when launcher at speed AND auto-aim on target |
-| **Right bumper (hold)** | Reverse all feeds (unjam) | Reverses H feed, V feed, and conveyor; interrupts right trigger |
+| **Right bumper (hold)** | Reverse all feeds (unjam) | Reverses H feed and V feed; interrupts right trigger |
 | **Right trigger (hold)** | Manual shoot (hold) | Spins launcher (right stick Y = speed); auto-feeds when at speed |
 
 ### D-pad / Other
@@ -42,6 +42,15 @@ Quick reference for what every button does on each Xbox controller.
 | **D-pad** | *unassigned* | |
 | **Back** | *unassigned* | |
 | **Start (hold) + Right stick Y** | Pit-mode intake jog | Low-voltage raise/lower for pit crew when mechanical arm locks are engaged. Stick up = raise, stick down = lower. Holding Start alone does nothing. |
+
+### Resync turret (when auto-aim drifts mid-match)
+
+If auto-aim was working earlier in the match but shots are now going wide (and manually re-aiming feels wrong too), the turret encoder has probably drifted against the motor -- or odometry is off. Recover with:
+
+1. Use **left stick X** to aim the turret at the Hub by eye.
+2. Once it is pointing at the Hub, press **B**.
+
+That snapshots the current turret position as the new "pointed at Hub" direction. Auto-aim (left bumper) will immediately start aiming correctly again. You can press B again later in the match if it drifts a second time. Every press is logged to the Driver Station so the pit crew can see how much drift happened and look at the turret between matches.
 
 ### How to shoot (manual aim)
 

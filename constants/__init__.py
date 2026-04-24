@@ -8,10 +8,10 @@ This package is split into topic files for easier navigation:
   shoot_distance_table.py - Distance lookup table (shared by shooting and auto-aim)
   shoot_auto_aim.py   - Turret PD controller, voltage limits, filtering
   shoot_auto_shoot.py - Movement compensation (velocity lead, distance correction)
-  conveyor.py         - Conveyor configuration
   feed.py             - Horizontal and vertical feed configuration
   intake.py           - Intake lever arm configuration
   intake_spinner.py   - Intake spinner configuration
+  intake_hopper_agitate.py - Hopper agitate command configuration
   controls.py         - Manual overrides and robot-wide settings
   simulation.py       - Sim calibration values and time step
   debug.py            - Debug logging toggles
@@ -20,8 +20,8 @@ This package is split into topic files for easier navigation:
   pose.py             - Robot pose and turret geometry
   telemetry.py        - Telemetry dashboard configuration
 
-You can import from the package (from constants import CON_TURRET)
-or from a specific file (from constants.shoot_hardware import CON_TURRET).
+You can import from the package (from constants import CON_TURRET_MINION)
+or from a specific file (from constants.shoot_hardware import CON_TURRET_MINION).
 """
 
 from constants.ids import *
@@ -29,10 +29,10 @@ from constants.shoot_hardware import *
 from constants.shoot_distance_table import *
 from constants.shoot_auto_aim import *
 from constants.shoot_auto_shoot import *
-from constants.conveyor import *
 from constants.feed import *
 from constants.intake import *
 from constants.intake_spinner import *
+from constants.intake_hopper_agitate import *
 from constants.controls import *
 from constants.simulation import *
 from constants.telemetry import *

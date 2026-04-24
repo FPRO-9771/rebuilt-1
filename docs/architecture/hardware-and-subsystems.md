@@ -206,13 +206,11 @@ _drive_initial_configs = configs.TalonFXConfiguration().with_current_limits(
 |-------|-----------|-----------|-------------|
 | Drive (x4) | 80 | 50 | `generated/tuner_constants.py` |
 | Steer (x4) | 60 | 35 | `generated/tuner_constants.py` |
-| Conveyor | 30 | 15 | `constants/ids.py` |
 | H-feed | 30 | 15 | `constants/ids.py` |
 | V-feed | 30 | 15 | `constants/ids.py` |
 | Intake spinner | 30 | 10 | `constants/ids.py` |
 | Intake left/right | 30 | 10 | `constants/ids.py` |
-| Turret | 30 | 15 | `constants/ids.py` |
-| Turret minion | 30 | 15 | `constants/ids.py` |
+| Turret (Minion) | 45 | 40 | `constants/ids.py` |
 | Launcher | 60 | 40 | `constants/ids.py` |
 
 #### Tuning tips

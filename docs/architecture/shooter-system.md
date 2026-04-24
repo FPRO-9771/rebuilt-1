@@ -10,7 +10,7 @@ This doc covers the shooter system: a turret and flywheel launcher. The system i
 
 ## Table of Contents
 
-1. [System Overview](#1-system-overview) (includes [Turret Motor Swap](#turret-motor-swap-kraken-vs-minion))
+1. [System Overview](#1-system-overview)
 2. [Subsystem Patterns](#2-subsystem-patterns)
 3. [Distance Lookup Table](#3-distance-lookup-table)
 4. [Command Modules](#4-command-modules)
@@ -48,56 +48,12 @@ Active bindings:
 
 | Component | Motor | Controller | Control Mode |
 |-----------|-------|------------|--------------|
-| Turret (active) | Minion | TalonFXS | Closed-loop position hold (default command), voltage (manual/auto-aim) |
-| Turret (alternate) | Kraken X60 | TalonFX | Same interface, different motor |
+| Turret | Minion | TalonFXS | Closed-loop position hold (default command), voltage (manual/auto-aim) |
 | Launcher | Kraken X60 | TalonFX | Closed-loop velocity |
 
 Both are "dumb" subsystems -- they don't know about each other or about vision. Small command modules coordinate them, and the operator chooses which to enable.
 
-### Turret Motor Swap: Kraken vs Minion
-
-We have two turret subsystem files with identical public interfaces so all commands (CoordinateAim, manual control) work with either motor.
-
-**Currently active: Minion (TalonFXS).** The Kraken import is commented out in `robot_container.py`.
-
-| | Kraken X60 (alternate) | Minion (active) |
-|---|---|---|
-| Subsystem file | `subsystems/turret.py` | `subsystems/turret_minion.py` |
-| Constants | `CON_TURRET` | `CON_TURRET_MINION` |
-| Motor ID entry | `MOTOR_IDS["turret"]` | `MOTOR_IDS["turret_minion"]` |
-| Controller type | TalonFX | TalonFXS |
-| Gear ratio | 18:90 (5:1) | 18:90 (5:1) |
-| Free speed | ~6000 RPM | ~7700 RPM |
-| Stall torque | ~7.09 Nm | ~3.17 Nm |
-| Weight | ~1.1 lbs | 0.65 lbs |
-
-The Minion has higher free speed but lower torque. Both are more than sufficient for turret rotation through the 5:1 gear ratio at the low voltages we use.
-
-**How to switch between Kraken and Minion:**
-
-1. In `constants/ids.py`, flip the `wired` flags:
-   ```python
-   # For Kraken:
-   "turret":        {..., "wired": True},
-   "turret_minion": {..., "wired": False},
-
-   # For Minion (current):
-   "turret":        {..., "wired": False},
-   "turret_minion": {..., "wired": True},
-   ```
-
-2. In `robot_container.py`, swap the import:
-   ```python
-   # For Kraken:
-   from subsystems.turret import Turret
-
-   # For Minion (current):
-   from subsystems.turret_minion import TurretMinion as Turret
-   ```
-
-3. Tune constants for whichever motor is active. The Minion variant uses `CON_TURRET_MINION` in `constants/shooter.py`, which includes slot0 PID gains for closed-loop position hold and brake mode.
-
-**Why two files instead of a flag?** The TalonFXS needs brake mode and slot0 PID gains passed at construction time, which is different enough from the TalonFX path that a clean separate file is easier to read and debug than conditionals. Both files are short and follow the same pattern.
+The turret subsystem lives in `subsystems/turret_minion.py` and is configured via `CON_TURRET_MINION` in `constants/shoot_hardware.py`. The motor ID is `MOTOR_IDS["turret_minion"]` in `constants/ids.py`. The TalonFXS requires brake mode and slot0 PID gains at construction time for closed-loop position hold.
 
 ---
 
@@ -107,9 +63,7 @@ Each shooter subsystem follows the standard template from [Hardware & Subsystems
 
 ### Turret: Closed-Loop Position Hold + Voltage Manual Control
 
-> **Two variants exist:** `subsystems/turret.py` (Kraken/TalonFX) and `subsystems/turret_minion.py` (Minion/TalonFXS). Both use the same pattern below. See [Turret Motor Swap](#turret-motor-swap-kraken-vs-minion) above for switching instructions.
-
-Both turret variants set a **default command** (`hold_position()`) that uses closed-loop position control to hold the turret steady when no other command is running. When the operator uses manual control (left stick X), that command takes over and drives via voltage. When the stick is released, the default command resumes and holds the turret at its current position.
+The turret (`subsystems/turret_minion.py`, Minion/TalonFXS) sets a **default command** (`hold_position()`) that uses closed-loop position control to hold the turret steady when no other command is running. When the operator uses manual control (left stick X), that command takes over and drives via voltage. When the stick is released, the default command resumes and holds the turret at its current position.
 
 ```python
 # subsystems/turret_minion.py -- default command set in __init__
@@ -145,11 +99,11 @@ def _set_voltage(self, volts: float) -> None:
     self.motor.set_voltage(clamped)
 ```
 
-The key insight: soft limits allow the motor to return (negative voltage at max, positive at min) but block pushing further. The **soft limit ramp** (`soft_limit_ramp: 0.5` rotations in `CON_TURRET_MINION`) gradually reduces voltage as the turret approaches a soft limit, so it decelerates smoothly instead of slamming to a sudden stop. The ramp scales voltage down to a minimum of 50% within the ramp zone. The Kraken variant (`turret.py`) has the same hard stop but does not include the ramp feature.
+The key insight: soft limits allow the motor to return (negative voltage at max, positive at min) but block pushing further. The **soft limit ramp** (`soft_limit_ramp: 0.5` rotations in `CON_TURRET_MINION`) gradually reduces voltage as the turret approaches a soft limit, so it decelerates smoothly instead of slamming to a sudden stop. The ramp scales voltage down to a minimum of 50% within the ramp zone.
 
-#### TurretMinion manual control: exponential response curve
+#### Turret manual control: exponential response curve
 
-The Minion variant applies an exponential response curve to joystick input for fine control at small deflections:
+Manual control applies an exponential response curve to joystick input for fine control at small deflections:
 
 ```python
 exp = CON_TURRET_MINION["manual_exponent"]  # 2.0

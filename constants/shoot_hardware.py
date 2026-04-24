@@ -7,24 +7,7 @@ distance lookup table, see shoot_distance_table.py.
 """
 
 # =============================================================================
-# TURRET CONFIGURATION
-# =============================================================================
-CON_TURRET = {
-    "max_voltage": 4.0,         # Maximum voltage to apply
-    "manual_speed_factor": 0.10, # Manual mode runs at 10% of max voltage
-    "min_position": 0,       # Soft limit: leftmost rotation (rotations)
-    "max_position": 9.5,        # Soft limit: rightmost rotation (rotations)
-    "position_tolerance": 0.02,  # "Close enough" tolerance (rotations)
-    "inverted": False,
-    "search_voltage": 0.5,      # Voltage during FindTarget sweep (tune on robot)
-    "search_brake_voltage": 3.0, # Brake voltage when sweep hits a soft limit
-    "search_brake_cycles": 5,   # How many cycles to brake at a soft limit before reversing
-}
-
-# =============================================================================
-# TURRET MINION CONFIGURATION (alternative to Kraken -- uses TalonFXS)
-# To switch: flip wired flags in ids.py and swap Turret/TurretMinion in
-# robot_container.py.  All voltages and limits need re-tuning on real hardware.
+# TURRET CONFIGURATION (Minion / TalonFXS)
 # =============================================================================
 CON_TURRET_MINION = {
     # Gear ratio: 9:1 planetary * (200t / 48t) = 37.5:1 total

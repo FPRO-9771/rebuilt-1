@@ -39,7 +39,7 @@ def log_hold(cycle, pose_x, pose_y, heading_deg,
     """Log when turret is on-target and holding still. Every other cycle.
 
     Shows inputs (where we think we are) and why we're holding.
-    target_mode is "hub" or "corner" -- whatever the supplier picked.
+    target_mode is "hub" or "assist" -- whatever the supplier picked.
     """
     if not _enabled() or cycle % 2 != 0:
         return
@@ -63,7 +63,7 @@ def log_drive(cycle, pose_x, pose_y, heading_deg,
     """Log PID control output when actively driving. Every other cycle.
 
     Shows the full pipeline: inputs -> lead -> PID terms -> voltage.
-    target_mode is "hub" or "corner" -- whatever the supplier picked.
+    target_mode is "hub" or "assist" -- whatever the supplier picked.
     """
     if not _enabled() or cycle % 2 != 0:
         return

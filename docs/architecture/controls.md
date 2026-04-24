@@ -130,12 +130,12 @@ A 3% stick deadband (`stick_deadband`) is applied in both modes to prevent drift
 | Left stick Y | | *unassigned* |
 | Right stick Y | (via right trigger) | Launcher speed (stick maps to RPS range) |
 | A button | | *unassigned* |
-| B button | | *unassigned* |
+| B button | `onTrue` | Resync turret to Hub (recalibrate after drift) |
 | X button | | *unassigned* |
 | Y button | | *unassigned* |
 | Left bumper | `toggleOnTrue` | Coordinate aim (turret aims at Hub via odometry) |
 | Left trigger | `whileTrue` | Shoot when ready (launcher + auto-feed when aligned and at speed) |
-| Right bumper | `whileTrue` | Reverse all feeds (unjam H feed + V feed + conveyor, interrupts right trigger) |
+| Right bumper | `whileTrue` | Reverse all feeds (unjam H feed + V feed, interrupts right trigger) |
 | Right trigger | `whileTrue` | Manual shoot (launcher + auto-feed when at speed, speed from right stick Y) |
 | Start (hold) + Right stick Y | `whileTrue` | Pit-mode intake jog -- low-voltage raise/lower when mechanical locks prevent manual movement |
 
@@ -146,6 +146,7 @@ A 3% stick deadband (`stick_deadband`) is applied in both modes to prevent drift
 - `commands/manual_launcher.py` -- stick-to-RPS mapping (fallback when feeds not wired)
 - `commands/reverse_feeds.py` -- reverse all feeds to clear jams (shared by manual and auto)
 - `commands/coordinate_aim.py` -- odometry-based turret aiming
+- `commands/resync_turret.py` -- in-match turret recalibration (operator B)
 - `commands/shoot_when_ready.py` -- launcher + auto-feed combo (uses shared unjam logic from reverse_feeds)
 
 ---

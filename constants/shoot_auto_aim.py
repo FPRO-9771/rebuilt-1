@@ -20,13 +20,20 @@ CON_AUTO_AIM = {
 
     # -- On-target thresholds --
     "turret_alignment_tolerance": 1.5,   # Degrees of error considered "aligned"
-    "corner_tolerance_multiplier": 4.0,  # Widen tolerance by this factor for corner aims
+    "assist_tolerance_multiplier": 4.0,  # Widen tolerance by this factor in Assist mode
     "turret_on_target_max_vel": 2.0,     # Max turret velocity (rot/s) to be on-target
 
-    # -- Voltage limits --
+    # -- Voltage limits (Hub aim) --
     "turret_max_auto_voltage": 7,      # ...
     "turret_max_brake_voltage": 2.3,     # Brake higher than drive to stop quickly
     "turret_min_move_voltage": 0.18,     # Just above kS (0.10) -- avoids jolt from old 0.60
+
+    # -- Voltage limits (Assist mode) --
+    # When shooter is in the neutral zone and target is an alliance corner,
+    # use softer caps so aggressive chassis moves don't slam the turret gears.
+    # Accuracy matters less for passing Fuel back to partners.
+    "assist_max_auto_voltage": 3.0,      # Gentler drive cap for passing shots
+    "assist_max_brake_voltage": 2.0,     # Kept below assist_max_auto to avoid jolt
 
     # -- EMA filter --
     "turret_tx_filter_alpha": 0.95,      # Less smoothing -- faster reaction to movement

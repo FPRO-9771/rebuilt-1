@@ -32,7 +32,7 @@ CON_DISTANCE_TABLE = {
     # Manual shoot stick mapping -- maps joystick Y to virtual distance,
     # then looks up RPS from the distance table above.
     # Stick -1 = min, stick 0 = center, stick +1 = max.
-    "manual_min_distance": 1.5,     # Stick full back
-    "manual_center_distance": 4.5,  # Stick at rest
-    "manual_max_distance": 8.0,     # Stick full forward
+    "manual_min_distance": 2,     # Stick full back
+    "manual_center_distance": 3,  # Stick at rest
+    "manual_max_distance": 4,     # Stick full forward
 }

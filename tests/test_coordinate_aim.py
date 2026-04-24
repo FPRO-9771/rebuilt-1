@@ -4,13 +4,13 @@ Tests for CoordinateAim command.
 
 from unittest.mock import patch
 
-from subsystems.turret import Turret
+from subsystems.turret_minion import TurretMinion as Turret
 from commands.coordinate_aim import CoordinateAim
 from calculations.target_state import ShootContext
-from tests.conftest import TEST_CON_TURRET, TEST_CON_POSE
+from tests.conftest import TEST_CON_TURRET_MINION, TEST_CON_POSE
 
 
-_MID_POS = (TEST_CON_TURRET["min_position"] + TEST_CON_TURRET["max_position"]) / 2
+_MID_POS = (TEST_CON_TURRET_MINION["min_position"] + TEST_CON_TURRET_MINION["max_position"]) / 2
 
 
 def _make_context(target_x=5.0, target_y=0.0, heading_deg=0.0,
@@ -43,7 +43,7 @@ def _make_coord_aim(ctx=None):
     cmd = CoordinateAim(
         turret,
         context_supplier=lambda: ctx,
-        turret_config=TEST_CON_TURRET,
+        turret_config=TEST_CON_TURRET_MINION,
     )
     return cmd, turret
 
@@ -150,7 +150,7 @@ def test_turret_near_limit_routes_other_direction(mock_sd):
     # Turret near max limit -> should route the other way
     ctx = _make_context(target_x=0.0, target_y=5.0)
     cmd, turret = _make_coord_aim(ctx)
-    turret.motor.simulate_position(TEST_CON_TURRET["max_position"] - 0.5)
+    turret.motor.simulate_position(TEST_CON_TURRET_MINION["max_position"] - 0.5)
 
     cmd.initialize()
     cmd.execute()

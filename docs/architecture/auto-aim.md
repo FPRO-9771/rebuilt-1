@@ -27,6 +27,7 @@ The auto-aim system uses drivetrain odometry to compute the turret angle needed 
 11. [File Map](#11-file-map)
 12. [Debugging Guide](#12-debugging-guide)
 13. [Common Failure Modes](#13-common-failure-modes)
+14. [Turret Resync (operator B)](#14-turret-resync-operator-b)
 
 ---
 
@@ -219,7 +220,7 @@ The negation is required because `start_angle_deg` uses a CW-positive convention
 
 If ErrorDeg goes the wrong direction when you turn the turret, `center_position` sign is wrong.
 
-**Why the soft limits matter here:** the turret soft limits (`min_position = 0`, `max_position = 9` for Minion, `9.5` for Kraken) are set by the energy chain and cannot be changed. At power-on (`tpos = 0`), the turret is at the minimum limit. It can only rotate CW (increasing tpos). If the error is negative (target is in the CCW direction), the router must send the turret the long way around CW, which takes more travel and time.
+**Why the soft limits matter here:** the turret soft limits (`min_position = 0`, `max_position = 41` in `CON_TURRET_MINION`) are set by the energy chain and cannot be changed. At power-on (`tpos = 0`), the turret is at the minimum limit. It can only rotate CW (increasing tpos). If the error is negative (target is in the CCW direction), the router must send the turret the long way around CW, which takes more travel and time.
 
 ---
 
@@ -409,6 +410,26 @@ The tolerance is `turret_alignment_tolerance` (default 1.5 degrees).
 
 ---
 
+## 9b. Assist Mode
+
+When the shooter is inside the neutral zone during teleop, `AssistAimSelector` in `calculations/assist_target.py` re-targets the nearest alliance scoring-zone corner instead of the Hub. This lets us lob Fuel back to partners on our side. The `ShootContext.target_mode` field is set to `"assist"` while this is active, `"hub"` otherwise.
+
+Assist mode is teleop-only -- in auto or when disabled, the selector always returns the Hub. A hysteresis band (`NEUTRAL_ZONE_HYSTERESIS_M` in `constants/match.py`) prevents the target from flickering when the robot straddles the neutral-zone boundary.
+
+### Softer control in Assist mode
+
+Drivers move much more aggressively in the neutral zone, which was snapping the turret around hard enough to skip gears. In Assist mode, `CoordinateAim._active_aim_config()` swaps in softer voltage caps, and `_get_tolerance()` widens the alignment tolerance. All other PD gains stay the same.
+
+| Constant | Effect in Assist mode |
+|----------|----------------------|
+| `assist_tolerance_multiplier` | Multiplies `turret_alignment_tolerance` (4.0x -> 6 deg hold band) |
+| `assist_max_auto_voltage` | Replaces `turret_max_auto_voltage` for drive voltage cap |
+| `assist_max_brake_voltage` | Replaces `turret_max_brake_voltage` for brake voltage cap |
+
+Accuracy is less critical when passing, so these caps are intentionally much lower than the Hub-aim caps. Tune the drive cap first if the turret still slams hard in fast swings; tune the tolerance multiplier if it oscillates around the corner target.
+
+---
+
 ## 10. Constants Reference
 
 Auto-aim tuning constants live in three files:
@@ -457,6 +478,7 @@ calculations/
   velocity_lead.py               # Lead angle from tangential velocity + flight time
   turret_routing.py              # Shortest path within soft limits
   turret_pd.py                   # PID + deadband voltage calculation
+  assist_target.py               # AssistAimSelector -- Hub vs nearest corner with hysteresis
 
 commands/
   coordinate_aim.py              # Turret aiming command -- reads ShootContext
@@ -583,6 +605,54 @@ If the turret aims correctly when the robot is near the Hub but misses at long r
 - This is expected over time. Odometry drifts, especially during collisions or wheel slip
 - Vision-based pose resets (if available) can correct this periodically
 - Watch `AutoAim/ErrorDeg` -- if it grows over time without the robot moving, odometry is the likely cause
+- See [Turret Resync](#14-turret-resync-operator-b) for how to recover mid-match without a pose reset
+
+---
+
+## 14. Turret Resync (operator B)
+
+Auto-aim depends on the turret motor's encoder matching the physical turret direction. That relationship can drift mid-match from belt slip, coupler slip, gearbox skip, or an imperfectly-tuned `center_position`. When it does, auto-aim can appear to be "on target" while shots go wide. The resync feature lets the operator recover without restarting the robot.
+
+### How it works
+
+The operator manually aims the turret at the Hub (left stick X), then presses **B**. `ResyncTurret` (`commands/resync_turret.py`) is an `InstantCommand` -- no subsystem requirements -- so it fires while manual aim or CoordinateAim is active. Inside `_resync()`:
+
+1. Read the current robot pose and alliance Hub position.
+2. Run `compute_target_state` with zero velocity, using the *current* effective center (which includes any prior offset).
+3. The returned `error_deg` is exactly the drift between what the math thinks the turret angle is and what the operator just lined up visually.
+4. Convert that error to rotations (`delta = error_deg / degrees_per_rotation`) and add it to `turret._center_position_offset`.
+5. Clear `CoordinateAim`'s EMA filter and I accumulator via `reset_state()` so the turret does not lurch on residual windup.
+
+The offset is stored on the turret subsystem (`TurretMinion` and `Turret` both expose `get/set/reset_center_position_offset()` and `get_effective_center_position()`). `CoordinateAim.execute()` reads `turret.get_effective_center_position()` each cycle, so the new offset applies immediately.
+
+### Cause-agnostic
+
+The resync does not diagnose *why* the turret drifted -- it just snaps the math to match reality. Encoder slip, odometry drift, or a mis-tuned constant all collapse to the same fix: "current motor position now corresponds to pointed-at-Hub."
+
+### Repeating the resync
+
+Each press measures error against the *already-offset* center, so the stored offset grows additively but stays mathematically correct:
+
+- Press 1 after drift D1: offset becomes `D1 / dpr`.
+- More drift D2, then press 2: offset becomes `(D1 + D2) / dpr`.
+
+The math always leaves the turret on target for the pose at the moment of press. If the team is pressing B every match, something physical is wrong and should be checked on the bench -- the warning log from each resync captures enough context (error, new offset, pose, hub) to reconstruct what happened.
+
+### Logging
+
+Each resync writes a WARNING-level log, which appears in both the console and the Driver Station log:
+
+```
+Turret resync: corrected +3.42 deg, offset now +5.18 deg (pose=(4.12,2.30) hub=(8.27,4.10))
+```
+
+The offset is cumulative over the match. A large final value is diagnostic, not a bug in the code.
+
+### Failure modes
+
+- Relies on `drivetrain.get_pose()` being accurate at the moment of press. Vision pose correction should keep this honest; if vision is offline or the Limelights are blocked, the resync will absorb pose error into the turret offset, making aim wrong from a different pose later. Prefer to resync where the Limelights have a clean view of the field.
+- If the operator did not physically aim at the Hub before pressing, future aims will be off by the same amount.
+- A fresh boot clears the offset -- it is not persisted across power cycles.
 
 ---
 

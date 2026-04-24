@@ -33,13 +33,11 @@ class ShootWhenReady(Command):
         v_feed: VFeed,
         context_supplier: Callable,
         on_target_supplier: Callable[[], bool],
-        conveyor=None,
     ):
         super().__init__()
         self.launcher = launcher
         self.h_feed = h_feed
         self.v_feed = v_feed
-        self.conveyor = conveyor
         self._context_supplier = context_supplier
         self._on_target_supplier = on_target_supplier
         self._reached_speed = False
@@ -49,10 +47,7 @@ class ShootWhenReady(Command):
         self._unjam_counter = 0
         self._cycle_count = 0
         self._feed_cycle_count = 0
-        requirements = [launcher, h_feed, v_feed]
-        if conveyor is not None:
-            requirements.append(conveyor)
-        self.addRequirements(*requirements)
+        self.addRequirements(launcher, h_feed, v_feed)
 
     def initialize(self):
         self._reached_speed = False
@@ -105,7 +100,7 @@ class ShootWhenReady(Command):
         # feeds briefly to clear the jam, then resume.
         if self._unjamming:
             self._unjam_counter -= 1
-            reverse_all_feeds(self.h_feed, self.v_feed, self.conveyor)
+            reverse_all_feeds(self.h_feed, self.v_feed)
             if self._unjam_counter <= 0:
                 self._unjamming = False
                 _log.info("Un-jam complete -- resuming feed")
@@ -117,12 +112,12 @@ class ShootWhenReady(Command):
                 self._unjamming = True
                 self._unjam_counter = CON_H_FEED["unjam_duration_cycles"]
                 _log.warning("H feed stalled -- un-jamming")
-                reverse_all_feeds(self.h_feed, self.v_feed, self.conveyor)
+                reverse_all_feeds(self.h_feed, self.v_feed)
             else:
                 self.h_feed._set_voltage(CON_H_FEED["feed_voltage"])
                 self.v_feed._set_voltage(CON_V_FEED["feed_voltage"])
         else:
-            stop_all_feeds(self.h_feed, self.v_feed, self.conveyor)
+            stop_all_feeds(self.h_feed, self.v_feed)
 
         log_shoot(
             self._cycle_count,
@@ -141,7 +136,7 @@ class ShootWhenReady(Command):
 
     def end(self, interrupted: bool):
         self.launcher._stop()
-        stop_all_feeds(self.h_feed, self.v_feed, self.conveyor)
+        stop_all_feeds(self.h_feed, self.v_feed)
         _log.info(f"ShootWhenReady DISABLED (interrupted={interrupted})")
         if DEBUG["auto_sequence_logging"]:
             _log.info(f"AUTO SEQ: ShootWhenReady end -- ran {self._cycle_count} cycles, reached_speed={self._reached_speed}")

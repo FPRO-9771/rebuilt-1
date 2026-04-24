@@ -28,11 +28,11 @@ ShootContext = namedtuple("ShootContext", [
     "heading_deg",         # robot heading (degrees)
     "shooter_x",           # shooter field X (meters)
     "shooter_y",           # shooter field Y (meters)
-    "target_x",            # target X (meters) -- Hub or nearest corner
-    "target_y",            # target Y (meters) -- Hub or nearest corner
+    "target_x",            # target X (meters) -- Hub or nearest corner (Assist)
+    "target_y",            # target Y (meters) -- Hub or nearest corner (Assist)
     "vx",                  # robot forward velocity (m/s)
     "vy",                  # robot lateral velocity (m/s)
-    "target_mode",         # "hub" or "corner" -- which target the turret is chasing
+    "target_mode",         # "hub" or "assist" -- which target the turret is chasing
 ], defaults=["hub"])
 
 

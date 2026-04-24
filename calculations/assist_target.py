@@ -1,10 +1,10 @@
 """
-Corner-aim target selection for the turret.
+Assist-mode target selection for the turret.
 
 Normal auto-aim points the turret at the alliance Hub. When the shooter is
-inside the neutral zone in teleop, we instead re-target the nearest corner
-of our own scoring zone, so the turret can lob Fuel back to our side for
-later collection.
+inside the neutral zone in teleop, Assist mode re-targets the nearest
+scoring-zone corner of our own alliance, so the turret can lob Fuel back
+to our side for later collection.
 
 Pure math -- no WPILib dependencies, easy to unit test.
 """
@@ -16,7 +16,7 @@ from constants.match import (
 )
 
 
-class CornerAimSelector:
+class AssistAimSelector:
     """Picks Hub vs nearest scoring-zone corner, with hysteresis on the
     neutral-zone boundary so the target does not flicker cycle to cycle."""
 
@@ -24,8 +24,8 @@ class CornerAimSelector:
         self._in_neutral = False
 
     @property
-    def in_corner_mode(self) -> bool:
-        """True if the latched state is 'aim at a corner'."""
+    def in_assist_mode(self) -> bool:
+        """True if the latched state is 'aim at a corner' (Assist mode)."""
         return self._in_neutral
 
     def select_target(self, shooter_xy, hub_xy, corners, is_teleop: bool):
@@ -34,7 +34,7 @@ class CornerAimSelector:
         shooter_xy: (x, y) shooter field position in meters
         hub_xy:     (x, y) alliance Hub position in meters
         corners:    list of (x, y) alliance scoring-zone corner positions
-        is_teleop:  True if the match is currently in teleop. Corner aim is
+        is_teleop:  True if the match is currently in teleop. Assist mode is
                     teleop-only; in auto or disabled we always return hub_xy.
         """
         if not is_teleop or not corners:

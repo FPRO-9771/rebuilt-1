@@ -18,7 +18,7 @@ from typing import Callable
 from commands2 import Command
 from wpilib import SmartDashboard
 
-from subsystems.turret import Turret
+from subsystems.turret_minion import TurretMinion
 from calculations.target_state import compute_target_state
 from calculations.movement_compensation import compute_angle_compensation
 from calculations.turret_routing import choose_rotation_direction
@@ -42,7 +42,7 @@ class CoordinateAim(Command):
 
     def __init__(
         self,
-        turret: Turret,
+        turret: TurretMinion,
         context_supplier: Callable,
         turret_config: dict,
     ):
@@ -82,6 +82,15 @@ class CoordinateAim(Command):
             return None
         return self._last_state
 
+    def reset_state(self) -> None:
+        """Zero the EMA filter and integral accumulator.
+
+        Called by ResyncTurret so the turret does not lurch on residual
+        integral windup after the operator recalibrates mid-match.
+        """
+        self._filtered_error = 0.0
+        self._i_accumulator = 0.0
+
     # --- Command lifecycle ---
 
     def initialize(self):
@@ -101,14 +110,16 @@ class CoordinateAim(Command):
         ctx = self._context_supplier()
         self._target_mode = ctx.target_mode
 
-        # 2. Compute target state (error, distance, closing speed)
+        # 2. Compute target state (error, distance, closing speed).
+        # Effective center includes any runtime calibration offset set by
+        # ResyncTurret (operator B), so drift can be corrected in-match.
         state = compute_target_state(
             ctx.heading_deg,
             (ctx.shooter_x, ctx.shooter_y),
             (ctx.target_x, ctx.target_y),
             (ctx.vx, ctx.vy),
             self.turret.get_position(),
-            CON_POSE["center_position"],
+            self.turret.get_effective_center_position(),
             CON_POSE["degrees_per_rotation"],
         )
         self._last_state = state
@@ -175,7 +186,7 @@ class CoordinateAim(Command):
             voltage, p_term, i_term, d_term, raw_voltage, self._i_accumulator = (
                 compute_turret_voltage(
                     self._filtered_error, turret_vel,
-                    self._aim_sign, CON_AUTO_AIM,
+                    self._aim_sign, self._active_aim_config(),
                     self._i_accumulator,
                 )
             )
@@ -211,11 +222,26 @@ class CoordinateAim(Command):
     # --- Internal ---
 
     def _get_tolerance(self) -> float:
-        """Return alignment tolerance, widened for corner aims."""
+        """Return alignment tolerance, widened in Assist mode."""
         tolerance = CON_AUTO_AIM["turret_alignment_tolerance"]
-        if self._target_mode == "corner":
-            tolerance *= CON_AUTO_AIM["corner_tolerance_multiplier"]
+        if self._target_mode == "assist":
+            tolerance *= CON_AUTO_AIM["assist_tolerance_multiplier"]
         return tolerance
+
+    def _active_aim_config(self) -> dict:
+        """Return the PD config for this cycle.
+
+        In Assist mode, override the voltage caps with the softer assist
+        limits so aggressive chassis moves in the neutral zone don't slam
+        the turret gears. All other gains stay the same.
+        """
+        if self._target_mode != "assist":
+            return CON_AUTO_AIM
+        return {
+            **CON_AUTO_AIM,
+            "turret_max_auto_voltage": CON_AUTO_AIM["assist_max_auto_voltage"],
+            "turret_max_brake_voltage": CON_AUTO_AIM["assist_max_brake_voltage"],
+        }
 
     def _in_hold_state(self) -> bool:
         """True if error is within tolerance -- sets motor to 0V so turret coasts.

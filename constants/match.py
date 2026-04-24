@@ -23,10 +23,10 @@ To add a pose, just add a dict to _POSES below.
 #   X = toward red alliance wall, Y = toward left side of blue driver station.
 # tag_priority: ordered list of AprilTags for vision-based distance lookup
 #   (used by ShootWhenReady, not by turret aiming).
-# corners: 2026 scoring-zone corners used by the neutral-zone corner-aim
-#   feature. When the shooter is inside the neutral zone in teleop, the
-#   turret re-targets whichever corner is closest so we can lob Fuel back
-#   to our side for later collection.
+# corners: 2026 scoring-zone corners used by Assist mode. When the shooter
+#   is inside the neutral zone in teleop, the turret re-targets whichever
+#   corner is closest so we can lob Fuel back to our side for later
+#   collection.
 #
 # TODO: Replace with measured 2026 Hub coordinates from the game manual.
 
@@ -59,16 +59,17 @@ ALLIANCES = {
 }
 
 # =============================================================================
-# NEUTRAL ZONE CORNER-AIM
+# NEUTRAL ZONE ASSIST MODE
 # =============================================================================
 # When the shooter's field X is between these values, we consider the robot
-# in the neutral zone. In teleop with auto-aim engaged, the turret aims at
-# the closest alliance scoring-zone corner instead of the Hub.
+# in the neutral zone. In teleop with auto-aim engaged, the turret switches
+# to Assist mode and aims at the closest alliance scoring-zone corner
+# instead of the Hub, so we can lob Fuel back to our partners.
 NEUTRAL_ZONE_X_MIN = 4.8
 NEUTRAL_ZONE_X_MAX = 11.5
 
-# Hysteresis buffer (meters). Once corner-aim mode is latched, the shooter
-# must leave the neutral zone by this much before Hub aim resumes. Prevents
+# Hysteresis buffer (meters). Once Assist mode is latched, the shooter must
+# leave the neutral zone by this much before Hub aim resumes. Prevents
 # target flicker when the robot straddles the boundary.
 NEUTRAL_ZONE_HYSTERESIS_M = 0.3
 

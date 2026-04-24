@@ -7,10 +7,7 @@ from constants import CON_ROBOT
 from controls.game_controller import GameController
 from controls.operator_controls import _make_shoot_context_supplier
 from generated.tuner_constants import TunerConstants
-# from subsystems.conveyor import Conveyor  # NOT WIRED YET
-# --- Turret motor swap: uncomment ONE of these two lines ---
-# from subsystems.turret import Turret          # Kraken X60 (TalonFX)
-from subsystems.turret_minion import TurretMinion as Turret  # Minion (TalonFXS)
+from subsystems.turret_minion import TurretMinion
 from subsystems.launcher import Launcher
 from subsystems.h_feed import HFeed
 from subsystems.v_feed import VFeed
@@ -39,8 +36,7 @@ class RobotContainer:
 
         # --- Subsystems ---
         self.drivetrain = TunerConstants.create_drivetrain()
-        # self.conveyor = Conveyor()  # NOT WIRED YET
-        self.turret = Turret()
+        self.turret = TurretMinion()
         self.launcher = Launcher()
         self.h_feed = HFeed()
         self.v_feed = VFeed()
@@ -87,7 +83,7 @@ class RobotContainer:
         self._configure_bindings()
 
         # --- Telemetry ---
-        setup_telemetry(None, self.turret, self.launcher,
+        setup_telemetry(self.turret, self.launcher,
                         {},  # vision providers disabled
                         self.h_feed, self.v_feed,
                         self.intake_spinner,
@@ -104,9 +100,11 @@ class RobotContainer:
 
         # --- Operator Controls ---
         configure_operator(
-            self.operator, None, self.turret,
+            self.operator, self.turret,
             self.launcher, None,  # vision provider disabled
             self.match_setup, self.h_feed, self.v_feed,
             drivetrain=self.drivetrain,
             intake=self.intake,
+            intake_spinner=self.intake_spinner,
+            driver=self.driver,
         )

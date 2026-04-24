@@ -6,8 +6,7 @@ Uses mock hardware and patches SmartDashboard (requires HAL).
 from unittest.mock import patch, MagicMock
 
 from handlers.mock_vision import MockVisionProvider
-from subsystems.conveyor import Conveyor
-from subsystems.turret import Turret
+from subsystems.turret_minion import TurretMinion
 from subsystems.launcher import Launcher
 from telemetry.motor_telemetry import MotorTelemetry
 from telemetry.command_telemetry import CommandTelemetry
@@ -21,17 +20,15 @@ def test_motor_telemetry_publishes_all_keys(mock_wpilib):
     """All motor keys should be published on update()."""
     sd = mock_wpilib.SmartDashboard
 
-    conveyor = Conveyor()
-    turret = Turret()
+    turret = TurretMinion()
     launcher = Launcher()
 
-    publisher = MotorTelemetry(conveyor, turret, launcher)
+    publisher = MotorTelemetry(turret, launcher)
     # Call with each stagger offset so all keys get published
     for cycle in range(MotorTelemetry._PERIOD):
         publisher.update(cycle)
 
     expected_number_keys = [
-        "Motors/Conveyor Velocity",
         "Motors/Turret Position",
         "Motors/Turret Velocity",
         "Motors/Launcher Target RPS",

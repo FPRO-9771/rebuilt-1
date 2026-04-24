@@ -115,7 +115,7 @@ Use the dashboard to find good motor speeds, then save them as constants.
 5. Watch the values in real time — note the velocities/positions that work well
 6. Add those values to the appropriate file in `constants/`
 
-This is how we discover values like conveyor speed and launcher RPM before hardcoding them.
+This is how we discover values like feeder voltages and launcher RPM before hardcoding them.
 
 ---
 
