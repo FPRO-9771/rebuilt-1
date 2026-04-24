@@ -33,7 +33,10 @@ def compute_corrected_distance(distance_m, closing_speed_mps):
         return distance_m
 
     flight_time = get_flight_time(distance_m)
-    gain = CON_AUTO_SHOOT["distance_correction_gain"]
+    if closing_speed_mps >= 0:
+        gain = CON_AUTO_SHOOT["distance_correction_gain_closing"]
+    else:
+        gain = CON_AUTO_SHOOT["distance_correction_gain_retreating"]
     corrected = distance_m - closing_speed_mps * flight_time * gain
 
     return max(min_dist, corrected)

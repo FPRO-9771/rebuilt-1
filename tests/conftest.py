@@ -133,7 +133,8 @@ TEST_CON_POSE = {
 TEST_CON_AUTO_SHOOT = {
     "velocity_lead_enabled": True,
     "velocity_lead_gain": 1.0,
-    "distance_correction_gain": 1.0,
+    "distance_correction_gain_closing": 1.0,
+    "distance_correction_gain_retreating": 1.0,
     "feed_off_target_debounce": 20,
     "min_distance": 0.5,
 }
