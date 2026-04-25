@@ -19,13 +19,13 @@ Sorted by distance -- interpolated at runtime by shooter_lookup.py.
 CON_DISTANCE_TABLE = {
     "distance_table": [
         # (distance_m, launcher_rps, flight_time_s)
-        (2.0, 43, 1),
-        (2.5, 48, 1),
-        (3.0, 53, 1),
-        (3.5, 59, 1.1),
-        (4.0, 64, 1.2),
-        (4.5, 71, 1.3),
-        (5.0, 77, 2),
+        (2.0, 40, 1),
+        (2.5, 46, 1),
+        (3.0, 51, 1),
+        (3.5, 57, 1.1),
+        (4.0, 61, 1.2),
+        (4.5, 68, 1.3),
+        (5.0, 74, 2),
         (8, 100, 2),
     ],
 

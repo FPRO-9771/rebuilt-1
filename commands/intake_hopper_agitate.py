@@ -11,11 +11,9 @@ is actively intaking (which is the normal RunIntake command). Wiring
 decisions (when to schedule this) live with the controller bindings --
 this command just knows how to agitate.
 
-End behavior: on end(), the arm is parked at down_position via the
-canonical intake.go_down() two-phase move. This prevents the arm from
-getting stuck mid-swing after cancel. If another command takes the
-intake requirement immediately after (e.g. RunIntake), that command
-wins -- go_down() acts as a safe default only.
+End behavior: on end(), both motors are stopped (brake mode). The
+intake's default command (position guard) takes over on the next
+scheduler tick.
 
 Requires: intake, intake_spinner.
 
@@ -95,11 +93,6 @@ class IntakeHopperAgitate(Command):
     def end(self, interrupted: bool):
         self.spinner._stop()
         self.intake._stop()
-        # Park at down_position so the arm doesn't sit mid-swing.
-        # If another command grabs the intake requirement in the next
-        # tick, go_down() gets interrupted -- that is the correct handoff.
-        self.intake.go_down().schedule()
         _log.info(
-            f"IntakeHopperAgitate DISABLED (interrupted={interrupted}) "
-            f"-- parking at down_position"
+            f"IntakeHopperAgitate DISABLED (interrupted={interrupted})"
         )

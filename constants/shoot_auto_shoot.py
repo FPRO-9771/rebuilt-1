@@ -47,7 +47,7 @@ CON_AUTO_SHOOT = {
     # Then repeat for retreating with the other gain. Expect retreating to
     # end up a bit higher than closing.
     "distance_correction_gain_closing": 0.7,
-    "distance_correction_gain_retreating": 0.8,
+    "distance_correction_gain_retreating": 0.3,
 
     # Minimum distance (meters) for compensation to activate.
     # Below this range, flight time is negligible and lead/distance
