@@ -17,6 +17,7 @@ from controls import configure_driver, configure_operator
 # from handlers import get_vision_providers  # COMMENTED OUT -- not using vision providers (2026-03-19)
 from match_setup import MatchSetup
 from telemetry import setup_telemetry
+from telemetry.power_monitor_setup import build_power_monitor
 from autonomous.named_commands import register_named_commands
 from autonomous.auton_modes import AutonModes
 from autonomous.auton_mode_selector import create_test_chooser
@@ -89,6 +90,17 @@ class RobotContainer:
                         self.intake_spinner,
                         drivetrain=self.drivetrain,
                         alliance_supplier=self.match_setup.get_alliance)
+
+        # --- Power monitor (post-match brownout diagnosis) ---
+        self.power_monitor = build_power_monitor(
+            drivetrain=self.drivetrain,
+            intake=self.intake,
+            intake_spinner=self.intake_spinner,
+            h_feed=self.h_feed,
+            v_feed=self.v_feed,
+            turret=self.turret,
+            launcher=self.launcher,
+        )
 
     def _configure_bindings(self):
         """Wire controller inputs to commands."""

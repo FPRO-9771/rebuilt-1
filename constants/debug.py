@@ -17,6 +17,7 @@ DEBUG = {
     "compensation_logging": False,  # True = log movement compensation pipeline (flight time, tangential vel, lead angle, corrected distance)
     "auto_sequence_logging": True,  # True = log every auto event trigger, command start/stop, and path milestone
     "auton_quiet_mode": True,  # True = suppress INFO from non-auton loggers (hardware, motors, subsystem internals)
+    "power_monitor": True,  # True = accumulate per-subsystem current + battery voltage during auto/teleop and dump a summary table on disable
     # Match-only telemetry (always published):
     #   Motors/Launcher At Speed, Motors/Feeder Running, Motors/Turret Clear,
     #   Motors/Intake Running, AutoAim/HasTarget,

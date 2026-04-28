@@ -79,6 +79,9 @@ class TalonFXController(MotorController):
     def get_velocity(self) -> float:
         return self.motor.get_velocity().value
 
+    def get_supply_current(self) -> float:
+        return self.motor.get_supply_current().value
+
     def zero_position(self) -> None:
         self.motor.set_position(0)
 

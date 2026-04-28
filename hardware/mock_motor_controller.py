@@ -20,6 +20,7 @@ class MockMotorController(MotorController):
         self._position = 0.0
         self._velocity = 0.0
         self._voltage = 0.0
+        self._supply_current = 0.0
         self.command_history: List[Dict[str, Any]] = []
 
     def set_voltage(self, volts: float) -> None:
@@ -48,6 +49,9 @@ class MockMotorController(MotorController):
     def get_velocity(self) -> float:
         return self._velocity
 
+    def get_supply_current(self) -> float:
+        return self._supply_current
+
     def zero_position(self) -> None:
         self._position = 0.0
 
@@ -63,6 +67,10 @@ class MockMotorController(MotorController):
     def simulate_velocity(self, velocity: float) -> None:
         """Set velocity for testing sensor reads."""
         self._velocity = velocity
+
+    def simulate_supply_current(self, amps: float) -> None:
+        """Set supply current draw for testing power monitor."""
+        self._supply_current = amps
 
     def get_last_voltage(self) -> float:
         """Get last commanded voltage for test assertions."""

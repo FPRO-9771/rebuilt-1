@@ -46,6 +46,12 @@ class MotorController(ABC):
         """Stop the motor."""
         pass
 
+    def get_supply_current(self) -> float:
+        """Return supply current draw in amps. Default 0.0 for controllers that
+        do not implement it (e.g. mock). Reads the cached Phoenix 6 signal in
+        real implementations -- no CAN traffic at read time."""
+        return 0.0
+
     def set_follower(self, leader_id: int, oppose_direction: bool = False) -> None:
         """Follow another motor controller. No-op by default."""
         pass

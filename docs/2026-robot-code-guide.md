@@ -21,6 +21,7 @@ Detailed guides live in `docs/architecture/`. Jump to the one you need:
 | [Vision](architecture/vision.md) | Limelight for auto, teleop, or any use |
 | [Testing & Simulation](architecture/testing-and-simulation.md) | Writing tests, running sim |
 | [Telemetry](architecture/telemetry.md) | Live dashboard data (motors, commands, vision) |
+| [Power Monitor](power-monitor.md) | Post-match brownout diagnosis via CSV logs |
 
 ---
 
@@ -36,7 +37,7 @@ The codebase is organized by responsibility, not by file type:
 - **`autonomous/`** — Named command registration (`named_commands.py`), auto routine factory (`auton_modes.py`), and test override chooser (`auton_mode_selector.py`). Actions are triggered by PathPlanner event markers on `.path` files. See [Autonomous](architecture/autonomous.md).
 - **`handlers/`** — External system integrations (vision/Limelight). Same abstraction pattern as hardware.
 - **`controls/`** — Controller bindings (driver and operator). Keeps button-wiring logic out of `robot_container.py`.
-- **`telemetry/`** — Dashboard publishers for motors, commands, and vision. Pushes data to SmartDashboard every cycle.
+- **`telemetry/`** — Dashboard publishers for motors, commands, and vision, plus the **Power Monitor** (`power_monitor.py`, `power_stats.py`, `power_csv.py`, `power_monitor_setup.py`) which silently accumulates per-subsystem current draw and battery voltage during auto/teleop and dumps CSV summary + time-series logs to `/home/lvuser/power_logs/` on disable, for post-match brownout diagnosis. See [Power Monitor](power-monitor.md).
 - **`testing/`** — Physics simulation models and sim runner. Calibrated from real robot measurements.
 - **`tests/`** — Automated pytest tests. Convention: one `test_<topic>.py` per subsystem or concern.
 - **`generated/`** — Phoenix Tuner X output. Generally don't edit by hand, except for drive/steer current limits in `tuner_constants.py` (re-exporting from Tuner X will overwrite these -- re-add them after export).
@@ -177,6 +178,13 @@ Always branch from `main` for new work. PR to `develop` first, then to `main` be
 10. **Manual overrides matter** - Always have a way to manually control mechanisms
 11. **Calibrate vision multipliers early** - The LL_DATA_SETTINGS multipliers need tuning per camera mount
 12. **Test direction logic** - Easy to get signs wrong (left vs right, forward vs back)
+
+---
+
+## Lessons Learned from 2026 (Carry Forward to 2027)
+
+1. **Build power monitoring in from day one** - See [Power Monitor](power-monitor.md). Added mid-2026 season after recurring brownouts during defensive matches and we wished we'd had it earlier. Silent per-subsystem current + battery accumulators with a CSV dump on disable give us exactly the post-match diagnosis data we need, without consuming drive team attention during matches. For 2027: design the hardware abstraction so `get_supply_current()` is there from the start, and wire the monitor in `robot_container.py` alongside telemetry setup. Keep it gated by a debug flag so it can be turned off if it ever contributes to loop overruns.
+2. *(add more as the 2026 season continues)*
 
 ---
 

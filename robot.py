@@ -92,6 +92,7 @@ class Robot(wpilib.TimedRobot):
             self._auto_periodic_count += 1
             if not self.auto_command.isScheduled() and self._auto_periodic_count <= 5:
                 _log.warning(f"AUTO PERIODIC [{self._auto_periodic_count}]: command NOT scheduled after {self._auto_periodic_count} cycles!")
+        self.container.power_monitor.sample("auto")
 
     def autonomousExit(self):
         """Called when autonomous mode ends."""
@@ -112,7 +113,7 @@ class Robot(wpilib.TimedRobot):
 
     def teleopPeriodic(self):
         """Called every 20ms during teleop."""
-        pass
+        self.container.power_monitor.sample("teleop")
 
     def teleopExit(self):
         """Called when teleop mode ends."""
@@ -122,7 +123,7 @@ class Robot(wpilib.TimedRobot):
 
     def disabledInit(self):
         """Called when robot is disabled."""
-        pass
+        self.container.power_monitor.dump()
 
     def disabledPeriodic(self):
         """Called every 20ms while disabled."""
