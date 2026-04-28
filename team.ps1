@@ -341,13 +341,22 @@ function Invoke-SetupProject {
     Write-Host ""
     Write-Host "--- Step 3: Requirements ---"
     $venvPip = Join-Path $PROJECT_DIR ".venv\Scripts\pip.exe"
+    $venvPython = Join-Path $PROJECT_DIR ".venv\Scripts\python.exe"
+
+    # Relax EAP around pip: it writes warnings to stderr, which would otherwise trigger NativeCommandError under "Stop".
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
 
     Write-Info "Updating pip..."
-    & $venvPip install --upgrade pip 2>&1 | Out-Null
+    & $venvPython -m pip install --upgrade pip 2>&1 | Out-Null
 
     Write-Info "Installing packages from requirements.txt..."
     & $venvPip install -r requirements.txt
-    if ($LASTEXITCODE -eq 0) {
+    $pipExit = $LASTEXITCODE
+
+    $ErrorActionPreference = $prevEAP
+
+    if ($pipExit -eq 0) {
         Write-Pass "All packages installed"
     } else {
         Write-Fail "Some packages failed -- try running manually:"
