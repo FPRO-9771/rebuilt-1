@@ -6,7 +6,8 @@
 #   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 #
 
-$ErrorActionPreference = "Stop"
+# Use "Continue" (PS default), not "Stop": pip / robotpy / gh / git push log to stderr, and "Stop" turns those into fatal NativeCommandError. Control flow uses $LASTEXITCODE and explicit try/catch.
+$ErrorActionPreference = "Continue"
 $PROJECT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # -----------------------------------------------
@@ -341,9 +342,10 @@ function Invoke-SetupProject {
     Write-Host ""
     Write-Host "--- Step 3: Requirements ---"
     $venvPip = Join-Path $PROJECT_DIR ".venv\Scripts\pip.exe"
+    $venvPython = Join-Path $PROJECT_DIR ".venv\Scripts\python.exe"
 
     Write-Info "Updating pip..."
-    & $venvPip install --upgrade pip 2>&1 | Out-Null
+    & $venvPython -m pip install --upgrade pip 2>&1 | Out-Null
 
     Write-Info "Installing packages from requirements.txt..."
     & $venvPip install -r requirements.txt

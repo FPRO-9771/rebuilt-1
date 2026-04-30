@@ -18,13 +18,13 @@ TEST_CON_INTAKE_HOPPER_AGITATE in tests/conftest.py, not these production values
 
 CON_INTAKE_HOPPER_AGITATE = {
     # --- Motion shape ---
-    "up_offset_rotations": 1.0,     # How far above down_position the arm peaks (arm rotations).
+    "up_offset_rotations": 0.5,     # How far above down_position the arm peaks (arm rotations).
                                     # 1.0 is about 20% of full travel with down_position = -4.91.
     "position_tolerance": 0.05,     # Distance from a target where direction flips (rotations).
 
     # --- Speed knobs ---
     # Jerkiness = (arm_voltage high) + (dwell_cycles low). Dial either down to smooth out.
-    "arm_voltage": 2.5,             # Magnitude of voltage applied to arm during a swing.
+    "arm_voltage": 1,             # Magnitude of voltage applied to arm during a swing.
                                     # Sign is set by code: + toward up_position, - toward down_position.
     "dwell_cycles": 3,              # Cycles (20 ms each) to hold 0V brake at each end of a swing
                                     # before reversing. 3 = 60 ms pause. Higher = smoother + slower.
