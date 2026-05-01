@@ -17,7 +17,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 20.0
+                  "waitTime": 10.0
                 }
               },
               {
@@ -31,8 +31,20 @@
                 "data": {
                   "name": "ShooterStart"
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeStart"
+                }
               }
             ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Center Depot 2 Pos"
           }
         }
       ]
