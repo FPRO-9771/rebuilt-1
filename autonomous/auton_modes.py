@@ -28,7 +28,7 @@ _log = get_logger("auton_modes")
 # expensive file I/O happens during robotInit, NOT during the
 # 20-second auto period.
 _ALL_AUTO_NAMES = [
-    "Auto Blue Left", "Auto Blue Center", "Auto Blue Center Depot", "Auto Blue Right",
+    "Auto Blue Left", "Auto Blue Center", "Auto Blue Center Depot", "Auto Blue Center 2", "Auto Blue Right",
     "Mini Test",
 ]
 

@@ -83,7 +83,7 @@
     {
       "name": "Constraints Zone",
       "minWaypointRelativePos": 0,
-      "maxWaypointRelativePos": 0,
+      "maxWaypointRelativePos": 0.45332146819526636,
       "constraints": {
         "maxVelocity": 1.0,
         "maxAcceleration": 0.75,
@@ -98,15 +98,47 @@
   "eventMarkers": [
     {
       "name": "IntakeDown",
-      "waypointRelativePos": 0,
+      "waypointRelativePos": 0.30035364275147913,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeDown"
+        }
+      }
     },
     {
-      "name": "",
-      "waypointRelativePos": 0,
+      "name": "IntakeStart",
+      "waypointRelativePos": 1.701056305473367,
+      "endWaypointRelativePos": 3.0,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "IntakeStart"
+        }
+      }
+    },
+    {
+      "name": "AimStart",
+      "waypointRelativePos": 2.453448594674547,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "AimStart"
+        }
+      }
+    },
+    {
+      "name": "ShooterStart",
+      "waypointRelativePos": 2.6030533468934802,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ShooterStart"
+        }
+      }
     }
   ],
   "globalConstraints": {
