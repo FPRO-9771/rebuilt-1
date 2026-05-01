@@ -20,4 +20,5 @@ robotpy_excludes = [
     ".logs",
     "hardware/mock_motor_controller.py",
     "constants/simulation.py",
+    "power_logs",
 ]

@@ -14,6 +14,8 @@ menu_robot() {
             "---|" \
             "5|Download packages for robot|python -m robotpy installer download ..." \
             "6|Install packages on robot|python -m robotpy installer install ..." \
+            "---|" \
+            "7|Download power logs from robot|scp new CSVs to power_logs/" \
             "b|Back"
 
         case "$MENU_CHOICE" in
@@ -38,6 +40,10 @@ menu_robot() {
                 ;;
             6)
                 cmd_install_robot_packages
+                ;;
+            7)
+                run_command "Download Power Logs" \
+                    "$CLI_DIR/commands/download_power_logs.sh"
                 ;;
             b) return ;;
             *) ;;
