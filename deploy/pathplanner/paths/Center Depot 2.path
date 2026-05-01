@@ -32,16 +32,16 @@
     },
     {
       "anchor": {
-        "x": 0.6,
-        "y": 5.051277108433735
+        "x": 0.7040558449074079,
+        "y": 5.043761935763889
       },
       "prevControl": {
-        "x": 0.5971856415126546,
-        "y": 4.801292950163044
+        "x": 0.7012414864200626,
+        "y": 4.793777777493199
       },
       "nextControl": {
-        "x": 0.6037398003472222,
-        "y": 5.383463234012439
+        "x": 0.7077956452546301,
+        "y": 5.375948061342593
       },
       "isLocked": false,
       "linkedName": null
@@ -73,7 +73,7 @@
       "maxWaypointRelativePos": 0.33494178921568674,
       "constraints": {
         "maxVelocity": 1.25,
-        "maxAcceleration": 0.75,
+        "maxAcceleration": 1.0,
         "maxAngularVelocity": 540.0,
         "maxAngularAcceleration": 720.0,
         "nominalVoltage": 12.0,
@@ -85,8 +85,8 @@
       "minWaypointRelativePos": 2.2475298713235308,
       "maxWaypointRelativePos": 2.55,
       "constraints": {
-        "maxVelocity": 0.5,
-        "maxAcceleration": 1.0,
+        "maxVelocity": 0.75,
+        "maxAcceleration": 1.25,
         "maxAngularVelocity": 540.0,
         "maxAngularAcceleration": 720.0,
         "nominalVoltage": 12.0,
@@ -98,7 +98,7 @@
   "eventMarkers": [
     {
       "name": "IntakeDown",
-      "waypointRelativePos": 0.30035364275147913,
+      "waypointRelativePos": 0.20497411242603547,
       "endWaypointRelativePos": null,
       "command": {
         "type": "named",
