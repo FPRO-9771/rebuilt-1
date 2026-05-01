@@ -34,6 +34,7 @@ To add a pose, just add a dict to _POSES below.
 # PathPlanner handles starting coordinates via the path's first waypoint.
 _POSES = [
     {"name": "Center", "default": True},
+    {"name": "Center 2"},
     {"name": "Center Depot"},
     {"name": "Left"},
     {"name": "Right"},
